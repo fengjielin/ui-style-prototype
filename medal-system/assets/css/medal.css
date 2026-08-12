@@ -6,6 +6,33 @@
  * ============================================================
  */
 
+/* ═══════════════════════ 通用：轻提示 toast（PC 管理页补样式） ═══════════════════════ */
+/* prototype.js 的 showToast() 固定使用 .mb-toast 类，而 .mb-toast 样式仅在 base-mobile.css 定义，
+   PC 管理页（tokens-pc.css + base-pc.css）未加载该文件，导致 PC 端 toast 无样式不可见。
+   此处用固定值等价 base-mobile.css 的定义（--mb-radius-lg=8px / --mb-font-body=14px），
+   medal.css 在所有勋章体系页（PC+移动端）均被加载，移动端因 base-mobile.css 先加载、无视觉差异。 */
+.mb-toast {
+  position: fixed;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.75);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  max-width: 70%;
+  text-align: center;
+}
+
+.mb-toast.is-show {
+  opacity: 1;
+}
+
 /* ═══════════════════════ PC：数据概览统计卡 ═══════════════════════ */
 
 /* 概览页待办事项列表 */
@@ -578,6 +605,150 @@
 
 .threshold-card.th-bronze {
   border-top: 3px solid #d9823c;
+}
+
+/* ═══════════════════════ PC：奖金梯度配置（月度勋章奖金卡片） ═══════════════════════ */
+
+.bonus-grad-card {
+  border: 1px solid var(--pc-border-card);
+  border-radius: var(--pc-radius-card);
+  background: #fff;
+  text-align: center;
+  padding: 24px 16px;
+  position: relative;
+  transition: var(--pc-transition);
+}
+
+.bonus-grad-card:hover {
+  box-shadow: var(--pc-shadow-card-hover);
+}
+
+.bonus-grad-card .bg-level {
+  font-size: 15px;
+  color: var(--pc-text-secondary);
+  margin-top: 10px;
+}
+
+.bonus-grad-card .bg-amount {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--pc-text-primary);
+  margin: 8px 0 4px;
+}
+
+.bonus-grad-card .bg-amount .unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--pc-text-secondary);
+}
+
+.bonus-grad-card .bg-desc {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+}
+
+.bonus-grad-card .bg-edit {
+  margin-top: 14px;
+}
+
+/* 奖金梯度卡三色描边（对齐勋章门槛卡） */
+.bonus-grad-card.bg-gold {
+  border-top: 3px solid #f5a623;
+}
+
+.bonus-grad-card.bg-silver {
+  border-top: 3px solid #9ca3af;
+}
+
+.bonus-grad-card.bg-bronze {
+  border-top: 3px solid #d9823c;
+}
+
+/* 月度自动绑定流程步骤条 */
+.bonus-bind-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bonus-bind-flow .bind-step {
+  flex: 1;
+  min-width: 150px;
+  border: 1px solid var(--pc-border-card);
+  border-radius: var(--pc-radius-card);
+  background: #fbfcfe;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bonus-bind-flow .bind-step b {
+  font-size: 14px;
+  color: var(--pc-text-primary);
+}
+
+.bonus-bind-flow .bind-step span {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+}
+
+.bonus-bind-flow .bind-arrow {
+  align-self: center;
+  color: var(--pc-text-secondary);
+  font-size: 16px;
+}
+
+/* ═══════════════════════ PC：专项活动奖金方案（独立核算 chips） ═══════════════════════ */
+
+/* 小号勋章徽章（活动奖金 chips 内使用） */
+.medal-badge-sm {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.act-bonus-card .act-bonus-rules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.act-bonus-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--pc-border-card);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: #fbfcfe;
+}
+
+/* 活动奖金 chips 三色描边 */
+.act-bonus-tag.tag-gold {
+  border-top: 2px solid #f5a623;
+}
+
+.act-bonus-tag.tag-silver {
+  border-top: 2px solid #9ca3af;
+}
+
+.act-bonus-tag.tag-bronze {
+  border-top: 2px solid #d9823c;
+}
+
+.act-bonus-tag .abt-level {
+  font-size: 13px;
+  color: var(--pc-text-secondary);
+}
+
+.act-bonus-tag .abt-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pc-btn-export);
 }
 
 /* ═══════════════════════ PC：勋章档案网格 ═══════════════════════ */
