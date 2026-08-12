@@ -101,7 +101,6 @@ window.MDS = (function () {
         title: '积分规则',
         children: [
           { key: 'score-scheme', title: '积分方案管理' },
-          { key: 'score-log', title: '规则生效记录' },
         ],
       },
       {
@@ -321,33 +320,34 @@ window.MDS = (function () {
       ],
     },
 
-    /* 积分方案（需求文档 3.1 / 3.2：月度常规 + 临时专项两套隔离模板） */
-    scoreSchemes: [
+    /* 月度常规勋章积分方案（固定唯一 · 始终生效 · 不可复制） */
+    monthlyScheme: {
+      id: 1,
+      name: '月度常规勋章积分方案',
+      updatedAt: '2026-08-01 更新',
+      dimensions: [
+        { key: 'usage', name: '平台使用', points: 5, weight: 30, enabled: true, headCoef: 1.0, assocCoef: 0.8 },
+        { key: 'interaction', name: '家园互动', points: 8, weight: 35, enabled: true, headCoef: 1.0, assocCoef: 1.0 },
+        { key: 'promotion', name: '外部推广', points: 15, weight: 20, enabled: true, headCoef: 1.0, assocCoef: 1.2 },
+        { key: 'conversion', name: '会员转化', points: 20, weight: 15, enabled: true, headCoef: 1.0, assocCoef: 1.0 },
+      ],
+    },
+
+    /* 活动方案（可多套 · 可复制 · 对应关联活动；参与对象由关联活动界定） */
+    activitySchemes: [
       {
         id: 1,
-        name: '月度常规勋章积分方案',
-        type: '月度常规',
-        isActive: true,
-        updatedAt: '2026-08-01 更新',
-        dimensions: [
-          { key: 'usage', name: '平台使用', points: 5, weight: 30, enabled: true, headCoef: 1.0, assocCoef: 0.8 },
-          { key: 'interaction', name: '家园互动', points: 8, weight: 35, enabled: true, headCoef: 1.0, assocCoef: 1.0 },
-          { key: 'promotion', name: '外部推广', points: 15, weight: 20, enabled: true, headCoef: 1.0, assocCoef: 1.2 },
-          { key: 'conversion', name: '会员转化', points: 20, weight: 15, enabled: true, headCoef: 1.0, assocCoef: 1.0 },
+        name: '秋季家园共育案例评选专项积分方案',
+        activityId: 8,
+        cycleStart: '2026-08-10',
+        cycleEnd: '2026-09-20',
+        awardRules: [
+          { level: '一等奖', points: 100 },
+          { level: '二等奖', points: 60 },
+          { level: '三等奖', points: 30 },
+          { level: '参与奖', points: 10 },
         ],
-      },
-      {
-        id: 2,
-        name: '临时专项活动积分方案',
-        type: '专项活动',
-        isActive: false,
-        updatedAt: '2026-08-05 更新',
-        dimensions: [
-          { key: 'usage', name: '平台使用', points: 2, weight: 20, enabled: false, headCoef: 1.0, assocCoef: 0.8 },
-          { key: 'interaction', name: '家园互动', points: 6, weight: 30, enabled: true, headCoef: 1.0, assocCoef: 1.0 },
-          { key: 'promotion', name: '外部推广', points: 12, weight: 30, enabled: true, headCoef: 1.0, assocCoef: 1.2 },
-          { key: 'conversion', name: '会员转化', points: 18, weight: 20, enabled: true, headCoef: 1.0, assocCoef: 1.0 },
-        ],
+        updatedAt: '2026-08-10 更新',
       },
     ],
 
@@ -696,7 +696,7 @@ window.MDS = (function () {
         }
       }
       // 只读 mock（不入库）：幼儿园/活动类型/作品/方案/门槛/奖金/榜单/首页原始内容等演示数据
-      ['kindergartens', 'activityTypes', 'works', 'judges', 'scoreSchemes', 'scoreLogs', 'medalThresholds', 'bonusGradients', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'parentProgress', 'teacherScores', 'homeAttendance', 'homeGrid'].forEach(function (key) {
+      ['kindergartens', 'activityTypes', 'works', 'judges', 'monthlyScheme', 'activitySchemes', 'scoreLogs', 'medalThresholds', 'bonusGradients', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'parentProgress', 'teacherScores', 'homeAttendance', 'homeGrid'].forEach(function (key) {
         cache[key] = JSON.parse(JSON.stringify(MOCK[key]));
       });
       var role = lsGet('role');

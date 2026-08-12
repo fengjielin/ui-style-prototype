@@ -1398,6 +1398,11 @@ window.MedalDemo = (function () {
         renderActivityManage(qs('#pcPage'));
         return;
       }
+      // 活动方案弹窗：切换关联活动 → 带出周期 + 更新参与对象提示
+      if (t.id === 'asActivity') {
+        updateAsParticipants();
+        return;
+      }
     });
     // 活动发起弹窗：是否需要专家评审 → 控制评审阶段多选显隐
     document.addEventListener('change', function (e) {
@@ -1509,49 +1514,80 @@ window.MedalDemo = (function () {
     box.innerHTML = html;
   }
 
-  /* ═══════════════════════ PC：积分方案管理（权重配置 + 启用 + 复制） ═══════════════════════ */
-
-  var editingSchemeId = null;
+  /* ═══════════════════════ PC：积分方案管理（月度权重配置 + 活动方案 CRUD） ═══════════════════════ */
 
   function renderScoreScheme(root) {
-    var box = document.getElementById('schemeList');
+    renderMonthlyScheme();
+    renderActivitySchemes();
+  }
+
+  /* 月度常规方案卡体：4 维度摘要行 */
+  function renderMonthlyScheme() {
+    var box = document.getElementById('monthlySchemeBox');
     if (!box) return;
-    var schemes = MDS.get('scoreSchemes') || [];
-    box.innerHTML = schemes
-      .map(function (s) {
-        var dims = (s.dimensions || [])
-          .map(function (d) {
-            var enabled = d.enabled
-              ? '单条得分 <b>' + d.points + '</b> · 权重 <b>' + d.weight + '%</b> · 班主任 ' + d.headCoef.toFixed(1) + ' / 配班 ' + d.assocCoef.toFixed(1)
-              : '<span class="dim-off">计分已关闭</span>';
-            return '<div class="scheme-dim-row"><span class="dim-name">' + esc(d.name) + '</span><span class="dim-info">' + enabled + '</span></div>';
-          })
-          .join('');
-        return (
-          '<div class="scheme-card' + (s.isActive ? ' is-active' : '') + '">' +
-          '<div class="scheme-head">' +
-          '<span class="scheme-name">' + esc(s.name) + '</span>' +
-          (s.isActive ? '<span class="enable-tag">启用中</span>' : '<span class="status-tag status-warning">未启用</span>') +
-          '<div class="scheme-ops">' +
-          (!s.isActive ? '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="score-enable" data-id="' + s.id + '">启用</button>' : '') +
-          '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="score-weight-edit" data-id="' + s.id + '">编辑权重</button>' +
-          '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="score-copy" data-id="' + s.id + '">复制方案</button>' +
-          '</div>' +
-          '</div>' +
-          '<div class="scheme-meta">类型：' + esc(s.type) + ' · 最近更新：' + esc(s.updatedAt) + '</div>' +
-          dims +
-          '</div>'
-        );
+    var s = MDS.get('monthlyScheme');
+    if (!s) return;
+    box.innerHTML = (s.dimensions || [])
+      .map(function (d) {
+        var enabled = d.enabled
+          ? '单条得分 <b>' + d.points + '</b> · 权重 <b>' + d.weight + '%</b> · 班主任 ' + d.headCoef.toFixed(1) + ' / 配班 ' + d.assocCoef.toFixed(1)
+          : '<span class="dim-off">计分已关闭</span>';
+        return '<div class="scheme-dim-row"><span class="dim-name">' + esc(d.name) + '</span><span class="dim-info">' + enabled + '</span></div>';
       })
       .join('');
   }
 
-  /* 权重配置弹窗：填充当前方案维度值 */
+  /* 活动方案列表 */
+  function renderActivitySchemes() {
+    var box = document.getElementById('activitySchemeList');
+    if (!box) return;
+    var count = document.getElementById('activitySchemeCount');
+    var list = MDS.get('activitySchemes') || [];
+    if (count) count.textContent = '共 ' + list.length + ' 条';
+    box.innerHTML = list.length
+      ? list.map(activitySchemeCard).join('')
+      : '<div class="pc-empty"><div class="empty-icon">🏷️</div><div>暂无活动方案，点击「新增活动方案」创建</div></div>';
+  }
+
+  /* 活动方案状态标签：由活动周期推导 */
+  function activitySchemeStatus(s) {
+    var today = todayStr();
+    if (!s.cycleStart) return '<span class="status-tag status-warning">未设置周期</span>';
+    if (s.cycleStart > today) return '<span class="status-tag status-warning">未开始</span>';
+    if (!s.cycleEnd || s.cycleEnd >= today) return '<span class="status-tag status-primary">进行中</span>';
+    return '<span class="status-tag status-success">已结束</span>';
+  }
+
+  /* 活动方案卡片 */
+  function activitySchemeCard(s) {
+    var act = activityById(s.activityId);
+    var rulesHtml = (s.awardRules || [])
+      .map(function (r) {
+        return '<span class="act-scope-tag">' + esc(r.level) + ' ' + r.points + '分</span>';
+      })
+      .join(' ');
+    return (
+      '<div class="scheme-card">' +
+      '<div class="scheme-head">' +
+      '<span class="scheme-name">' + esc(s.name) + '</span>' +
+      activitySchemeStatus(s) +
+      '<div class="scheme-ops">' +
+      '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="as-edit" data-id="' + s.id + '">编辑</button>' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="as-copy" data-id="' + s.id + '">复制方案</button>' +
+      '<button type="button" class="pc-btn pc-btn-delete pc-btn-sm" data-action="as-delete" data-id="' + s.id + '">删除</button>' +
+      '</div>' +
+      '</div>' +
+      '<div class="scheme-meta">关联活动：' + esc(act ? act.title : '未关联') + ' · 参与对象：' + esc(act ? act.title + ' 报名教师' : '—') + '</div>' +
+      '<div class="scheme-meta">活动周期：' + esc(s.cycleStart || '—') + ' ~ ' + esc(s.cycleEnd || '—') + '</div>' +
+      '<div class="scheme-meta">折算标准：' + (rulesHtml || '<span style="color:#c0c4cc;">—</span>') + '</div>' +
+      '</div>'
+    );
+  }
+
+  /* 权重配置弹窗：填充月度方案维度值 */
   function fillWeightDialog(schemeId) {
-    var schemes = MDS.get('scoreSchemes') || [];
-    var s = schemes.filter(function (x) { return x.id === schemeId; })[0];
+    var s = MDS.get('monthlyScheme');
     if (!s) return;
-    editingSchemeId = schemeId;
     var nameEl = document.getElementById('schemeNameText');
     if (nameEl) nameEl.textContent = s.name;
     (s.dimensions || []).forEach(function (d, i) {
@@ -1570,31 +1606,95 @@ window.MedalDemo = (function () {
   }
 
   function saveWeightDialog() {
-    MDS.update('scoreSchemes', function (schemes) {
-      return schemes.map(function (s) {
-        if (s.id !== editingSchemeId) return s;
-        var dims = (s.dimensions || []).map(function (d, i) {
-          var points = parseInt((document.getElementById('dimPoints' + i) || {}).value, 10);
-          var weight = parseInt((document.getElementById('dimWeight' + i) || {}).value, 10);
-          var enabled = !!(document.getElementById('dimEnabled' + i) || {}).checked;
-          var head = parseFloat((document.getElementById('dimHead' + i) || {}).value);
-          var assoc = parseFloat((document.getElementById('dimAssoc' + i) || {}).value);
-          return {
-            key: d.key,
-            name: d.name,
-            points: isNaN(points) ? d.points : points,
-            weight: isNaN(weight) ? d.weight : weight,
-            enabled: enabled,
-            headCoef: isNaN(head) ? d.headCoef : head,
-            assocCoef: isNaN(assoc) ? d.assocCoef : assoc,
-          };
-        });
-        return Object.assign({}, s, { dimensions: dims, updatedAt: '刚刚 更新' });
-      });
+    var s = MDS.get('monthlyScheme');
+    if (!s) return;
+    var dims = (s.dimensions || []).map(function (d, i) {
+      var points = parseInt((document.getElementById('dimPoints' + i) || {}).value, 10);
+      var weight = parseInt((document.getElementById('dimWeight' + i) || {}).value, 10);
+      var enabled = !!(document.getElementById('dimEnabled' + i) || {}).checked;
+      var head = parseFloat((document.getElementById('dimHead' + i) || {}).value);
+      var assoc = parseFloat((document.getElementById('dimAssoc' + i) || {}).value);
+      return {
+        key: d.key,
+        name: d.name,
+        points: isNaN(points) ? d.points : points,
+        weight: isNaN(weight) ? d.weight : weight,
+        enabled: enabled,
+        headCoef: isNaN(head) ? d.headCoef : head,
+        assocCoef: isNaN(assoc) ? d.assocCoef : assoc,
+      };
+    });
+    MDS.update('monthlyScheme', function (cur) {
+      return Object.assign({}, cur, { dimensions: dims, updatedAt: '刚刚 更新' });
     });
     Proto.closeDialog('weightDialog');
     renderScoreScheme(qs('#pcPage'));
     Proto.showToast('权重配置已保存');
+  }
+
+  /* ── 活动方案弹窗辅助：关联活动下拉 / 参与对象提示 / 折算表行 ── */
+
+  function fillAsActivitySelect() {
+    var sel = document.getElementById('asActivity');
+    if (!sel) return;
+    var acts = MDS.get('activities') || [];
+    sel.innerHTML = '<option value="">请选择活动</option>' + acts
+      .map(function (a) {
+        return '<option value="' + a.id + '">' + esc(a.title) + '</option>';
+      })
+      .join('');
+  }
+
+  /* 关联活动选择后：带出活动周期（仅填空时）并提示参与对象 */
+  function updateAsParticipants() {
+    var id = Number((qs('#asActivity') || {}).value);
+    var act = activityById(id);
+    var parts = document.getElementById('asParticipants');
+    if (parts) {
+      parts.textContent = act
+        ? act.title + ' 报名教师（由关联活动界定）'
+        : '选择关联活动后自动带出（该活动报名教师）';
+    }
+    if (act) {
+      var s = qs('#asCycleStart');
+      var e = qs('#asCycleEnd');
+      if (s && !s.value) s.value = act.signupStart || '';
+      if (e && !e.value) e.value = act.signupEnd || '';
+    }
+  }
+
+  /* 折算表行模板（字段类 as-award-level / as-award-points） */
+  function asAwardRowHtml(r) {
+    r = r || {};
+    return (
+      '<tr>' +
+      '<td class="award-idx"></td>' +
+      '<td><input class="pc-input as-award-level" placeholder="如：一等奖" value="' + esc(r.level || '') + '"></td>' +
+      '<td><input class="pc-input as-award-points" type="number" min="0" placeholder="如：100" style="width:120px;" value="' + (r.points != null ? esc(String(r.points)) : '') + '"></td>' +
+      '<td><span class="action-btn action-delete" data-action="as-award-del">删除</span></td>' +
+      '</tr>'
+    );
+  }
+
+  function renderAsAwardRows(awards) {
+    var tbody = document.getElementById('asAwardTbody');
+    if (!tbody) return;
+    var list = (awards && awards.length) ? awards : [{}];
+    tbody.innerHTML = list.map(asAwardRowHtml).join('');
+    renumberAwardRows(tbody);
+  }
+
+  function readAsAwardRows() {
+    var tbody = document.getElementById('asAwardTbody');
+    var out = [];
+    if (!tbody) return out;
+    tbody.querySelectorAll('tr').forEach(function (tr) {
+      var level = ((tr.querySelector('.as-award-level') || {}).value || '').trim();
+      var points = parseInt((tr.querySelector('.as-award-points') || {}).value, 10);
+      if (!level) return;
+      out.push({ level: level, points: isNaN(points) || points < 0 ? 0 : points });
+    });
+    return out;
   }
 
   /* ═══════════════════════ PC：勋章门槛配置（金银铜双套） ═══════════════════════ */
@@ -2707,7 +2807,7 @@ window.MedalDemo = (function () {
       Proto.openDialog('worksPreviewDialog');
     });
 
-    // ── 积分方案 ──
+    // ── 积分方案：月度权重 + 活动方案 CRUD ──
     Proto.registerAction('score-weight-edit', function (el) {
       fillWeightDialog(Number(el.getAttribute('data-id')));
     });
@@ -2716,34 +2816,145 @@ window.MedalDemo = (function () {
       saveWeightDialog();
     });
 
-    Proto.registerAction('score-enable', function (el) {
-      var id = Number(el.getAttribute('data-id'));
-      var s = (MDS.get('scoreSchemes') || []).filter(function (x) { return x.id === id; })[0];
-      if (!s) return;
-      if (!confirm('切换后将从下个结算周期起生效，当前周期不受影响。\n方案快照将自动生成，是否继续启用「' + s.name + '」？')) {
-        return;
-      }
-      MDS.update('scoreSchemes', function (arr) {
-        return arr.map(function (x) { return Object.assign({}, x, { isActive: x.id === id }); });
-      });
-      renderScoreScheme(qs('#pcPage'));
-      Proto.showToast('已启用「' + s.name + '」，方案快照已生成');
+    // 新增活动方案：打开空表单弹窗
+    Proto.registerAction('as-add', function () {
+      document.getElementById('asId').value = '';
+      document.getElementById('asDialogTitle').textContent = '新增活动方案';
+      document.getElementById('asName').value = '';
+      fillAsActivitySelect();
+      document.getElementById('asActivity').value = '';
+      document.getElementById('asCycleStart').value = '';
+      document.getElementById('asCycleEnd').value = '';
+      var parts = document.getElementById('asParticipants');
+      if (parts) parts.textContent = '选择关联活动后自动带出（该活动报名教师）';
+      renderAsAwardRows([{}]);
+      Proto.openDialog('asDialog');
     });
 
-    Proto.registerAction('score-copy', function (el) {
+    // 编辑活动方案：回填
+    Proto.registerAction('as-edit', function (el) {
       var id = Number(el.getAttribute('data-id'));
-      var s = (MDS.get('scoreSchemes') || []).filter(function (x) { return x.id === id; })[0];
+      var s = (MDS.get('activitySchemes') || []).filter(function (x) { return x.id === id; })[0];
+      if (!s) return;
+      document.getElementById('asId').value = id;
+      document.getElementById('asDialogTitle').textContent = '编辑活动方案';
+      document.getElementById('asName').value = s.name;
+      fillAsActivitySelect();
+      document.getElementById('asActivity').value = String(s.activityId || '');
+      document.getElementById('asCycleStart').value = s.cycleStart || '';
+      document.getElementById('asCycleEnd').value = s.cycleEnd || '';
+      updateAsParticipants();
+      renderAsAwardRows(s.awardRules || [{}]);
+      Proto.openDialog('asDialog');
+    });
+
+    // 复制活动方案：副本保留周期与折算表，关联活动清空需重新选择
+    Proto.registerAction('as-copy', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      var s = (MDS.get('activitySchemes') || []).filter(function (x) { return x.id === id; })[0];
       if (!s) return;
       var copy = JSON.parse(JSON.stringify(s));
       copy.id = Date.now();
       copy.name = s.name + '（副本）';
-      copy.isActive = false;
+      copy.activityId = null;
       copy.updatedAt = '刚刚 复制';
-      MDS.update('scoreSchemes', function (arr) {
-        return arr.concat([copy]);
+      MDS.update('activitySchemes', function (arr) {
+        return (arr || []).concat([copy]);
       });
       renderScoreScheme(qs('#pcPage'));
-      Proto.showToast('已复制为「' + copy.name + '」');
+      Proto.showToast('已复制为「' + copy.name + '」，请选择关联活动');
+    });
+
+    // 删除活动方案
+    Proto.registerAction('as-delete', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      var s = (MDS.get('activitySchemes') || []).filter(function (x) { return x.id === id; })[0];
+      if (!s) return;
+      if (!confirm('确定删除活动方案「' + s.name + '」吗？')) return;
+      MDS.update('activitySchemes', function (arr) {
+        return (arr || []).filter(function (x) { return x.id !== id; });
+      });
+      renderScoreScheme(qs('#pcPage'));
+      Proto.showToast('已删除活动方案');
+    });
+
+    // 活动方案弹窗：添加/删除折算标准行
+    Proto.registerAction('as-award-add', function () {
+      var tbody = document.getElementById('asAwardTbody');
+      if (tbody) {
+        tbody.insertAdjacentHTML('beforeend', asAwardRowHtml({}));
+        renumberAwardRows(tbody);
+      }
+    });
+
+    Proto.registerAction('as-award-del', function (el) {
+      var tbody = el.closest('tbody');
+      var tr = el.closest('tr');
+      if (tbody && tr) {
+        tr.remove();
+        renumberAwardRows(tbody);
+      }
+    });
+
+    // 保存活动方案
+    Proto.registerAction('as-save', function () {
+      var name = ((qs('#asName') || {}).value || '').trim();
+      var activityId = Number((qs('#asActivity') || {}).value);
+      var cycleStart = (qs('#asCycleStart') || {}).value || '';
+      var cycleEnd = (qs('#asCycleEnd') || {}).value || '';
+      // 折算表完整性校验：奖项等级已填但积分为空 → 拦截
+      var asAwardRows = document.querySelectorAll('#asAwardTbody tr');
+      var incompleteRule = false;
+      asAwardRows.forEach(function (tr) {
+        var lv = ((tr.querySelector('.as-award-level') || {}).value || '').trim();
+        var pt = ((tr.querySelector('.as-award-points') || {}).value || '').trim();
+        if (lv && !pt) incompleteRule = true;
+      });
+      if (incompleteRule) {
+        Proto.showToast('请为每个奖项填写积分');
+        return;
+      }
+      var rules = readAsAwardRows();
+      if (!name) {
+        Proto.showToast('请填写方案名称');
+        return;
+      }
+      if (!activityId) {
+        Proto.showToast('请选择关联活动');
+        return;
+      }
+      if (!cycleStart || !cycleEnd) {
+        Proto.showToast('请填写活动周期');
+        return;
+      }
+      if (cycleStart > cycleEnd) {
+        Proto.showToast('活动周期开始日期不能晚于结束日期');
+        return;
+      }
+      if (!rules.length) {
+        Proto.showToast('请至少添加一项奖励折算标准');
+        return;
+      }
+      var id = Number((qs('#asId') || {}).value);
+      var payload = {
+        name: name,
+        activityId: activityId,
+        cycleStart: cycleStart,
+        cycleEnd: cycleEnd,
+        awardRules: rules,
+        updatedAt: '刚刚 更新',
+      };
+      MDS.update('activitySchemes', function (arr) {
+        if (id) {
+          return (arr || []).map(function (x) {
+            return x.id === id ? Object.assign({}, x, payload) : x;
+          });
+        }
+        return (arr || []).concat([Object.assign({ id: Date.now() }, payload)]);
+      });
+      Proto.closeDialog('asDialog');
+      renderScoreScheme(qs('#pcPage'));
+      Proto.showToast(id ? '已保存活动方案修改' : '已新增活动方案');
     });
 
     // ── 勋章门槛 ──
@@ -3726,7 +3937,7 @@ window.MedalDemo = (function () {
     if (document.getElementById('parentProgressRoot')) {
       renderRankParent(qs('#pcPage'));
     }
-    if (document.getElementById('schemeList')) {
+    if (document.getElementById('monthlySchemeBox')) {
       renderScoreScheme(qs('#pcPage'));
     }
     if (document.getElementById('thresholdGrid')) {

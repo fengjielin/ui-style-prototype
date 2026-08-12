@@ -242,17 +242,33 @@
           </section>
         </div>
 
-        <!-- ═════════ ⑥ 积分方案管理（score-scheme） ═════════ -->
+        <!-- ═════════ ⑥ 积分方案管理（score-scheme）：月度固定方案 + 临时专项活动积分方案双区 ═════════ -->
         <div class="pc-page-block" data-page-key="score-scheme">
+          <!-- 月度常规勋章积分方案（固定唯一 · 始终生效 · 不可复制） -->
+          <section class="pc-card">
+            <div class="card-head">
+              <span class="card-title">月度常规勋章积分方案</span>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+                <span class="table-count">固定唯一 · 始终生效 · 不可复制</span>
+                <button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="score-weight-edit" data-id="1">编辑权重</button>
+              </div>
+            </div>
+            <div class="card-body" id="monthlySchemeBox" style="padding-top:8px;"></div>
+          </section>
+
+          <!-- 临时专项活动积分方案（可多套 · 可复制 · 对应关联活动） -->
           <section class="pc-card">
             <div class="card-body" style="display:flex;align-items:center;gap:12px;">
-              <button type="button" class="pc-btn pc-btn-add" data-action="show-toast" data-toast="演示功能：新增方案模板">＋ 新增方案</button>
-              <span style="font-size:12px;color:#909399;">两套方案模板隔离：月度常规勋章积分方案 / 临时专项活动积分方案</span>
+              <button type="button" class="pc-btn pc-btn-add" data-action="as-add">＋ 新增活动方案</button>
+              <span style="font-size:12px;color:#909399;">活动方案对应所选活动，参与对象由关联活动界定；可一键复制复用</span>
             </div>
           </section>
           <section class="pc-card">
-            <div class="card-head"><span class="card-title">积分方案列表</span></div>
-            <div class="card-body" id="schemeList" style="display:flex;flex-direction:column;gap:14px;"></div>
+            <div class="card-head">
+              <span class="card-title">临时专项活动积分方案</span>
+              <span class="table-count" id="activitySchemeCount">共 0 条</span>
+            </div>
+            <div class="card-body" id="activitySchemeList" style="display:flex;flex-direction:column;gap:14px;"></div>
           </section>
         </div>
 
@@ -846,6 +862,57 @@
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="weightDialog">取 消</button>
         <button type="button" class="pc-btn pc-btn-add" data-action="score-weight-save">保存并生效</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 新增/编辑活动方案弹窗 ══════════════════ -->
+  <div class="mask-layer" id="asDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="asDialogTitle">新增活动方案</div>
+      <input type="hidden" id="asId">
+      <div class="dialog-body">
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>方案名称<span class="required">*</span></label>
+            <input class="pc-input" id="asName" placeholder="请输入方案名称">
+          </div>
+          <div class="pc-form-item">
+            <label>关联活动<span class="required">*</span></label>
+            <select class="pc-select" id="asActivity" style="width:100%;">
+              <option value="">请选择活动</option>
+            </select>
+          </div>
+          <div class="pc-form-item">
+            <label>活动周期<span class="required">*</span></label>
+            <div style="display:flex;align-items:center;gap:8px;width:100%;">
+              <input class="pc-input" type="date" id="asCycleStart" style="flex:1;"> <span>~</span> <input class="pc-input" type="date" id="asCycleEnd" style="flex:1;">
+            </div>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>参与对象</label>
+            <div id="asParticipants" style="font-size:12px;color:#909399;">选择关联活动后自动带出（该活动报名教师）</div>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>奖励折算标准<span class="required">*</span></label>
+            <table class="pc-table award-crud-table">
+              <thead>
+                <tr>
+                  <th style="width:60px;">序号</th>
+                  <th>奖项等级</th>
+                  <th style="width:140px;">积分</th>
+                  <th style="width:90px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="asAwardTbody"></tbody>
+            </table>
+            <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="as-award-add" style="margin-top:8px;">＋ 添加奖项</button>
+          </div>
+        </form>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="asDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="as-save">保 存</button>
       </div>
     </div>
   </div>
