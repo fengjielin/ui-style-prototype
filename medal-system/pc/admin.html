@@ -436,6 +436,69 @@
           </div>
         </div>
 
+        <!-- ═════════ ⑨½ 期末汇总清单（bonus-semester）：学期末自动汇总 + 月度/专项合并统计 + 离职剔除 ═════════ -->
+        <div class="pc-page-block" data-page-key="bonus-semester">
+          <section class="pc-card">
+            <div class="card-head">
+              <span class="card-title">期末汇总清单</span>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+                <span class="table-count" id="semesterPeriod">学期：—</span>
+                <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="semester-generate">⚡ 自动汇总期末清单</button>
+                <button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="semester-export">⇩ 导出发放清单</button>
+              </div>
+            </div>
+            <div style="font-size:12px;color:#909399;padding:10px 16px 0;">期末汇总 = 月度常规奖金 + 当期所有专项活动奖励合并统计；中途离职教师自动剔除并标注原因（不影响历史数据）。</div>
+          </section>
+
+          <section class="pc-card">
+            <div class="card-body" id="semesterSummaryRoot"></div>
+          </section>
+
+          <section class="pc-card">
+            <div class="card-head"><span class="card-title">清单状态</span></div>
+            <div class="card-body">
+              <div class="pc-filter-tabs">
+                <span class="pc-filter-tab is-active" data-action="switch-tab" data-tab-group="semesterFilter" data-tab-value="ALL">全部</span>
+                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="semesterFilter" data-tab-value="NORMAL">正常发放</span>
+                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="semesterFilter" data-tab-value="EXCLUDED">已剔除（离职）</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="pc-card">
+            <div class="card-head">
+              <span class="card-title">期末总结大会统一发放清单</span>
+              <span class="table-count" id="semesterCount">共 0 条</span>
+            </div>
+            <div class="card-body no-padding">
+              <table class="pc-table">
+                <thead>
+                  <tr>
+                    <th>教师</th>
+                    <th>班级</th>
+                    <th>累计勋章</th>
+                    <th>月度常规奖金</th>
+                    <th>专项活动奖金</th>
+                    <th>合计奖金</th>
+                    <th>状态</th>
+                    <th>剔除原因</th>
+                  </tr>
+                </thead>
+                <tbody id="semesterTbody"></tbody>
+              </table>
+              <div class="pc-pagination">
+                <span>共 <span id="semesterTotal">0</span> 条</span>
+                <span>
+                  <span class="page-btn is-disabled" data-action="switch-page" data-page-group="sm">上一页</span>
+                  <span class="page-number is-active" data-action="switch-page" data-page-group="sm">1</span>
+                  <span class="page-btn" data-action="switch-page" data-page-group="sm">下一页</span>
+                </span>
+                <span>10 条/页</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
         <!-- ═════════ ⑩ 教师管理（user-teacher） ═════════ -->
         <div class="pc-page-block" data-page-key="user-teacher">
           <section class="pc-card">

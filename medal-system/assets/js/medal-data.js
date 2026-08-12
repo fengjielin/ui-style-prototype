@@ -402,6 +402,10 @@ window.MDS = (function () {
       // 2026-07 月度常规勋章（补齐赵敏/孙悦，与月度发放清单 mock 一致，供「自动生成当月发放清单」演示）
       { id: 9, teacher: '赵敏', className: '小一班', period: '2026-07', type: '月度常规', level: '银', activity: '—', usage: 460, interaction: 500, promotion: 380, conversion: 270, total: 1610, rank: 5 },
       { id: 10, teacher: '孙悦', className: '中一班', period: '2026-07', type: '月度常规', level: '铜', activity: '—', usage: 400, interaction: 450, promotion: 320, conversion: 230, total: 1400, rank: 9 },
+      // 亲子阅读打卡活动专项勋章（关联专项活动奖金方案：活动金500/活动银300/活动铜150，供期末汇总「月度+专项合并统计」演示）
+      { id: 11, teacher: '张慧', className: '中一班', period: '2026-04', type: '活动专项', level: '金', activity: '亲子阅读打卡活动', usage: 320, interaction: 400, promotion: 260, conversion: 180, total: 1160, rank: 2 },
+      { id: 12, teacher: '李娜', className: '小一班', period: '2026-04', type: '活动专项', level: '银', activity: '亲子阅读打卡活动', usage: 300, interaction: 360, promotion: 240, conversion: 160, total: 1060, rank: 4 },
+      { id: 13, teacher: '王强', className: '大一班', period: '2026-04', type: '活动专项', level: '铜', activity: '亲子阅读打卡活动', usage: 280, interaction: 320, promotion: 220, conversion: 150, total: 970, rank: 6 },
     ],
 
     /* 月度勋章奖金梯度（勋章等级 ↔ 月度奖金标准，纯配置面板，需求文档 5.1；固定唯一 · 每月勋章等级自动绑定） */
@@ -444,7 +448,8 @@ window.MDS = (function () {
       { id: 4, name: '赵敏', gender: '女', phone: '136****0004', className: '小一班', kindergarten: '童蹊幼儿园', role: '配班', hireDate: '2023-06-01', status: '在职', isActive: true },
       { id: 5, name: '陈晨', gender: '女', phone: '135****0005', className: '中一班', kindergarten: '童蹊幼儿园', role: '配班', hireDate: '2021-09-01', status: '在职', isActive: true },
       { id: 6, name: '刘洋', gender: '男', phone: '134****0006', className: '大一班', kindergarten: '童蹊幼儿园', role: '配班', hireDate: '2020-08-10', status: '在职', isActive: true },
-      { id: 7, name: '孙悦', gender: '女', phone: '133****0007', className: '中一班', kindergarten: '阳光幼儿园', role: '配班', hireDate: '2024-09-01', status: '离职', isActive: false },
+      // leaveReason：离职时记录的评比资格放弃原因（期末汇总剔除清单标注依据）
+      { id: 7, name: '孙悦', gender: '女', phone: '133****0007', className: '中一班', kindergarten: '阳光幼儿园', role: '配班', hireDate: '2024-09-01', status: '离职', isActive: false, leaveReason: '6 月离职，放弃评比资格' },
       { id: 8, name: '周涛', gender: '男', phone: '132****0008', className: '大一班', kindergarten: '阳光幼儿园', role: '班主任', hireDate: '2019-05-20', status: '在职', isActive: true },
       { id: 9, name: '吴倩', gender: '女', phone: '131****0009', className: '小一班', kindergarten: '蓝天幼儿园', role: '配班', hireDate: '2025-03-01', status: '在职', isActive: true },
       { id: 10, name: '郑爽', gender: '女', phone: '130****0010', className: '中一班', kindergarten: '蓝天幼儿园', role: '班主任', hireDate: '2023-11-15', status: '在职', isActive: true },

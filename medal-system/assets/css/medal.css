@@ -972,6 +972,17 @@ tr.row-excluded td {
   font-size: 12px;
 }
 
+/* ═══════════════════════ PC：期末汇总 · 累计勋章 chip ═══════════════════════ */
+
+.sem-medal-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 10px;
+  font-size: 13px;
+  color: var(--pc-text-primary);
+}
+
 /* ═══════════════════════ PC：评委打分页 ═══════════════════════ */
 
 .score-work-meta {

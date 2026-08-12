@@ -252,4 +252,36 @@ var asAfter = MDS.get('activitySchemes');
 assert(asAfter[0].bonusRules[0].amount === 700, '专项活动奖金保存生效 700，实际 ' + asAfter[0].bonusRules[0].amount);
 assert(asAfter[1].bonusRules[0].amount === 500, '亲子方案独立奖金不受影响（500），实际 ' + asAfter[1].bonusRules[0].amount);
 
+console.log('— 期末汇总清单（月度+专项合并统计 + 离职剔除） —');
+/* 重置梯度/方案/勋章数据，保证期末汇总结果可预期（此前测试已修改梯度与活动方案） */
+MDS.reset('bonusGradients');
+MDS.reset('activitySchemes');
+MDS.reset('medals');
+/* 点击「自动汇总期末清单」：按勋章档案累计等级/数量，合并月度+专项奖金 */
+document.dispatchClick(actionEl('semester-generate'));
+var sb = MDS.get('semesterBonus');
+assert(sb.length === 7, '期末汇总共 7 位教师，实际 ' + sb.length);
+var zhang = sb.filter(function (b) { return b.teacher === '张慧'; })[0];
+assert(zhang && zhang.medals.indexOf('金×4') >= 0, '张慧累计勋章 金×4：' + (zhang && zhang.medals));
+assert(zhang && zhang.monthBonus === 1600, '张慧月度常规奖金 1600（金×2×800），实际 ' + (zhang && zhang.monthBonus));
+assert(zhang && zhang.activityBonus === 500, '张慧专项活动奖励 500（亲子活动金）合并统计，实际 ' + (zhang && zhang.activityBonus));
+assert(zhang && zhang.total === 2100, '张慧合计 2100（月度+专项合并），实际 ' + (zhang && zhang.total));
+var sun = sb.filter(function (b) { return b.teacher === '孙悦'; })[0];
+assert(sun && sun.status === '已剔除', '离职教师孙悦自动剔除');
+assert(sun && (sun.remark || '').indexOf('6 月离职') >= 0, '剔除原因标注「6 月离职，放弃评比资格」：' + (sun && sun.remark));
+assert(sun && sun.monthBonus === 300, '孙悦保留历史月度奖金 300（不影响历史数据），实际 ' + (sun && sun.monthBonus));
+/* 汇总统计卡渲染（基于全量清单） */
+var semSummary = document.getElementById('semesterSummaryRoot');
+assert(semSummary && semSummary.innerHTML.indexOf('¥ 4850') >= 0, '汇总奖金总额 ¥ 4850（正常发放教师合计）');
+assert(semSummary && semSummary.innerHTML.indexOf('金4 · 银6 · 铜3') >= 0, '汇总累计勋章 金4·银6·铜3');
+var semPeriod = document.getElementById('semesterPeriod');
+assert(semPeriod && semPeriod.textContent.indexOf('2025-2026 第二学期') >= 0, '学期信息展示：' + (semPeriod && semPeriod.textContent));
+/* 清单表格渲染（含剔除标注） */
+var semTbody = document.getElementById('semesterTbody');
+assert(semTbody && semTbody.innerHTML.indexOf('row-excluded') >= 0, '剔除行应用灰色弱化样式');
+assert(semTbody && semTbody.innerHTML.indexOf('6 月离职，放弃评比资格') >= 0, '清单中标注剔除原因');
+assert(semTbody && semTbody.innerHTML.indexOf('sem-medal-item') >= 0, '累计勋章 chip 渲染');
+var semCount = document.getElementById('semesterCount');
+assert(semCount && semCount.textContent.indexOf('共 7 条') >= 0, '清单计数 7 条：' + (semCount && semCount.textContent));
+
 console.log('冒烟测试完成');

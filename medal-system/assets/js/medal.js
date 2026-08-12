@@ -341,6 +341,7 @@ window.MedalDemo = (function () {
     'medal-archive': renderMedalArchive,
     'bonus-gradient': renderBonusGradient,
     'bonus-monthly': renderBonusMonthly,
+    'bonus-semester': renderBonusSemester,
     'user-teacher': renderUserTeacher,
     'judge-scoring': renderJudgeTasks,
   };
@@ -2149,6 +2150,187 @@ window.MedalDemo = (function () {
     activateTag('bonus-monthly');
   }
 
+  /* ═══════════════════════ PC：期末汇总清单（月度常规奖金 + 当期专项活动奖励合并统计，自动剔除离职教师） ═══════════════════════ */
+
+  var semesterFilter = 'ALL';
+
+  function renderBonusSemester(root) {
+    renderSemesterSummary();
+    renderSemesterTable();
+  }
+
+  function filteredSemester() {
+    var all = MDS.get('semesterBonus') || [];
+    return all.filter(function (b) {
+      if (semesterFilter === 'ALL') return true;
+      if (semesterFilter === 'EXCLUDED') return b.status === '已剔除';
+      return b.status === '正常';
+    });
+  }
+
+  /* 解析累计勋章字符串「金×3 / 银×2」为 { 金:n, 银:n, 铜:n } */
+  function parseMedalsStr(str) {
+    var out = { '金': 0, '银': 0, '铜': 0 };
+    String(str || '').replace(/([金银铜])\s*[xX×]\s*(\d+)/g, function (_, lv, n) {
+      out[lv] += parseInt(n, 10);
+      return '';
+    });
+    return out;
+  }
+
+  /* 累计勋章单元格：徽章 + 等级×数量 chip（如「金×3 银×2」） */
+  function semesterMedalsHtml(str) {
+    var list = String(str || '').split('/').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!list.length) return '<span style="color:#c0c4cc;">—</span>';
+    return list
+      .map(function (part) {
+        var m = part.match(/^([金银铜])\s*[xX×]\s*(\d+)$/);
+        if (!m) return esc(part);
+        var key = m[1] === '金' ? 'gold' : m[1] === '银' ? 'silver' : 'bronze';
+        return (
+          '<span class="sem-medal-item">' +
+          '<span class="medal-badge medal-badge-sm level-' + key + '"></span>' +
+          '<span>' + m[1] + '×' + m[2] + '</span>' +
+          '</span>'
+        );
+      })
+      .join('');
+  }
+
+  /* 汇总统计卡：在册评比 / 累计勋章 / 剔除人数 / 奖金总额（基于全量清单，不受筛选影响） */
+  function renderSemesterSummary() {
+    var box = document.getElementById('semesterSummaryRoot');
+    if (!box) return;
+    var sys = MDS.get('sysConfig') || {};
+    var period = document.getElementById('semesterPeriod');
+    if (period) period.textContent = '学期：' + (sys.semester || '—');
+    var all = MDS.get('semesterBonus') || [];
+    var normal = all.filter(function (b) { return b.status === '正常'; });
+    var excluded = all.filter(function (b) { return b.status === '已剔除'; });
+    var gold = 0, silver = 0, bronze = 0;
+    all.forEach(function (b) {
+      var c = parseMedalsStr(b.medals);
+      gold += c['金']; silver += c['银']; bronze += c['铜'];
+    });
+    var total = normal.reduce(function (s, b) { return s + (b.total || 0); }, 0);
+    box.innerHTML =
+      '<div class="stat-grid" style="margin-bottom:0;">' +
+      statCard('教师', '在册评比（正常发放）', normal.length + ' 人', '👩‍🏫', 'rgba(37,99,235,0.12)') +
+      statCard('勋章', '本学期累计勋章', '金' + gold + ' · 银' + silver + ' · 铜' + bronze, '🎖️', 'rgba(245,166,35,0.16)') +
+      statCard('剔除', '离职放弃评比', excluded.length + ' 人', '⚠️', 'rgba(224,58,46,0.12)') +
+      statCard('奖金', '期末奖金总额', '¥ ' + total, '💰', 'rgba(245,158,11,0.14)') +
+      '</div>';
+  }
+
+  function renderSemesterTable() {
+    var tbody = document.getElementById('semesterTbody');
+    var count = document.getElementById('semesterCount');
+    var list = filteredSemester();
+    if (count) count.textContent = '共 ' + list.length + ' 条';
+    if (!tbody) return;
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#909399;padding:40px 0;">暂无清单记录</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list
+      .map(function (b) {
+        var excluded = b.status === '已剔除';
+        var statusCell = excluded
+          ? '<span class="excluded-tag">已剔除</span>'
+          : '<span class="status-tag status-success">正常</span>';
+        var remarkCell = excluded
+          ? '<span style="color:#e03a2e;font-size:12px;">' + esc(b.remark || '中途离职，放弃评比资格') + '</span>'
+          : '<span style="color:#909399;">—</span>';
+        return (
+          '<tr class="' + (excluded ? 'row-excluded' : '') + '">' +
+          '<td>' + esc(b.teacher) + '</td>' +
+          '<td>' + esc(b.className) + '</td>' +
+          '<td>' + semesterMedalsHtml(b.medals) + '</td>' +
+          '<td class="bonus-amount">' + (b.monthBonus || 0) + '</td>' +
+          '<td class="bonus-amount">' + (b.activityBonus || 0) + '</td>' +
+          '<td><strong>' + (b.total || 0) + '</strong></td>' +
+          '<td>' + statusCell + '</td>' +
+          '<td>' + remarkCell + '</td>' +
+          '</tr>'
+        );
+      })
+      .join('');
+  }
+
+  /* 一键自动汇总期末清单：按勋章档案累计等级/数量，合并月度常规奖金 + 当期专项活动奖励，自动剔除离职教师 */
+  function generateSemesterBonus() {
+    var medals = MDS.get('medals') || [];
+    var grads = MDS.get('bonusGradients') || [];
+    var schemes = MDS.get('activitySchemes') || [];
+    var activities = MDS.get('activities') || [];
+    var teachers = MDS.get('teachers') || [];
+    var sys = MDS.get('sysConfig') || {};
+    var amountOf = function (level) {
+      var g = grads.filter(function (x) { return x.level === level; })[0];
+      return g ? g.amount : 0;
+    };
+    // 专项活动奖金方案速查：activityId → { 活动金/活动银/活动铜: 金额 }
+    var schemeBonus = {};
+    schemes.forEach(function (s) {
+      var map = {};
+      (s.bonusRules || []).forEach(function (r) { map[r.level] = r.amount; });
+      schemeBonus[s.activityId] = map;
+    });
+    // 活动 id → 标题 对照（反查活动专项勋章所属活动的奖金方案）
+    var actTitle = {};
+    activities.forEach(function (a) { actTitle[a.id] = a.title; });
+    // 按教师聚合勋章：累计等级/数量 + 月度/专项奖金
+    var byTeacher = {};
+    medals.forEach(function (m) {
+      if (!byTeacher[m.teacher]) {
+        byTeacher[m.teacher] = { teacher: m.teacher, className: m.className, counts: { '金': 0, '银': 0, '铜': 0 }, monthBonus: 0, activityBonus: 0 };
+      }
+      var row = byTeacher[m.teacher];
+      row.counts[m.level] = (row.counts[m.level] || 0) + 1;
+      if (m.type === '月度常规') {
+        row.monthBonus += amountOf(m.level);
+      } else {
+        // 专项活动奖励：按关联活动方案的独立奖金规则核算（等级 金/银/铜 → 活动金/活动银/活动铜）
+        var actId = null;
+        Object.keys(actTitle).forEach(function (id) {
+          if (actTitle[id] === m.activity) actId = Number(id);
+        });
+        var map = actId != null ? (schemeBonus[actId] || null) : null;
+        row.activityBonus += (map && map['活动' + m.level]) || 0;
+      }
+    });
+    var tOf = function (name) {
+      return teachers.filter(function (t) { return t.name === name; })[0] || null;
+    };
+    var list = Object.keys(byTeacher).map(function (name) {
+      var row = byTeacher[name];
+      var t = tOf(name);
+      var excluded = t && !t.isActive;
+      var medalsStr = [];
+      ['金', '银', '铜'].forEach(function (lv) {
+        if (row.counts[lv]) medalsStr.push(lv + '×' + row.counts[lv]);
+      });
+      return {
+        teacher: name,
+        className: row.className,
+        medals: medalsStr.join(' / '),
+        monthBonus: row.monthBonus,
+        activityBonus: row.activityBonus,
+        total: row.monthBonus + row.activityBonus,
+        status: excluded ? '已剔除' : '正常',
+        remark: excluded ? (t.leaveReason || '中途离职，放弃评比资格（不影响历史数据）') : '',
+      };
+    });
+    // 正常教师在前、剔除在后，同状态按合计降序
+    list.sort(function (a, b) {
+      if (a.status !== b.status) return a.status === '正常' ? -1 : 1;
+      return b.total - a.total;
+    });
+    MDS.set('semesterBonus', list);
+    Proto.showToast('已按' + (sys.semester || '本学期') + '勋章档案自动汇总（' + list.length + ' 条，剔除 ' + list.filter(function (b) { return b.status === '已剔除'; }).length + ' 人）');
+    activateTag('bonus-semester');
+  }
+
   /* ═══════════════════════ PC：教师管理（含离职标注，复用 CRUD 模式） ═══════════════════════ */
 
   var teacherSearch = { name: '', phone: '', className: '' };
@@ -3281,6 +3463,15 @@ window.MedalDemo = (function () {
       generateMonthlyBonus();
     });
 
+    // ── 期末汇总清单 ──
+    Proto.registerAction('semester-generate', function () {
+      generateSemesterBonus();
+    });
+
+    Proto.registerAction('semester-export', function () {
+      Proto.showToast('演示功能：已导出期末汇总清单（含月度常规 + 专项活动合并明细）');
+    });
+
     // ── 教师管理 ──
     Proto.registerAction('teacher-search', function () {
       teacherSearch.name = (qs('#mtSearchName') || {}).value || '';
@@ -4274,6 +4465,15 @@ window.MedalDemo = (function () {
         tab.addEventListener('click', function () {
           bonusGradTab = tab.getAttribute('data-tab-value') || 'monthly';
           renderBonusGradient(qs('#pcPage'));
+        });
+      });
+    }
+    if (document.getElementById('semesterTbody')) {
+      renderBonusSemester(qs('#pcPage'));
+      document.querySelectorAll('[data-tab-group="semesterFilter"]').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          semesterFilter = tab.getAttribute('data-tab-value') || 'ALL';
+          renderBonusSemester(qs('#pcPage'));
         });
       });
     }
