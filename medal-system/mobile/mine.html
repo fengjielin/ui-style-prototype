@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊积分勋章激励体系 · 移动端 · 我的二级页（独立全屏）
+  入口：角色首页功能宫格「我的奖金」/ tabBar「我的」
+  结构：顶部橙导航栏（返回首页）+ 橙色渐变头 + 上浮内容区（我的奖金 / 消息中心 / 切换管理端 / 关于，无 tabBar）
+  角色差异：园长显示「切换至管理端」入口
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的 · 积分勋章</title>
+  <link rel="stylesheet" href="../../assets/css/tokens-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/base-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/demo.css">
+  <link rel="stylesheet" href="../assets/css/medal.css">
+</head>
+<body class="mb-body">
+
+  <div class="mb-page">
+
+    <header class="mb-navbar">
+      <span class="nav-back" data-action="navigate" data-path="home.html">‹</span>
+      <span class="nav-title">我的</span>
+      <span class="nav-action" data-action="show-toast" data-toast="设置">⚙</span>
+    </header>
+
+    <!-- 橙色渐变头（medal.js 按角色填充） -->
+    <div class="mine-head">
+      <div class="mine-avatar" id="mineAvatar">管</div>
+      <div class="mine-name" id="mineName">平台管理员</div>
+      <div class="mine-role" id="mineRole">童蹊平台 · 超级管理员</div>
+    </div>
+
+    <!-- 上浮内容区 -->
+    <main class="mine-content">
+
+      <!-- 我的奖金 -->
+      <div class="subscription-card">
+        <div class="sub-title">我的奖金</div>
+        <div id="mineBonus"></div>
+        <div class="sub-cta">
+          <span data-action="show-toast" data-toast="奖金明细">奖金明细</span>
+          <span data-action="show-toast" data-toast="期末汇总">期末汇总</span>
+        </div>
+      </div>
+
+      <!-- 园长：切换至管理端 -->
+      <div id="switchAdmin" class="subscription-card" style="text-align:center;cursor:pointer;" data-action="switch-admin">
+        <div style="font-size:16px;font-weight:700;color:#a855f7;">🏫 切换至管理端</div>
+        <div style="font-size:12px;color:#9ca3af;margin-top:4px;">进入园长管理视图（园内排行榜 / 家长进度 / 勋章档案 / 奖金清单）</div>
+      </div>
+
+      <!-- 消息中心 -->
+      <div class="mb-section-title"><span class="title">消息中心</span><span class="subtitle">站内通知</span></div>
+      <div class="filter-bar" style="background:transparent;border-bottom:none;padding-top:0;">
+        <div class="mb-filter-tabs">
+          <span class="mb-filter-tab is-active" data-action="switch-tab" data-tab-group="noticeFilter" data-tab-value="all">全部</span>
+          <span class="mb-filter-tab" data-action="switch-tab" data-tab-group="noticeFilter" data-tab-value="unread">未读</span>
+          <span class="mb-filter-tab" data-action="switch-tab" data-tab-group="noticeFilter" data-tab-value="read">已读</span>
+        </div>
+        <span class="mb-filter-tab" style="margin-left:auto;background:rgba(37,99,235,0.1);color:#2563eb;" data-action="notice-all-read">全部已读</span>
+      </div>
+      <div class="mb-list" id="noticeList" style="padding:0;"></div>
+
+      <!-- 关于 -->
+      <div class="mb-section-title"><span class="title">关于</span></div>
+      <div class="subscription-card">
+        <div class="sub-row"><span class="label">应用名称</span><span class="value">童蹊积分勋章激励体系</span></div>
+        <div class="sub-row"><span class="label">版本</span><span class="value">3.8.8 · 原型演示</span></div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <script src="../../assets/js/prototype.js"></script>
+  <script src="../assets/js/medal-data.js"></script>
+  <script src="../assets/js/medal.js"></script>
+</body>
+</html>

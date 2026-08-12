@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊幼儿成长平台 · 原型演示 入口页
+  用途：分角色演示的角色选择入口（家长/教师/园长/后勤/管理后台）
+  说明：点击角色卡 → 写入 localStorage.demo.v1.role → 跳转对应首页
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>原型演示 · 角色选择 · 童蹊幼儿成长平台</title>
+  <link rel="stylesheet" href="assets/css/tokens-pc.css">
+  <link rel="stylesheet" href="assets/css/common.css">
+  <link rel="stylesheet" href="assets/css/demo.css">
+  <style>
+    /* 入口页独立样式，色值引用 pc 令牌保持一致风格 */
+    body {
+      min-height: 100vh;
+      background: var(--pc-primary-bg);
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(255, 159, 41, 0.12) 0, transparent 320px),
+        radial-gradient(circle at 80% 80%, rgba(102, 204, 153, 0.12) 0, transparent 320px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .entry-card {
+      width: 100%;
+      max-width: 760px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--pc-border-card);
+      padding: 40px 36px;
+    }
+
+    .entry-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--pc-primary);
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .entry-sub {
+      font-size: 14px;
+      color: var(--pc-text-secondary);
+      text-align: center;
+      margin: 10px 0 30px;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .role-card {
+      border: 1px solid var(--pc-border-card);
+      border-radius: 12px;
+      padding: 22px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      background: #fff;
+    }
+
+    .role-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(255, 138, 0, 0.12);
+      border-color: var(--pc-primary-border);
+    }
+
+    .role-card .role-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 12px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: #fff;
+    }
+
+    .role-card .role-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--pc-text-primary);
+    }
+
+    .role-card .role-desc {
+      font-size: 12px;
+      color: var(--pc-text-secondary);
+      margin-top: 6px;
+      line-height: 1.6;
+    }
+
+    .entry-foot {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--pc-text-secondary);
+    }
+
+    .entry-foot .cur-role {
+      color: var(--pc-primary);
+      font-weight: 600;
+    }
+
+    .entry-reset {
+      margin-left: 8px;
+      color: var(--pc-btn-add);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 12px;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="entry-card">
+    <div class="entry-title">童蹊幼儿成长平台</div>
+    <div class="entry-sub">纯静态原型演示 · 请选择要演示的角色</div>
+
+    <!-- 5 张角色卡 -->
+    <div class="role-grid" id="roleCards">
+      <div class="role-card" data-action="role-switch" data-role="parent">
+        <div class="role-icon" style="background:linear-gradient(135deg,#ff8a00,#ff9f29);">🏠</div>
+        <div class="role-name">家长端</div>
+        <div class="role-desc">首页 / 宝贝圈 / 成长手册<br>通知 · 请假 · 健康档案</div>
+      </div>
+      <div class="role-card" data-action="role-switch" data-role="teacher">
+        <div class="role-icon" style="background:linear-gradient(135deg,#66cc99,#99e6b3);">👩‍🏫</div>
+        <div class="role-name">教师端</div>
+        <div class="role-desc">教学工作台<br>观察 · 评语 · 班级管理</div>
+      </div>
+      <div class="role-card" data-action="role-switch" data-role="principal">
+        <div class="role-icon" style="background:linear-gradient(135deg,#a855f7,#c084fc);">🏫</div>
+        <div class="role-name">园长端</div>
+        <div class="role-desc">全园工作台<br>班级 · 考勤 · 评价统计</div>
+      </div>
+      <div class="role-card" data-action="role-switch" data-role="logistics">
+        <div class="role-icon" style="background:linear-gradient(135deg,#6366f1,#818cf8);">🍚</div>
+        <div class="role-name">后勤端</div>
+        <div class="role-desc">后勤管理组<br>报餐 · 考勤 · 安全巡查</div>
+      </div>
+      <div class="role-card" data-action="role-switch" data-role="admin">
+        <div class="role-icon" style="background:linear-gradient(135deg,#2563eb,#3b82f6);">🖥️</div>
+        <div class="role-name">管理后台</div>
+        <div class="role-desc">PC 端后台<br>教师管理 · 增删改查</div>
+      </div>
+    </div>
+
+    <div class="entry-foot">
+      <span>当前已保存角色：<span class="cur-role" id="curRole">未选择</span></span>
+      <button type="button" class="entry-reset" id="entryReset">重置演示数据</button>
+    </div>
+  </div>
+
+  <script src="assets/js/data-store.js"></script>
+  <script src="assets/js/prototype.js"></script>
+  <script src="assets/js/demo.js"></script>
+</body>
+</html>

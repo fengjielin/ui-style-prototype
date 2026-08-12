@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊幼儿成长平台 · PC 端 可复制代码片段合集
+  用法：在浏览器打开本页浏览效果，复制对应 HTML 片段到新原型页。
+  引用固定三段：
+    <link rel="stylesheet" href="../assets/css/tokens-pc.css">
+    <link rel="stylesheet" href="../assets/css/common.css">
+    <link rel="stylesheet" href="../assets/css/base-pc.css">
+    <script src="../assets/js/prototype.js"></script>
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PC 端代码片段合集 · 童蹊幼儿成长平台</title>
+  <link rel="stylesheet" href="../assets/css/tokens-pc.css">
+  <link rel="stylesheet" href="../assets/css/common.css">
+  <link rel="stylesheet" href="../assets/css/base-pc.css">
+  <style>
+    body { background: #f5f7fa; padding: 20px; }
+    .snippet-wrap { max-width: 960px; margin: 0 auto; }
+    .snippet-block { background: #fff; border: 1px solid #ebeef5; border-radius: 8px; margin-bottom: 20px; overflow: hidden; }
+    .snippet-title { padding: 14px 20px; font-size: 16px; font-weight: 600; color: #303133; border-bottom: 1px solid #ebeef5; }
+    .snippet-preview { padding: 20px; }
+    .snippet-code { padding: 16px 20px; background: #f8fafc; border-top: 1px dashed #ebeef5; }
+    .snippet-code pre { font-size: 12px; line-height: 1.7; color: #334155; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+    .snippet-code pre:empty::after { content: '（片段见源文件注释标注区）'; color: #909399; }
+  </style>
+</head>
+<body>
+
+  <div class="snippet-wrap">
+
+    <!-- 片段：功能按钮 -->
+    <div class="snippet-block">
+      <div class="snippet-title">功能按钮（新增/修改/删除/导入/导出）</div>
+      <div class="snippet-preview" style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="button" class="pc-btn pc-btn-add">＋ 新增</button>
+        <button type="button" class="pc-btn pc-btn-edit">✎ 修改</button>
+        <button type="button" class="pc-btn pc-btn-delete">🗑 删除</button>
+        <button type="button" class="pc-btn pc-btn-import">⇪ 导入</button>
+        <button type="button" class="pc-btn pc-btn-export">⇩ 导出</button>
+      </div>
+      <div class="snippet-code"><pre>&lt;button type="button" class="pc-btn pc-btn-add"&gt;＋ 新增&lt;/button&gt;
+&lt;button type="button" class="pc-btn pc-btn-edit"&gt;✎ 修改&lt;/button&gt;
+&lt;button type="button" class="pc-btn pc-btn-delete"&gt;🗑 删除&lt;/button&gt;
+&lt;button type="button" class="pc-btn pc-btn-import"&gt;⇪ 导入&lt;/button&gt;
+&lt;button type="button" class="pc-btn pc-btn-export"&gt;⇩ 导出&lt;/button&gt;</pre></div>
+    </div>
+
+    <!-- 片段：卡片 + 标题 + 计数 -->
+    <div class="snippet-block">
+      <div class="snippet-title">卡片容器（带标题与计数）</div>
+      <div class="snippet-preview">
+        <section class="pc-card">
+          <div class="card-head">
+            <span class="card-title">教师列表</span>
+            <span class="table-count">共 12 条记录</span>
+          </div>
+          <div class="card-body">卡片内容区</div>
+        </section>
+      </div>
+      <div class="snippet-code"><pre>&lt;section class="pc-card"&gt;
+  &lt;div class="card-head"&gt;
+    &lt;span class="card-title"&gt;教师列表&lt;/span&gt;
+    &lt;span class="table-count"&gt;共 12 条记录&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;div class="card-body"&gt;卡片内容区&lt;/div&gt;
+&lt;/section&gt;</pre></div>
+    </div>
+
+    <!-- 片段：表单 -->
+    <div class="snippet-block">
+      <div class="snippet-title">表单（grid 双列自适应 + 必填星号）</div>
+      <div class="snippet-preview">
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>姓名<span class="required">*</span></label>
+            <input class="pc-input" placeholder="请输入姓名">
+          </div>
+          <div class="pc-form-item">
+            <label>性别</label>
+            <select class="pc-select">
+              <option value="">请选择</option>
+              <option value="1">男</option>
+              <option value="2">女</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="snippet-code"><pre>&lt;form class="pc-form" onsubmit="return false"&gt;
+  &lt;div class="pc-form-item"&gt;
+    &lt;label&gt;姓名&lt;span class="required"&gt;*&lt;/span&gt;&lt;/label&gt;
+    &lt;input class="pc-input" placeholder="请输入姓名"&gt;
+  &lt;/div&gt;
+  &lt;div class="pc-form-item"&gt;
+    &lt;label&gt;性别&lt;/label&gt;
+    &lt;select class="pc-select"&gt;
+      &lt;option value=""&gt;请选择&lt;/option&gt;
+    &lt;/select&gt;
+  &lt;/div&gt;
+&lt;/form&gt;</pre></div>
+    </div>
+
+    <!-- 片段：表格 -->
+    <div class="snippet-block">
+      <div class="snippet-title">表格（表头 #f8fafc / 行 hover / 操作文字按钮）</div>
+      <div class="snippet-preview">
+        <table class="pc-table">
+          <thead>
+            <tr><th>姓名</th><th>手机号码</th><th>状态</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="cell-avatar">张</span>张老师</td>
+              <td>138****1234</td>
+              <td><span class="status-tag status-primary">在职</span></td>
+              <td class="op-col">
+                <span class="action-btn action-edit">编辑</span>
+                <span class="action-btn action-delete">删除</span>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="cell-avatar">李</span>李老师</td>
+              <td>139****5678</td>
+              <td><span class="status-tag status-success">正常</span></td>
+              <td class="op-col">
+                <span class="action-btn action-edit">编辑</span>
+                <span class="action-btn action-delete">删除</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="snippet-code"><pre>&lt;table class="pc-table"&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;&lt;th&gt;姓名&lt;/th&gt;&lt;th&gt;手机号码&lt;/th&gt;&lt;th&gt;状态&lt;/th&gt;&lt;th&gt;操作&lt;/th&gt;&lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;span class="cell-avatar"&gt;张&lt;/span&gt;张老师&lt;/td&gt;
+      &lt;td&gt;138****1234&lt;/td&gt;
+      &lt;td&gt;&lt;span class="status-tag status-primary"&gt;在职&lt;/span&gt;&lt;/td&gt;
+      &lt;td class="op-col"&gt;
+        &lt;span class="action-btn action-edit"&gt;编辑&lt;/span&gt;
+        &lt;span class="action-btn action-delete"&gt;删除&lt;/span&gt;
+      &lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;</pre></div>
+    </div>
+
+    <!-- 片段：分页 -->
+    <div class="snippet-block">
+      <div class="snippet-title">分页（右侧对齐 + 顶部分隔线）</div>
+      <div class="snippet-preview">
+        <div class="pc-pagination">
+          <span>共 12 条</span>
+          <span>
+            <span class="page-btn is-disabled" data-action="switch-page" data-page-group="s1">上一页</span>
+            <span class="page-number is-active" data-action="switch-page" data-page-group="s1">1</span>
+            <span class="page-number" data-action="switch-page" data-page-group="s1">2</span>
+            <span class="page-number" data-action="switch-page" data-page-group="s1">3</span>
+            <span class="page-btn" data-action="switch-page" data-page-group="s1">下一页</span>
+          </span>
+          <span>10 条/页</span>
+        </div>
+      </div>
+      <div class="snippet-code"><pre>&lt;div class="pc-pagination"&gt;
+  &lt;span&gt;共 12 条&lt;/span&gt;
+  &lt;span&gt;
+    &lt;span class="page-btn is-disabled" data-action="switch-page" data-page-group="s1"&gt;上一页&lt;/span&gt;
+    &lt;span class="page-number is-active" data-action="switch-page" data-page-group="s1"&gt;1&lt;/span&gt;
+    &lt;span class="page-number" data-action="switch-page" data-page-group="s1"&gt;2&lt;/span&gt;
+    &lt;span class="page-btn" data-action="switch-page" data-page-group="s1"&gt;下一页&lt;/span&gt;
+  &lt;/span&gt;
+  &lt;span&gt;10 条/页&lt;/span&gt;
+&lt;/div&gt;</pre></div>
+    </div>
+
+    <!-- 片段：弹窗 -->
+    <div class="snippet-block">
+      <div class="snippet-title">弹窗（遮罩 + 8px 圆角 + 头部 #f8fafc）</div>
+      <div class="snippet-preview">
+        <button type="button" class="pc-btn pc-btn-add" data-action="open-dialog" data-target="snippetDialog">打开弹窗</button>
+      </div>
+      <div class="snippet-code"><pre>&lt;div class="mask-layer" id="snippetDialog" hidden data-close-on-mask="true"&gt;
+  &lt;div class="pc-dialog"&gt;
+    &lt;div class="dialog-head"&gt;弹窗标题&lt;/div&gt;
+    &lt;div class="dialog-body"&gt;表单内容&lt;/div&gt;
+    &lt;div class="dialog-footer"&gt;
+      &lt;button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="snippetDialog"&gt;取 消&lt;/button&gt;
+      &lt;button type="button" class="pc-btn pc-btn-add"&gt;确 定&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre></div>
+    </div>
+
+    <!-- 片段：状态标签 -->
+    <div class="snippet-block">
+      <div class="snippet-title">状态标签（在职橙 / 正常绿 / 离职红 / 试用黄）</div>
+      <div class="snippet-preview" style="display:flex;gap:12px;">
+        <span class="status-tag status-primary">在职</span>
+        <span class="status-tag status-success">正常</span>
+        <span class="status-tag status-danger">离职</span>
+        <span class="status-tag status-warning">试用</span>
+      </div>
+      <div class="snippet-code"><pre>&lt;span class="status-tag status-primary"&gt;在职&lt;/span&gt;
+&lt;span class="status-tag status-success"&gt;正常&lt;/span&gt;
+&lt;span class="status-tag status-danger"&gt;离职&lt;/span&gt;
+&lt;span class="status-tag status-warning"&gt;试用&lt;/span&gt;</pre></div>
+    </div>
+
+    <!-- 片段：父子级菜单（无图标，父级展开/收起 + 子级选中态） -->
+    <div class="snippet-block">
+      <div class="snippet-title">侧栏父子级菜单（父级展开收起 + 子级选中态四要素）</div>
+      <div class="snippet-preview">
+        <div style="width:230px;background:#fff9f0;border-right:2px dashed #ffe8cc;padding:10px 0;">
+          <div class="pc-menu-parent is-open">
+            <span class="parent-title">基础信息</span>
+            <span class="parent-arrow">▸</span>
+          </div>
+          <div class="pc-menu-sub">
+            <div class="pc-menu-item">学校管理</div>
+            <div class="pc-menu-item is-active">教师管理</div>
+            <div class="pc-menu-item">班级管理</div>
+          </div>
+        </div>
+      </div>
+      <div class="snippet-code"><pre>&lt;div class="pc-menu-parent is-open"&gt;
+  &lt;span class="parent-title"&gt;基础信息&lt;/span&gt;
+  &lt;span class="parent-arrow"&gt;▸&lt;/span&gt;
+&lt;/div&gt;
+&lt;div class="pc-menu-sub"&gt;
+  &lt;div class="pc-menu-item"&gt;学校管理&lt;/div&gt;
+  &lt;div class="pc-menu-item is-active"&gt;教师管理&lt;/div&gt;
+  &lt;div class="pc-menu-item"&gt;班级管理&lt;/div&gt;
+&lt;/div&gt;
+&lt;!-- 子级选中态：浅橙底 #fff0e0 + 左 4px 橙实线 + 橙字 + 橙阴影（无图标） --&gt;</pre></div>
+    </div>
+
+  </div>
+
+  <!-- 弹窗示例 -->
+  <div class="mask-layer" id="snippetDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head">弹窗标题</div>
+      <div class="dialog-body"><p style="color:#606266;">弹窗内容区</p></div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="snippetDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add">确 定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/prototype.js"></script>
+</body>
+</html>

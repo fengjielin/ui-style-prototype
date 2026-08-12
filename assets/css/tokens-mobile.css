@@ -1,0 +1,110 @@
+/**
+ * ============================================================
+ * 童蹊幼儿成长平台 · 移动端 设计令牌（Design Tokens）
+ * 来源：kindergartenMobileGit（uni-app + ColorUI）
+ * 参考源码：
+ *   - static/scss/theme-variables.scss（设计令牌核心）
+ *   - static/scss/theme.scss / global.scss / theme-mixins.scss
+ *   - components/tab-bar/tab-bar.vue（自研 tabBar，选中金黄 #f9ca24）
+ * 说明：源码单位为 rpx（750 基准），模板统一换算为 px（1rpx = 0.5px）。
+ *       所有移动端样式统一通过 var(--mb-*) 引用，避免硬编码。
+ * ============================================================
+ */
+
+:root {
+  /* ────────────────────────── 主色（橙） ────────────────────────── */
+  --mb-primary: #ff8a00; /* 主橙 */
+  --mb-primary-light: #ff9f29; /* 浅橙 */
+  --mb-primary-dark: #e55a2b; /* 深橙（按压/强调） */
+  --mb-primary-lighter: #ffb352; /* 最浅橙 */
+  --mb-primary-lightest: #fff5f0; /* 极淡橙（标签底/选中底） */
+
+  /* ────────────────────────── 辅绿（配色） ────────────────────────── */
+  --mb-secondary: #66cc99; /* 主绿 */
+  --mb-secondary-light: #99e6b3; /* 浅绿 */
+  --mb-secondary-dark: #4ade80; /* 深绿 */
+  --mb-secondary-lighter: #e6f9f0; /* 最浅绿（成功标签底） */
+
+  /* ────────────────────────── 状态色 ────────────────────────── */
+  --mb-success: #4ade80; /* 成功 */
+  --mb-warning: #fbbf24; /* 警告 */
+  --mb-error: #ef4444; /* 错误 */
+  --mb-info: #3b82f6; /* 信息 */
+  --mb-badge: #ff4d4f; /* 角标红 */
+
+  /* ────────────────────────── 文字色 ────────────────────────── */
+  --mb-text-primary: #1f2937; /* 主文字 */
+  --mb-text-secondary: #6b7280; /* 次要文字 */
+  --mb-text-muted: #9ca3af; /* 淡化文字/占位 */
+  --mb-text-disabled: #d1d5db; /* 禁用文字 */
+  --mb-text-white: #fff;
+
+  /* ────────────────────────── 背景色 ────────────────────────── */
+  --mb-bg-page: #f7f8fa; /* 页面默认背景 */
+  --mb-bg-card: #ffffff; /* 卡片白 */
+  --mb-bg-tertiary: #f1f5f9; /* 三级背景 */
+  --mb-bg-light: #fafafa; /* 浅背景 */
+  --mb-bg-filter: #f5f5f5; /* 筛选胶囊灰底 */
+
+  /* ────────────────────────── 边框色 ────────────────────────── */
+  --mb-border-light: #e5e7eb; /* 浅边框 */
+  --mb-border-medium: #d1d5db; /* 中边框 */
+  --mb-border-dark: #9ca3af; /* 深边框 */
+  --mb-border-divider: #f5f5f5; /* 列表细分割线 */
+
+  /* ────────────────────────── 渐变 ────────────────────────── */
+  --mb-grad-primary: linear-gradient(135deg, #ff8a00, #ff9f29); /* 主按钮/渐变头 */
+  --mb-grad-primary-pressed: linear-gradient(135deg, #e55a2b, #ff8a00); /* 按压态 */
+  --mb-grad-secondary: linear-gradient(135deg, #66cc99, #99e6b3); /* 次按钮/绿 */
+  --mb-grad-hero: linear-gradient(135deg, #fff9f2, #f2fff7); /* 首页 hero 卡 */
+  --mb-grad-page: linear-gradient(180deg, #f7fbf8 0%, #fdfaf6 40%, #f5f6f8 100%); /* 首页页面背景 */
+  --mb-grad-mine-head: linear-gradient(135deg, #ff8a00, #ff9f29); /* 我的页头部 */
+  --mb-grad-publish: linear-gradient(135deg, #ff9a3e, #ff8a00); /* 发布胶囊按钮 */
+  --mb-grad-tabbar-publish: linear-gradient(180deg, #ffe066, #f9ca24); /* 中间发布钮 */
+
+  /* ────────────────────────── 阴影（橙色调泛光） ────────────────────────── */
+  --mb-shadow-sm: 0 1px 2px rgba(255, 107, 53, 0.05);
+  --mb-shadow-md: 0 4px 6px -1px rgba(255, 107, 53, 0.1);
+  --mb-shadow-lg: 0 10px 15px -3px rgba(255, 107, 53, 0.1);
+  --mb-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.04); /* 卡片 */
+  --mb-shadow-feed: 0 4px 16px rgba(0, 0, 0, 0.06); /* 信息流卡 */
+  --mb-shadow-hero: 0 24px 40px rgba(255, 154, 62, 0.15); /* hero 大卡 */
+  --mb-shadow-banner: 0 8px 24px rgba(79, 172, 254, 0.12); /* 出勤横幅 */
+  --mb-shadow-footer: 0 -2px 10px rgba(0, 0, 0, 0.05); /* 底部操作栏 */
+  --mb-shadow-btn: 0 8px 16px rgba(255, 138, 0, 0.35); /* 发布按钮 */
+
+  /* ────────────────────────── 圆角（rpx→px） ────────────────────────── */
+  --mb-radius-sm: 4px; /* 8rpx */
+  --mb-radius-md: 6px; /* 12rpx */
+  --mb-radius-lg: 8px; /* 16rpx */
+  --mb-radius-card: 12px; /* 24rpx 卡片 */
+  --mb-radius-lg-card: 14px; /* 28rpx 弹层 */
+  --mb-radius-hero: 18px; /* 36rpx hero */
+  --mb-radius-pill: 22px; /* 44rpx 胶囊按钮 */
+  --mb-radius-icon: 12px; /* 24rpx 宫格图标 */
+  --mb-radius-banner-icon: 9px; /* 18rpx 横幅图标 */
+
+  /* ────────────────────────── 字号（rpx→px） ────────────────────────── */
+  --mb-font-lg: 20px; /* 40rpx 大标题/数字 */
+  --mb-font-hero-name: 20px; /* 40rpx hero 名称 */
+  --mb-font-title: 16px; /* 32rpx 区块标题 */
+  --mb-font-body: 14px; /* 28rpx 正文/按钮 */
+  --mb-font-sub: 13px; /* 26rpx 次级 */
+  --mb-font-mini: 12px; /* 24rpx 辅助/meta */
+  --mb-font-tiny: 11px; /* 22rpx tabBar/角标 */
+  --mb-font-mini-badge: 10px; /* 20rpx 最小标签 */
+
+  /* ────────────────────────── 布局尺寸 ────────────────────────── */
+  --mb-navbar-h: 44px; /* 顶部导航栏高 */
+  --mb-tabbar-h: 52px; /* 底部 tabBar 高 */
+  --mb-content-pad: 15px; /* 30rpx 页面左右边距 */
+  --mb-card-gap: 10px; /* 20rpx 卡片垂直间距 */
+  --mb-hero-pad: 20px 16px; /* hero 内边距（40rpx 32rpx） */
+  --mb-grid-icon-size: 48px; /* 96rpx 宫格图标 */
+  --mb-avatar-size: 70px; /* 140rpx hero 头像 */
+
+  /* ────────────────────────── tabBar 特色 ────────────────────────── */
+  /* 注意：自研组件选中色为金黄 #f9ca24（与 theme.scss 旧橙配置不同），以实际组件为准 */
+  --mb-tabbar-active: #f9ca24;
+  --mb-tabbar-inactive: #999;
+}

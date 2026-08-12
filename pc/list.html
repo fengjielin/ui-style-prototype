@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊幼儿成长平台 · PC 端管理后台 · 管理台外壳模板（默认展示教师管理）
+  基准样式：kindergarten-ui 新版卡片式（src/views/base/teacher/index.vue）
+  结构：侧边栏（父子级动态菜单）+ 顶栏 + TagsView + 内容区
+  动态能力（demo.js 驱动）：
+    - 侧边栏菜单按角色（admin/principal/teacher/logistics）从 PC_MENUS 动态渲染，父级可展开/收起
+    - 点击子级菜单 → TagsView 自动新增并激活标签，面包屑/内容区同步切换
+    - TagsView 标签保持原有顺序、点击仅切换高亮；支持 × 关闭、更多（关闭其他/关闭全部）；无固定标签
+    - 父级菜单不显示选中高亮，仅 hover 高亮
+    - 教师管理（key=teacher）展示真实表格，其余菜单展示"建设中"占位页
+  交互：教师表格 增删改 + 搜索/重置 + 批量删除，数据存 localStorage（demo.js 驱动）
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理台 · 动态菜单 + TagsView · 童蹊幼儿成长平台</title>
+  <link rel="stylesheet" href="../assets/css/tokens-pc.css">
+  <link rel="stylesheet" href="../assets/css/common.css">
+  <link rel="stylesheet" href="../assets/css/base-pc.css">
+  <link rel="stylesheet" href="../assets/css/demo.css">
+</head>
+<body class="pc-body">
+
+  <!-- ══════════════════ 左侧边栏 ══════════════════ -->
+  <aside class="pc-sidebar">
+    <div class="sidebar-decoration top"></div>
+    <!-- 菜单由 demo.js 按角色动态渲染（父子级、无图标），容器见 #pcMenuRoot -->
+    <nav class="pc-menu" id="pcMenuRoot"></nav>
+    <div class="sidebar-decoration bottom"></div>
+  </aside>
+
+  <!-- ══════════════════ 右侧主区域 ══════════════════ -->
+  <div class="pc-main">
+
+    <!-- 顶部导航栏 -->
+    <header class="pc-navbar">
+      <div class="nav-logo">童蹊幼儿成长平台</div>
+      <span class="nav-hamburger" data-action="toggle-sidebar" title="折叠/展开菜单">☰</span>
+      <!-- 面包屑随当前选中菜单动态变化（demo.js renderBreadcrumb） -->
+      <div class="nav-breadcrumb" id="pcBreadcrumb"></div>
+      <div class="nav-user">
+        <span class="user-avatar">管</span>
+        <span class="user-name" id="pcUserName">管理员</span>
+      </div>
+    </header>
+
+    <!-- TagsView 页签栏（随菜单动态变化，demo.js renderTagsView） -->
+    <div class="pc-tags-view">
+      <div class="pc-tags-scroll" id="pcTagsRoot"></div>
+      <div class="pc-tags-more" id="pcTagsMore" data-action="pc-tags-more" title="更多操作">▾</div>
+    </div>
+
+    <!-- 内容区：真实页面内容块 + 占位容器（demo.js renderPageContent 切换） -->
+    <main class="pc-content">
+
+      <!-- ── 真实内容块：教师管理（菜单 key = teacher） ── -->
+      <div id="pageTeacher" data-page-block="teacher">
+
+      <!-- ─────────────── ① 搜索卡片 ─────────────── -->
+      <section class="pc-card">
+        <div class="card-head">
+          <span class="card-title">筛选条件</span>
+        </div>
+        <div class="card-body">
+          <form class="pc-form" onsubmit="return false">
+            <div class="pc-form-item">
+              <label>教师姓名</label>
+              <input class="pc-input" id="searchName" placeholder="请输入教师姓名">
+            </div>
+            <div class="pc-form-item">
+              <label>手机号码</label>
+              <input class="pc-input" id="searchPhone" placeholder="请输入手机号码">
+            </div>
+            <div class="pc-form-item">
+              <label>所属班级</label>
+              <select class="pc-select" id="searchClass">
+                <option value="">全部</option>
+                <option value="小一班">小一班</option>
+                <option value="中一班">中一班</option>
+                <option value="大一班">大一班</option>
+              </select>
+            </div>
+            <div class="pc-form-item">
+              <label>入职时间</label>
+              <input class="pc-input" type="date" id="searchDate">
+            </div>
+            <div class="pc-form-item" style="grid-column:1/-1">
+              <div class="search-actions">
+                <button type="button" class="pc-btn pc-btn-add" data-action="teacher-search">搜 索</button>
+                <button type="button" class="pc-btn pc-btn-default" data-action="teacher-reset">重 置</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ─────────────── ② 操作按钮卡片 ─────────────── -->
+      <section class="pc-card">
+        <div class="card-body" style="display:flex;align-items:center;gap:12px;">
+          <button type="button" class="pc-btn pc-btn-add" data-action="open-dialog" data-target="addDialog">＋ 新增</button>
+          <button type="button" class="pc-btn pc-btn-delete" data-action="teacher-batch-delete">🗑 删除</button>
+          <button type="button" class="pc-btn pc-btn-import" data-action="show-toast" data-toast="演示功能：导入">⇪ 导入</button>
+          <button type="button" class="pc-btn pc-btn-export" data-action="show-toast" data-toast="演示功能：导出">⇩ 导出</button>
+          <div class="pc-toolbar">
+            <span class="toolbar-btn" title="刷新">⟳</span>
+            <span class="toolbar-btn" title="显隐列">☰</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─────────────── ③ 表格卡片 ─────────────── -->
+      <section class="pc-card">
+        <div class="card-head">
+          <span class="card-title">教师列表</span>
+          <span class="table-count" id="tableCount">共 0 条记录</span>
+        </div>
+        <div class="card-body no-padding">
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="checkAll"></th>
+                <th>教师姓名</th>
+                <th>性别</th>
+                <th>手机号码</th>
+                <th>所属班级</th>
+                <th>入职日期</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="teacherTbody"></tbody>
+          </table>
+
+          <!-- 分页 -->
+          <div class="pc-pagination">
+            <span>共 <span id="pageTotal">0</span> 条</span>
+            <span>
+              <span class="page-btn is-disabled" data-action="switch-page" data-page-group="demo">上一页</span>
+              <span class="page-number is-active" data-action="switch-page" data-page-group="demo">1</span>
+              <span class="page-number" data-action="switch-page" data-page-group="demo">2</span>
+              <span class="page-number" data-action="switch-page" data-page-group="demo">3</span>
+              <span class="page-btn" data-action="switch-page" data-page-group="demo">下一页</span>
+            </span>
+            <span>10 条/页</span>
+          </div>
+        </div>
+      </section>
+
+      </div><!-- /#pageTeacher 真实内容块 -->
+
+      <!-- ── 其他菜单占位内容容器（demo.js renderPageContent 渲染，无独立页面时显示） ── -->
+      <div id="pagePlaceholder" hidden></div>
+
+    </main>
+  </div>
+
+  <!-- ══════════════════ 新增弹窗 ══════════════════ -->
+  <div class="mask-layer" id="addDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head">添加教师基本信息</div>
+      <div class="dialog-body">
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>教师姓名<span class="required">*</span></label>
+            <input class="pc-input" id="addName" placeholder="请输入姓名">
+          </div>
+          <div class="pc-form-item">
+            <label>性别</label>
+            <select class="pc-select" id="addGender">
+              <option value="女">女</option>
+              <option value="男">男</option>
+            </select>
+          </div>
+          <div class="pc-form-item">
+            <label>手机号码<span class="required">*</span></label>
+            <input class="pc-input" id="addPhone" placeholder="请输入手机号">
+          </div>
+          <div class="pc-form-item">
+            <label>所属班级</label>
+            <select class="pc-select" id="addClass">
+              <option value="小一班">小一班</option>
+              <option value="中一班">中一班</option>
+              <option value="大一班">大一班</option>
+            </select>
+          </div>
+          <div class="pc-form-item">
+            <label>入职日期</label>
+            <input class="pc-input" type="date" id="addDate">
+          </div>
+          <div class="pc-form-item">
+            <label>状态</label>
+            <select class="pc-select" id="addStatus">
+              <option value="在职">在职</option>
+              <option value="正常">正常</option>
+              <option value="试用">试用</option>
+              <option value="离职">离职</option>
+            </select>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>备注</label>
+            <textarea class="pc-input" rows="3" placeholder="请输入备注信息"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="addDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="teacher-save-add">确 定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 编辑弹窗 ══════════════════ -->
+  <div class="mask-layer" id="editDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head">编辑教师信息</div>
+      <div class="dialog-body">
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>教师姓名<span class="required">*</span></label>
+            <input class="pc-input" id="editName" placeholder="请输入姓名">
+          </div>
+          <div class="pc-form-item">
+            <label>性别</label>
+            <select class="pc-select" id="editGender">
+              <option value="女">女</option>
+              <option value="男">男</option>
+            </select>
+          </div>
+          <div class="pc-form-item">
+            <label>手机号码<span class="required">*</span></label>
+            <input class="pc-input" id="editPhone" placeholder="请输入手机号">
+          </div>
+          <div class="pc-form-item">
+            <label>所属班级</label>
+            <select class="pc-select" id="editClass">
+              <option value="小一班">小一班</option>
+              <option value="中一班">中一班</option>
+              <option value="大一班">大一班</option>
+            </select>
+          </div>
+          <div class="pc-form-item">
+            <label>状态</label>
+            <select class="pc-select" id="editStatus">
+              <option value="在职">在职</option>
+              <option value="正常">正常</option>
+              <option value="试用">试用</option>
+              <option value="离职">离职</option>
+            </select>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>备注</label>
+            <textarea class="pc-input" rows="3">优秀教师</textarea>
+          </div>
+        </form>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="editDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="teacher-save-edit">确 定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data-store.js"></script>
+  <script src="../assets/js/prototype.js"></script>
+  <script src="../assets/js/demo.js"></script>
+</body>
+</html>

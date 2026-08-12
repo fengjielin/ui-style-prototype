@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊幼儿成长平台 · 移动端 · 我的页模板（独立全屏，按角色渲染）
+  基准：pages/mine/index.vue
+  结构：橙色渐变头 + 上浮内容区（订阅卡 + 角色化菜单）+ 底部 tabBar
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的 · 童蹊家园</title>
+  <link rel="stylesheet" href="../assets/css/tokens-mobile.css">
+  <link rel="stylesheet" href="../assets/css/common.css">
+  <link rel="stylesheet" href="../assets/css/base-mobile.css">
+  <link rel="stylesheet" href="../assets/css/demo.css">
+</head>
+<body class="mb-body">
+
+  <div class="mb-page">
+
+    <!-- 顶部导航栏 -->
+    <header class="mb-navbar">
+      <span class="nav-back"></span>
+      <span class="nav-title">我的</span>
+      <span class="nav-action" data-action="show-toast" data-toast="设置">⚙</span>
+    </header>
+
+    <!-- 橙色渐变头（用户信息由 demo.js 按角色填充） -->
+    <div class="mine-head">
+      <div class="mine-avatar" id="mineAvatar">桐</div>
+      <div class="mine-name" id="mineName">桐桐妈妈</div>
+      <div class="mine-role" id="mineRole">中一班 · 家长</div>
+    </div>
+
+    <!-- 上浮内容区 -->
+    <main class="mine-content">
+
+      <!-- 订阅卡（静态展示） -->
+      <div class="subscription-card">
+        <div class="sub-title">我的订阅</div>
+        <div class="sub-row">
+          <span class="label">当前版本</span>
+          <span class="value">尊享版</span>
+        </div>
+        <div class="sub-row">
+          <span class="label">有效期至</span>
+          <span class="value">2027-08-10</span>
+        </div>
+        <div class="sub-row">
+          <span class="label">剩余天数</span>
+          <span class="value">365 天</span>
+        </div>
+        <div class="sub-cta">
+          <span data-action="show-toast" data-toast="订阅详情">订阅详情</span>
+          <span data-action="show-toast" data-toast="历史记录">历史记录</span>
+        </div>
+      </div>
+
+      <!-- list-cell 菜单（按角色渲染，demo.js 填充） -->
+      <div class="menu-list" id="mineMenu"></div>
+
+    </main>
+
+    <!-- 底部 tabBar（按角色渲染） -->
+    <nav class="mb-tabbar" id="tabbarRoot"></nav>
+
+  </div>
+
+  <script src="../assets/js/data-store.js"></script>
+  <script src="../assets/js/prototype.js"></script>
+  <script src="../assets/js/demo.js"></script>
+</body>
+</html>

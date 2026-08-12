@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊积分勋章激励体系 · 移动端 · 活动二级页（独立全屏）
+  入口：角色首页勋章卡片（上传作品 / 活动中心）
+  结构：顶部橙导航栏（返回首页）+ 筛选胶囊 + 活动卡列表（无 tabBar）
+  交互：作品上传底部弹层（文件选择占位 + 提交确认）+ 电子奖状区
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>活动 · 积分勋章</title>
+  <link rel="stylesheet" href="../../assets/css/tokens-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/base-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/demo.css">
+  <link rel="stylesheet" href="../assets/css/medal.css">
+</head>
+<body class="mb-body">
+
+  <div class="mb-page">
+
+    <header class="mb-navbar">
+      <span class="nav-back" data-action="navigate" data-path="home.html">‹</span>
+      <span class="nav-title">活动</span>
+      <span class="nav-action" data-action="show-toast" data-toast="更多">⋯</span>
+    </header>
+
+    <!-- 筛选胶囊 tab（medal.js 监听切换；活动生命周期仅两态：未发布/已发布） -->
+    <div class="filter-bar">
+      <span class="filter-tab is-active" data-action="switch-tab" data-tab-group="actFilter" data-tab-value="all">全部</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="actFilter" data-tab-value="published">已发布</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="actFilter" data-tab-value="draft">未发布</span>
+    </div>
+
+    <main class="mb-content no-tabbar" style="padding-top:0;">
+      <!-- 活动卡列表（medal.js 渲染） -->
+      <div class="mb-list" id="activityList"></div>
+
+      <!-- 电子奖状区（演示） -->
+      <div class="mb-section-title"><span class="title">我的电子奖状</span></div>
+      <div class="mb-card">
+        <div class="cert-card" style="margin-top:0;">
+          <div class="cert-title">🏅 铜牌 · 课件制作技能大赛</div>
+          <div class="cert-sub">陈晨 · 中一班 · 2026 年 7 月获得</div>
+          <div class="cert-level">恭喜获奖</div>
+          <div style="margin-top:12px;">
+            <button type="button" class="mb-btn mb-btn-ghost" style="height:36px;padding:0 20px;font-size:13px;" data-action="show-toast" data-toast="演示功能：保存/分享奖状">保存 / 分享</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- 作品上传底部弹层 -->
+  <div class="mask-layer sheet-mask" id="uploadSheet" hidden data-close-on-mask="true">
+    <div class="mb-sheet">
+      <div class="sheet-title">上传参赛作品</div>
+      <div class="sheet-field">
+        <label>选择文件（文档 / 课件 / 图片 / 压缩包）</label>
+        <input type="text" id="uploadFileName" placeholder="点击选择文件（演示：占位输入）">
+      </div>
+      <div class="sheet-field">
+        <label>作品说明</label>
+        <textarea id="uploadDesc" rows="3" placeholder="请输入作品说明（选填）"></textarea>
+      </div>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-cancel" data-action="close-dialog" data-target="uploadSheet">取消</button>
+        <button type="button" class="sheet-confirm" data-action="upload-confirm">确认提交</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/prototype.js"></script>
+  <script src="../assets/js/medal-data.js"></script>
+  <script src="../assets/js/medal.js"></script>
+</body>
+</html>

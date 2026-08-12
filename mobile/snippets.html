@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊幼儿成长平台 · 移动端 可复制代码片段合集
+  用法：在浏览器打开本页浏览效果，复制对应 HTML 片段到新原型页。
+  引用固定三段：
+    <link rel="stylesheet" href="../assets/css/tokens-mobile.css">
+    <link rel="stylesheet" href="../assets/css/common.css">
+    <link rel="stylesheet" href="../assets/css/base-mobile.css">
+    <script src="../assets/js/prototype.js"></script>
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>移动端代码片段合集 · 童蹊家园</title>
+  <link rel="stylesheet" href="../assets/css/tokens-mobile.css">
+  <link rel="stylesheet" href="../assets/css/common.css">
+  <link rel="stylesheet" href="../assets/css/base-mobile.css">
+  <style>
+    body { background: #f7f8fa; padding: 20px; font-family: 'PingFang SC','Microsoft YaHei',sans-serif; }
+    .snippet-wrap { max-width: 480px; margin: 0 auto; }
+    .snippet-block { background: #fff; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.05); }
+    .snippet-title { padding: 12px 16px; font-size: 15px; font-weight: 600; color: #1f2937; border-bottom: 1px solid #e5e7eb; }
+    .snippet-preview { padding: 16px; }
+    .snippet-code { padding: 12px 16px; background: #f8fafc; border-top: 1px dashed #e5e7eb; }
+    .snippet-code pre { font-size: 11px; line-height: 1.7; color: #334155; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+  <div class="snippet-wrap">
+
+    <!-- 片段：顶部导航栏 -->
+    <div class="snippet-block">
+      <div class="snippet-title">顶部导航栏（橙底白字 44px）</div>
+      <div class="snippet-preview" style="padding:0;">
+        <header class="mb-navbar" style="position:relative;">
+          <span class="nav-back">‹</span>
+          <span class="nav-title">页面标题</span>
+          <span class="nav-action">⋯</span>
+        </header>
+      </div>
+      <div class="snippet-code"><pre>&lt;header class="mb-navbar"&gt;
+  &lt;span class="nav-back"&gt;‹&lt;/span&gt;
+  &lt;span class="nav-title"&gt;页面标题&lt;/span&gt;
+  &lt;span class="nav-action"&gt;⋯&lt;/span&gt;
+&lt;/header&gt;</pre></div>
+    </div>
+
+    <!-- 片段：主按钮 -->
+    <div class="snippet-block">
+      <div class="snippet-title">按钮（橙渐变胶囊 / 绿次按钮 / 灰普通）</div>
+      <div class="snippet-preview" style="display:flex;flex-direction:column;gap:12px;">
+        <button type="button" class="mb-btn mb-btn-block">主操作（橙渐变胶囊）</button>
+        <button type="button" class="mb-btn mb-btn-secondary">次操作（绿渐变）</button>
+        <button type="button" class="mb-btn mb-btn-ghost">普通操作（灰底）</button>
+      </div>
+      <div class="snippet-code"><pre>&lt;button type="button" class="mb-btn mb-btn-block"&gt;主操作（橙渐变胶囊）&lt;/button&gt;
+&lt;button type="button" class="mb-btn mb-btn-secondary"&gt;次操作（绿渐变）&lt;/button&gt;
+&lt;button type="button" class="mb-btn mb-btn-ghost"&gt;普通操作（灰底）&lt;/button&gt;</pre></div>
+    </div>
+
+    <!-- 片段：卡片 -->
+    <div class="snippet-block">
+      <div class="snippet-title">卡片（白底圆角 24rpx 阴影）</div>
+      <div class="snippet-preview">
+        <div class="mb-card">
+          <div class="snippet-card-inner" style="padding:14px 16px;">
+            <div style="font-size:15px;font-weight:600;color:#1f2937;">卡片标题</div>
+            <div style="font-size:13px;color:#6b7280;margin-top:4px;">卡片描述文字</div>
+          </div>
+        </div>
+      </div>
+      <div class="snippet-code"><pre>&lt;div class="mb-card"&gt;
+  &lt;div style="padding:14px 16px;"&gt;
+    &lt;div style="font-size:15px;font-weight:600;"&gt;卡片标题&lt;/div&gt;
+    &lt;div style="font-size:13px;color:#6b7280;margin-top:4px;"&gt;卡片描述&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre></div>
+    </div>
+
+    <!-- 片段：筛选胶囊 -->
+    <div class="snippet-block">
+      <div class="snippet-title">筛选胶囊 tab（选中橙字橙底）</div>
+      <div class="snippet-preview">
+        <div class="filter-bar">
+          <span class="filter-tab is-active" data-action="switch-tab" data-tab-group="demo1" data-tab-value="all">全部</span>
+          <span class="filter-tab" data-action="switch-tab" data-tab-group="demo1" data-tab-value="unread">未读</span>
+          <span class="filter-tab" data-action="switch-tab" data-tab-group="demo1" data-tab-value="read">已读</span>
+        </div>
+      </div>
+      <div class="snippet-code"><pre>&lt;div class="filter-bar"&gt;
+  &lt;span class="filter-tab is-active" data-action="switch-tab" data-tab-group="demo1" data-tab-value="all"&gt;全部&lt;/span&gt;
+  &lt;span class="filter-tab" data-action="switch-tab" data-tab-group="demo1" data-tab-value="unread"&gt;未读&lt;/span&gt;
+&lt;/div&gt;</pre></div>
+    </div>
+
+    <!-- 片段：列表卡 -->
+    <div class="snippet-block">
+      <div class="snippet-title">列表卡（未读左橙边）</div>
+      <div class="snippet-preview">
+        <div class="mb-list">
+          <div class="mb-list-item is-unread">
+            <div class="item-title">【通知】本周五举办亲子运动会</div>
+            <div class="item-desc">请各位家长提前安排好时间……</div>
+            <div class="item-time">今天 09:30 · 张老师</div>
+          </div>
+        </div>
+      </div>
+      <div class="snippet-code"><pre>&lt;div class="mb-list"&gt;
+  &lt;div class="mb-list-item is-unread"&gt;
+    &lt;div class="item-title"&gt;标题&lt;/div&gt;
+    &lt;div class="item-desc"&gt;描述&lt;/div&gt;
+    &lt;div class="item-time"&gt;时间&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre></div>
+    </div>
+
+    <!-- 片段：功能宫格 -->
+    <div class="snippet-block">
+      <div class="snippet-title">功能宫格（4 列，图标色/底色行内传值）</div>
+      <div class="snippet-preview">
+        <div class="mb-grid-wrap">
+          <div class="mb-grid">
+            <div class="mb-grid-item" data-action="show-toast" data-toast="学习成长">
+              <div class="mb-grid-icon" style="background:#fff5eb;color:#ff8a00">★</div>
+              <div class="mb-grid-name">学习成长</div>
+            </div>
+            <div class="mb-grid-item" data-action="show-toast" data-toast="在园生活">
+              <div class="mb-grid-icon" style="background:#e6f4ff;color:#4facfe">▤</div>
+              <div class="mb-grid-name">在园生活</div>
+            </div>
+            <div class="mb-grid-item" data-action="show-toast" data-toast="习惯养成">
+              <div class="mb-grid-icon" style="background:#e8f4fc;color:#4facfe">☑</div>
+              <div class="mb-grid-name">习惯养成</div>
+            </div>
+            <div class="mb-grid-item" data-action="show-toast" data-toast="亲子任务">
+              <div class="mb-grid-icon" style="background:#fff1f0;color:#ff6b6b">♥</div>
+              <div class="mb-grid-name">亲子任务</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="snippet-code"><pre>&lt;div class="mb-grid-wrap"&gt;
+  &lt;div class="mb-grid"&gt;
+    &lt;div class="mb-grid-item" data-action="show-toast" data-toast="学习成长"&gt;
+      &lt;div class="mb-grid-icon" style="background:#fff5eb;color:#ff8a00"&gt;★&lt;/div&gt;
+      &lt;div class="mb-grid-name"&gt;学习成长&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;!-- 配色对照：底色 bg + 图标色 color，见规范文档宫格配色表 --&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre></div>
+    </div>
+
+    <!-- 片段：状态标签 -->
+    <div class="snippet-block">
+      <div class="snippet-title">状态标签（成功/警告/错误/信息）</div>
+      <div class="snippet-preview" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="mb-tag mb-tag-success">已到园</span>
+        <span class="mb-tag mb-tag-warning">请假</span>
+        <span class="mb-tag mb-tag-error">缺勤</span>
+        <span class="mb-tag mb-tag-info">待定</span>
+      </div>
+      <div class="snippet-code"><pre>&lt;span class="mb-tag mb-tag-success"&gt;已到园&lt;/span&gt;
+&lt;span class="mb-tag mb-tag-warning"&gt;请假&lt;/span&gt;
+&lt;span class="mb-tag mb-tag-error"&gt;缺勤&lt;/span&gt;
+&lt;span class="mb-tag mb-tag-info"&gt;待定&lt;/span&gt;</pre></div>
+    </div>
+
+    <!-- 片段：底部操作栏 -->
+    <div class="snippet-block">
+      <div class="snippet-title">底部固定操作栏（footer-bar）</div>
+      <div class="snippet-preview" style="position:relative;height:70px;">
+        <div class="footer-bar" style="position:absolute;">
+          <button type="button" class="mb-btn mb-btn-ghost">取消</button>
+          <button type="button" class="mb-btn">提交</button>
+        </div>
+      </div>
+      <div class="snippet-code"><pre>&lt;div class="footer-bar"&gt;
+  &lt;button type="button" class="mb-btn mb-btn-ghost"&gt;取消&lt;/button&gt;
+  &lt;button type="button" class="mb-btn"&gt;提交&lt;/button&gt;
+&lt;/div&gt;</pre></div>
+    </div>
+
+    <!-- 片段：tabBar -->
+    <div class="snippet-block">
+      <div class="snippet-title">底部 tabBar（自研，选中金黄 #f9ca24）</div>
+      <div class="snippet-preview" style="padding:0;">
+        <nav class="mb-tabbar" style="position:relative;">
+          <div class="tab-item is-active"><span class="tab-icon">⌂</span><span>首页</span></div>
+          <div class="tab-item"><span class="tab-icon">◫</span><span>宝贝圈</span></div>
+          <div class="tab-item"><span class="tab-icon">▣</span><span>成长手册</span></div>
+          <div class="tab-item"><span class="tab-icon">☏</span><span>消息</span></div>
+          <div class="tab-item"><span class="tab-icon">◉</span><span>我的</span></div>
+        </nav>
+      </div>
+      <div class="snippet-code"><pre>&lt;nav class="mb-tabbar"&gt;
+  &lt;div class="tab-item is-active"&gt;
+    &lt;span class="tab-icon"&gt;⌂&lt;/span&gt;&lt;span&gt;首页&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;!-- 选中色 #f9ca24（金黄），未选中 #999 --&gt;
+&lt;/nav&gt;</pre></div>
+    </div>
+
+  </div>
+
+  <script src="../assets/js/prototype.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊积分勋章激励体系 · 移动端 · 排行榜二级页（独立全屏）
+  入口：角色首页勋章激励卡 / 功能宫格「排行榜」
+  结构：顶部橙导航栏（返回首页）+ 榜单切换胶囊 + TOP10 列表 + 个人排行详情（无 tabBar）
+  交互：5 榜切换（URL ?board= 刷新）+ 本人插队高亮 + 排名升降标识
+  个人排行详情：多维度看板 + 趋势柱状图（本人/园内均值/第一）+ 班级家长三色进度
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>排行榜 · 积分勋章</title>
+  <link rel="stylesheet" href="../../assets/css/tokens-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/base-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/demo.css">
+  <link rel="stylesheet" href="../assets/css/medal.css">
+</head>
+<body class="mb-body">
+
+  <div class="mb-page">
+
+    <header class="mb-navbar">
+      <span class="nav-back" data-action="navigate" data-path="home.html">‹</span>
+      <span class="nav-title">排行榜</span>
+      <span class="nav-action" data-action="show-toast" data-toast="更新于 09:32">⋯</span>
+    </header>
+
+    <!-- 榜单切换胶囊（medal.js 监听，URL ?board= 刷新） -->
+    <div class="filter-bar">
+      <span class="filter-tab is-active" data-action="switch-tab" data-tab-group="rankBoard" data-tab-value="total">综合榜</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="rankBoard" data-tab-value="usage">平台使用</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="rankBoard" data-tab-value="interaction">家园互动</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="rankBoard" data-tab-value="promotion">外部推广</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="rankBoard" data-tab-value="conversion">会员转化</span>
+    </div>
+
+    <main class="mb-content no-tabbar" style="padding-top:0;">
+
+      <!-- 榜单 TOP10（medal.js 渲染） -->
+      <div class="mb-section-title"><span class="title">本园 TOP10</span><span class="subtitle">实时更新</span></div>
+      <div class="mb-card" id="mobileRankList" style="padding:4px 14px;"></div>
+
+      <!-- 个人排行详情（medal.js 渲染） -->
+      <div id="rankDetail"></div>
+
+    </main>
+
+  </div>
+
+  <script src="../../assets/js/prototype.js"></script>
+  <script src="../assets/js/medal-data.js"></script>
+  <script src="../assets/js/medal.js"></script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊幼儿成长平台 · PC 端管理后台 · 表单 / 弹窗专项模板
+  用途：展示表单栅格、输入框/下拉框、弹窗三种形态；演示数据层写入（formLog）
+  交互：提交写入 localStorage.demo.v1.formLog，下方记录卡即时更新
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>表单 · 弹窗专项 · 童蹊幼儿成长平台</title>
+  <link rel="stylesheet" href="../assets/css/tokens-pc.css">
+  <link rel="stylesheet" href="../assets/css/common.css">
+  <link rel="stylesheet" href="../assets/css/base-pc.css">
+  <link rel="stylesheet" href="../assets/css/demo.css">
+</head>
+<body class="pc-body">
+
+  <div class="pc-main" style="margin-left:0;max-width:960px;margin-right:auto;padding:20px;">
+
+    <!-- ─────────────── 表单卡片 ─────────────── -->
+    <section class="pc-card">
+      <div class="card-head">
+        <span class="card-title">表单示例（grid 双列自适应）</span>
+      </div>
+      <div class="card-body">
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>姓名<span class="required">*</span></label>
+            <input class="pc-input" id="logName" placeholder="请输入姓名">
+          </div>
+          <div class="pc-form-item">
+            <label>性别</label>
+            <select class="pc-select">
+              <option value="">请选择</option>
+              <option value="1">男</option>
+              <option value="2">女</option>
+            </select>
+          </div>
+          <div class="pc-form-item">
+            <label>手机号码<span class="required">*</span></label>
+            <input class="pc-input" id="logPhone" placeholder="请输入手机号码">
+          </div>
+          <div class="pc-form-item">
+            <label>邮箱</label>
+            <input class="pc-input" placeholder="请输入邮箱">
+          </div>
+          <div class="pc-form-item">
+            <label>只读字段</label>
+            <input class="pc-input" value="只读内容" readonly>
+          </div>
+          <div class="pc-form-item">
+            <label>日期</label>
+            <input class="pc-input" type="date">
+          </div>
+          <div class="pc-form-item full-width">
+            <label>备注</label>
+            <textarea class="pc-input" rows="3" placeholder="请输入备注"></textarea>
+          </div>
+          <div class="pc-form-item full-width">
+            <div class="search-actions">
+              <button type="button" class="pc-btn pc-btn-default">取 消</button>
+              <button type="button" class="pc-btn pc-btn-add" data-action="form-submit">提 交</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ─────────────── 提交记录卡（演示数据层持久化） ─────────────── -->
+    <section class="pc-card">
+      <div class="card-head">
+        <span class="card-title">提交记录</span>
+        <span class="table-count" id="formLogCount">共 0 条</span>
+      </div>
+      <div class="card-body no-padding">
+        <table class="pc-table">
+          <thead>
+            <tr><th>姓名</th><th>手机号码</th><th>提交时间</th></tr>
+          </thead>
+          <tbody id="formLog"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─────────────── 按钮形态展示 ─────────────── -->
+    <section class="pc-card">
+      <div class="card-head">
+        <span class="card-title">按钮形态（功能五色）</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <button type="button" class="pc-btn pc-btn-add">新增（蓝）</button>
+          <button type="button" class="pc-btn pc-btn-edit">修改（绿）</button>
+          <button type="button" class="pc-btn pc-btn-delete">删除（红）</button>
+          <button type="button" class="pc-btn pc-btn-import">导入（靛蓝）</button>
+          <button type="button" class="pc-btn pc-btn-export">导出（琥珀）</button>
+          <button type="button" class="pc-btn pc-btn-default">默认 / 取消</button>
+          <button type="button" class="pc-btn pc-btn-add is-disabled">禁用态</button>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+          <button type="button" class="pc-btn pc-btn-add pc-btn-sm">小尺寸新增</button>
+          <button type="button" class="pc-btn pc-btn-default pc-btn-sm">小尺寸默认</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────── 弹窗触发 ─────────────── -->
+    <section class="pc-card">
+      <div class="card-head">
+        <span class="card-title">弹窗示例</span>
+      </div>
+      <div class="card-body">
+        <button type="button" class="pc-btn pc-btn-add" data-action="open-dialog" data-target="demoDialog">打开弹窗</button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ══════════════════ 弹窗示例 ══════════════════ -->
+  <div class="mask-layer" id="demoDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head">弹窗标题</div>
+      <div class="dialog-body">
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>字段一<span class="required">*</span></label>
+            <input class="pc-input" placeholder="请输入">
+          </div>
+          <div class="pc-form-item">
+            <label>字段二</label>
+            <select class="pc-select">
+              <option value="">请选择</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="demoDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add">确 定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../assets/js/data-store.js"></script>
+  <script src="../assets/js/prototype.js"></script>
+  <script src="../assets/js/demo.js"></script>
+</body>
+</html>

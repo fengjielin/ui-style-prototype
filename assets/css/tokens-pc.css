@@ -1,0 +1,115 @@
+/**
+ * ============================================================
+ * 童蹊幼儿成长平台 · PC 端管理后台 设计令牌（Design Tokens）
+ * 来源：kindergarten-ui（Vue2 + Element UI）
+ * 参考源码：
+ *   - src/assets/styles/kindergarten.scss（项目自定义主题）
+ *   - src/assets/styles/variables.scss（设计变量）
+ *   - src/views/base/teacher/index.vue（新版卡片式基准）
+ * 说明：本文件为 PC 端所有样式变量的唯一来源，
+ *       其他 PC 样式统一通过 var(--pc-*) 引用，避免硬编码。
+ * ============================================================
+ */
+
+:root {
+  /* ────────────────────────── 品牌主色（暖橙系） ────────────────────────── */
+  --pc-primary: #ff8a00; /* 主橙 */
+  --pc-primary-light: #ff9f29; /* 浅橙（渐变终点） */
+  --pc-primary-lighter: #ffb352; /* 最浅橙 */
+  --pc-primary-bg: #fff9f0; /* 暖白底（侧栏/顶栏） */
+  --pc-primary-border: #ffe8cc; /* 浅橙边框（全局卡片变体） */
+  --pc-primary-active-bg: #fff0e0; /* 菜单/激活浅橙底 */
+  --pc-primary-hover-shadow: 0 3px 8px rgba(255, 159, 41, 0.2); /* 选中橙阴影 */
+
+  /* ────────────────────────── Element 语义色（兜底/状态） ────────────────────────── */
+  --pc-el-primary: #11a983; /* Element 默认主题青绿（未覆盖组件兜底） */
+  --pc-success: #13ce66; /* 成功 */
+  --pc-warning: #ffba00; /* 警告 */
+  --pc-danger: #ff4949; /* 危险 */
+
+  /* ────────────────────────── 功能按钮色（新版卡片式基准） ────────────────────────── */
+  /* 各按钮 hover 用深一档色；删除旧全局变体 add=绿 #66cc99 仅作文档记录 */
+  --pc-btn-add: #2563eb; /* 新增（蓝） */
+  --pc-btn-add-hover: #1d4ed8;
+  --pc-btn-edit: #10b981; /* 修改（绿） */
+  --pc-btn-edit-hover: #059669;
+  --pc-btn-delete: #ef4444; /* 删除（红） */
+  --pc-btn-delete-hover: #dc2626;
+  --pc-btn-import: #6366f1; /* 导入（靛蓝） */
+  --pc-btn-import-hover: #4f46e5;
+  --pc-btn-export: #f59e0b; /* 导出（琥珀） */
+  --pc-btn-export-hover: #d97706;
+  --pc-btn-default: #fff; /* 普通/取消按钮底 */
+  --pc-btn-default-text: #606266; /* 普通/取消按钮文字 */
+  --pc-btn-disabled-opacity: 0.6; /* 禁用透明度 */
+  --pc-search-btn: #2563eb; /* 搜索按钮（同新增蓝） */
+  --pc-search-btn-hover: #1d4ed8;
+
+  /* ────────────────────────── 文字色 ────────────────────────── */
+  --pc-text-primary: #303133; /* 标题/主文字 */
+  --pc-text-regular: #606266; /* 正文/表单 label */
+  --pc-text-secondary: #909399; /* 次要文字/计数 */
+  --pc-text-table-head: #334155; /* 表头文字 */
+  --pc-text-table-cell: #1e293b; /* 单元格文字 */
+  --pc-text-white: #fff;
+
+  /* ────────────────────────── 背景色 ────────────────────────── */
+  --pc-bg-page: #f5f7fa; /* 页面/内容区背景 */
+  --pc-bg-card-head: #fff; /* 卡片头部 */
+  --pc-bg-table-head: #f8fafc; /* 表格表头 */
+  --pc-bg-row-hover: #f0f9ff; /* 表格行 hover */
+  --pc-bg-dialog-head: #f8fafc; /* 弹窗头部 */
+  --pc-bg-readonly: #f8fafc; /* 只读/禁用输入 */
+  --pc-bg-nav: #fff9f0; /* 顶栏背景（暖白） */
+  --pc-bg-sidebar: #fff9f0; /* 侧栏背景（暖白） */
+
+  /* ────────────────────────── 边框色 ────────────────────────── */
+  --pc-border-card: #ebeef5; /* 卡片边框（新版基准） */
+  --pc-border-input: #cbd5e1; /* 输入框边框 */
+  --pc-border-input-default: #dcdfe6; /* 输入框默认边框（搜索表单） */
+  --pc-border-dialog: #e2e8f0; /* 弹窗头部下边框 */
+  --pc-border-divider: #ebeef5; /* 分隔线 */
+  --pc-border-table: #dfe6ec; /* 表格边框 */
+
+  /* ────────────────────────── 圆角 ────────────────────────── */
+  --pc-radius-card: 8px; /* 卡片 */
+  --pc-radius-input: 8px; /* 输入框 */
+  --pc-radius-btn: 8px; /* 按钮 */
+  --pc-radius-menu: 15px; /* 侧栏菜单项 */
+  --pc-radius-action: 6px; /* 表格操作文字按钮 */
+  --pc-radius-dialog: 8px; /* 弹窗 */
+  --pc-radius-tag: 4px; /* 标签 */
+
+  /* ────────────────────────── 阴影 ────────────────────────── */
+  --pc-shadow-card: 0 2px 12px rgba(0, 0, 0, 0.05); /* 卡片 */
+  --pc-shadow-card-hover: 0 4px 20px rgba(0, 0, 0, 0.08); /* 卡片 hover */
+  --pc-shadow-btn-hover: 0 4px 12px rgba(0, 0, 0, 0.1); /* 按钮 hover */
+  --pc-shadow-nav: 0 2px 10px rgba(255, 159, 41, 0.2); /* 顶栏橙色投影 */
+  --pc-shadow-menu-active: 0 3px 8px rgba(255, 159, 41, 0.2); /* 菜单选中 */
+  --pc-shadow-focus: 0 0 0 2px rgba(37, 99, 235, 0.1); /* 输入框 focus */
+  --pc-shadow-dialog: 0 10px 30px rgba(0, 0, 0, 0.15); /* 弹窗 */
+  --pc-shadow-sidebar: 2px 0 6px rgba(0, 21, 41, 0.35); /* 侧栏投影 */
+  --pc-grad-avatar: linear-gradient(135deg, #ff8a00, #ff9f29); /* 头像渐变 */
+
+  /* ────────────────────────── 布局尺寸 ────────────────────────── */
+  --pc-sidebar-w: 230px; /* 侧栏宽（折叠 54px） */
+  --pc-sidebar-w-collapsed: 54px;
+  --pc-navbar-h: 65px; /* 顶栏高 */
+  --pc-tags-h: 34px; /* 标签页高 */
+  --pc-menu-h: 50px; /* 菜单项高 */
+  --pc-menu-gap: 10px; /* 菜单项间距/外边距 */
+  --pc-page-padding: 20px; /* 页面容器内边距 */
+  --pc-card-gap: 20px; /* 卡片垂直间距 */
+
+  /* ────────────────────────── 字号 ────────────────────────── */
+  --pc-font-title: 16px; /* 卡片标题 */
+  --pc-font-body: 14px; /* 正文 */
+  --pc-font-tag: 12px; /* 次要/计数 */
+  --pc-font-table-head: 13px; /* 表头 */
+  --pc-font-action: 12px; /* 表格操作文字按钮 */
+  --pc-font-logo: 20px; /* 顶栏 Logo */
+
+  /* ────────────────────────── 过渡动画 ────────────────────────── */
+  --pc-transition: all 0.3s ease;
+  --pc-transition-fast: all 0.2s ease;
+}

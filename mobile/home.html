@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊幼儿成长平台 · 移动端 · 角色化首页模板（独立全屏）
+  基准：pages/home/parent/index.vue + parent-home-panel.vue / teacher-home-panel.vue
+  结构：顶部橙导航栏 + Hero（按角色）+ 功能宫格（按角色）+ 底部 tabBar（按角色）
+  说明：
+    - 角色由 URL ?role= 参数 / localStorage 决定（demo.js 解析）
+    - hero/宫格/tabBar 均为容器，由 demo.js 渲染
+    - 桌面预览可给 body 加 class="preview-mobile" 居中限宽（可选）
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>首页 · 童蹊家园</title>
+  <link rel="stylesheet" href="../assets/css/tokens-mobile.css">
+  <link rel="stylesheet" href="../assets/css/common.css">
+  <link rel="stylesheet" href="../assets/css/base-mobile.css">
+  <link rel="stylesheet" href="../assets/css/demo.css">
+</head>
+<body class="mb-body">
+
+  <div class="mb-page">
+
+    <!-- 顶部导航栏（橙底白字，标题由 demo.js 按角色写入） -->
+    <header class="mb-navbar">
+      <span class="nav-back">‹</span>
+      <span class="nav-title">童蹊家园</span>
+      <span class="nav-action">⋯</span>
+    </header>
+
+    <!-- 内容区 -->
+    <main class="mb-content">
+
+      <!-- Hero 区（按角色渲染：家长出勤横幅 / 教师园长指标胶囊 / 后勤报餐） -->
+      <div class="hero-wrapper" id="heroRoot"></div>
+
+      <!-- 功能宫格区（按角色渲染：家长11项平铺 / 教师园长分组 / 后勤单组） -->
+      <div id="gridRoot"></div>
+
+    </main>
+
+    <!-- 底部自研 tabBar（按角色渲染，选中金黄 #f9ca24） -->
+    <nav class="mb-tabbar" id="tabbarRoot"></nav>
+
+  </div>
+
+  <script src="../assets/js/data-store.js"></script>
+  <script src="../assets/js/prototype.js"></script>
+  <script src="../assets/js/demo.js"></script>
+</body>
+</html>

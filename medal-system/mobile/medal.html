@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊积分勋章激励体系 · 移动端 · 我的勋章二级页（独立全屏）
+  入口：角色首页勋章激励卡 / 功能宫格「我的勋章」
+  结构：顶部橙导航栏（返回首页）+ 本月勋章 hero + 勋章档案（无 tabBar）
+  交互：勋章档案按类型/学期筛选；勋章详情底部弹层（当期四大维度原始数据）
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>我的勋章 · 积分勋章</title>
+  <link rel="stylesheet" href="../../assets/css/tokens-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/base-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/demo.css">
+  <link rel="stylesheet" href="../assets/css/medal.css">
+</head>
+<body class="mb-body">
+
+  <div class="mb-page">
+
+    <header class="mb-navbar">
+      <span class="nav-back" data-action="navigate" data-path="home.html">‹</span>
+      <span class="nav-title">我的勋章</span>
+      <span class="nav-action" data-action="show-toast" data-toast="勋章规则">?</span>
+    </header>
+
+    <main class="mb-content no-tabbar">
+
+      <!-- 本月勋章 hero（medal.js 渲染） -->
+      <div class="hero-wrapper" style="margin-top:12px;">
+        <div id="medalHero"></div>
+      </div>
+
+      <!-- 勋章档案筛选 -->
+      <div class="mb-section-title"><span class="title">勋章档案</span><span class="subtitle">永久留存</span></div>
+      <div class="filter-bar" style="background:transparent;border-bottom:none;padding-top:0;">
+        <div class="mb-filter-tabs">
+          <span class="mb-filter-tab is-active" data-action="switch-tab" data-tab-group="medalFilter" data-tab-value="all">全部</span>
+          <span class="mb-filter-tab" data-action="switch-tab" data-tab-group="medalFilter" data-tab-value="月度常规">月度常规</span>
+          <span class="mb-filter-tab" data-action="switch-tab" data-tab-group="medalFilter" data-tab-value="活动专项">活动专项</span>
+        </div>
+      </div>
+
+      <!-- 勋章档案列表（medal.js 渲染） -->
+      <div class="mb-list">
+        <div class="mb-card" id="medalList" style="padding:4px 14px;"></div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- 勋章详情底部弹层 -->
+  <div class="mask-layer sheet-mask" id="medalDetailSheet" hidden data-close-on-mask="true">
+    <div class="mb-sheet">
+      <div class="sheet-title">勋章详情</div>
+      <div class="sheet-body" id="medalDetailSheetBody"></div>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-confirm" data-action="close-dialog" data-target="medalDetailSheet">关 闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/prototype.js"></script>
+  <script src="../assets/js/medal-data.js"></script>
+  <script src="../assets/js/medal.js"></script>
+</body>
+</html>
