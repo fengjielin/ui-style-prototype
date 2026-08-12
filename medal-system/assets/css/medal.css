@@ -1148,3 +1148,157 @@ tr.row-excluded td {
   color: var(--mb-primary);
   margin-top: 10px;
 }
+
+/* ═══════════════════════ PC：评委分配 · 分组抽取交互效果 ═══════════════════════ */
+
+/* 抽取中动画 */
+.draw-loading {
+  color: var(--pc-primary);
+  font-size: 13px;
+  padding: 10px 0;
+  animation: draw-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes draw-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* 分组抽取结果卡片 */
+.draw-group-card {
+  border: 1px solid var(--pc-border-card);
+  border-radius: var(--pc-radius-card);
+  padding: 10px 12px;
+  background: var(--pc-bg-table-head);
+  animation: draw-in 0.35s ease;
+}
+
+.draw-group-card .draw-group-head {
+  font-size: 12px;
+  color: var(--pc-primary);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+@keyframes draw-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 评委成员徽章 */
+.draw-judge-tag {
+  display: inline-block;
+  margin: 2px 4px 2px 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--pc-primary);
+  color: var(--pc-primary);
+  font-size: 12px;
+}
+
+/* ═══════════════════════ PC：活动管理 · 活动步骤条（针对单个活动） ═══════════════════════ */
+
+.pc-stepper {
+  display: flex;
+  align-items: flex-start;
+}
+
+.pc-stepper-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6px 12px 10px;
+  cursor: pointer;
+  border-radius: var(--pc-radius-card);
+  transition: var(--pc-transition-fast);
+  user-select: none;
+}
+
+.pc-stepper-step:hover {
+  background: var(--pc-primary-active-bg);
+}
+
+.pc-stepper-step .step-index {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  background: var(--pc-bg-table-head);
+  color: var(--pc-text-regular);
+  border: 2px solid #d1d5db;
+  transition: var(--pc-transition-fast);
+}
+
+.pc-stepper-step .step-label {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pc-text-regular);
+}
+
+.pc-stepper-step .step-desc {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
+
+/* 步骤间连接线 */
+.pc-stepper-connector {
+  flex: 0 0 28px;
+  height: 2px;
+  background: #e5e7eb;
+  margin-top: 23px;
+}
+
+/* 激活（当前查看）步骤 */
+.pc-stepper-step.is-active .step-index {
+  background: var(--pc-primary);
+  border-color: var(--pc-primary);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--pc-primary-active-bg);
+}
+
+.pc-stepper-step.is-active .step-label {
+  color: var(--pc-primary);
+}
+
+/* 未进入的后续阶段：禁用不可点击 */
+.pc-stepper-step.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pc-stepper-step.is-disabled:hover {
+  background: transparent;
+}
+
+/* 活动步骤 · 阶段流转操作 */
+.am-stage-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--pc-border-divider);
+}
+
+.am-stage-nav .pc-btn {
+  margin: 0;
+}
+
+.am-stage-nav-disabled {
+  font-size: 12px;
+  color: #c0c4cc;
+  padding: 5px 14px;
+  border: 1px dashed #dcdfe6;
+  border-radius: var(--pc-radius-action);
+}
+

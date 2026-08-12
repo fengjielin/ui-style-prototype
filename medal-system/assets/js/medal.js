@@ -126,7 +126,7 @@ window.MedalDemo = (function () {
     return MDS.get('pcMenus') || [];
   }
 
-  /* 非侧边栏菜单的可打开页面（不挂在菜单树中，但可从活动列表等入口进入，保留标签/面包屑） */
+  /* 非侧边栏菜单的可打开页面（不挂在菜单树中，但可从活动管理各阶段入口进入，保留标签/面包屑） */
   var EXTRA_PAGES = {
     'activity-works': { groupTitle: '活动管理', title: '作品管理' },
   };
@@ -331,11 +331,9 @@ window.MedalDemo = (function () {
   /* 内容区渲染注册表：key → 渲染函数（真实页）；未注册的 key 走占位 */
   var PC_PAGES = {
     overview: renderOverview,
-    'activity-list': renderActivityList,
+    'activity-launch': renderActivityLaunch,
     'activity-works': renderActivityWorks,
-    'review-assign': renderReviewAssign,
-    'review-monitor': renderReviewMonitor,
-    'review-result': renderReviewResult,
+    'activity-manage': renderActivityManage,
     'rank-garden': renderRankGarden,
     'rank-parent': renderRankParent,
     'score-scheme': renderScoreScheme,
@@ -441,16 +439,16 @@ window.MedalDemo = (function () {
     // 待办事项
     html += '<section class="pc-card"><div class="card-head"><span class="card-title">待办事项</span></div><div class="card-body">';
     html += '<div class="pc-list">';
-    html += overviewTodo('评奖管理', '课件制作技能大赛 · 已发布，待结算评奖', 'review-assign');
+    html += overviewTodo('活动管理', '课件制作技能大赛 · 报名已结束，进入审核阶段', 'activity-manage');
     html += overviewTodo('作品管理', '2026 春季论文评选大赛 · 38 份作品待审', 'activity-works', { action: 'act-works', extra: 'data-works-activity="2026 春季论文评选大赛"' });
-    html += overviewTodo('活动发布', '家园互动创意活动评选 · 已发布，等待报名', 'activity-list');
+    html += overviewTodo('活动发起', '家园互动创意活动评选 · 已发布，等待报名', 'activity-launch');
     if (!isPrincipal) html += overviewTodo('积分方案', '月度常规勋章积分方案运行中', 'score-scheme');
     html += '</div></div></section>';
 
     // 核心闭环说明卡
     html += '<section class="pc-card"><div class="card-head"><span class="card-title">激励闭环概览</span></div><div class="card-body">';
     html += '<div class="pc-closed-loop">';
-    html += closedLoopStep('① 活动组织', '活动发布 → 作品收集', 'activity-list');
+    html += closedLoopStep('① 活动组织', '活动发起 → 报名 → 评审 → 归档', 'activity-launch');
     html += closedLoopStep('② 积分计算', '四大维度累计积分', 'score-scheme');
     html += closedLoopStep('③ 园内排行', '5 榜实时更新', 'rank-garden');
     html += closedLoopStep('④ 勋章授予', '金银铜按月结算', 'medal-threshold');
@@ -729,8 +727,8 @@ window.MedalDemo = (function () {
     return map[a.status] || [];
   }
 
-  function renderActivityList(root) {
-    // 骨架在 admin.html 中；这里仅渲染表格行
+  function renderActivityLaunch(root) {
+    // 骨架在 admin.html 中；这里仅渲染表格行（活动发起页：发起/发布活动）
     renderActivityTable();
   }
 
@@ -741,7 +739,7 @@ window.MedalDemo = (function () {
     if (!tbody) return;
     var list = filteredActivities();
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#909399;padding:40px 0;">暂无匹配活动</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#909399;padding:40px 0;">暂无匹配活动</td></tr>';
       return;
     }
     tbody.innerHTML = list
@@ -754,10 +752,6 @@ window.MedalDemo = (function () {
           .join('');
         if (a.status === 'DRAFT' || a.status === 'PUBLISHED') {
           ops += '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="act-edit" data-id="' + a.id + '">编辑</button>';
-        }
-        // 查看作品：仅已发布状态显示；点击进入作品管理页（过滤为该活动的作品）
-        if (a.status === 'PUBLISHED') {
-          ops += '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="act-works" data-id="' + a.id + '">查看作品</button>';
         }
         // 通知：仅已发布状态显示；点击打开通知弹窗，可过滤部分老师不发送
         if (a.status === 'PUBLISHED') {
@@ -773,7 +767,6 @@ window.MedalDemo = (function () {
           '<td>' + esc(a.type) + '</td>' +
           '<td>' + esc(a.signupStart || '—') + ' ~ ' + esc(a.signupEnd || '—') + '</td>' +
           '<td>' + actScopeHtml(a.targetKindergartens) + '</td>' +
-          '<td>' + a.worksCount + '</td>' +
           '<td>' + esc(a.publishTime || '—') + '</td>' +
           '<td>' + statusHtml + '</td>' +
           '<td class="op-col">' + ops + '</td>' +
@@ -783,7 +776,7 @@ window.MedalDemo = (function () {
       .join('');
   }
 
-  /* ═══════════════════════ PC：作品管理（由活动列表「查看作品」进入，支持按活动/作品名/教师筛选） ═══════════════════════ */
+  /* ═══════════════════════ PC：作品管理（由活动管理·报名阶段「查看作品」进入，支持按活动/作品名/教师筛选） ═══════════════════════ */
 
   var worksActivityFilter = '';
   var worksSearch = { name: '', teacher: '' };
@@ -839,11 +832,10 @@ window.MedalDemo = (function () {
       .join('');
   }
 
-  /* ═══════════════════════ PC：评奖管理（评委分批 / 打分监控 / 结果管理） ═══════════════════════ */
+  /* ═══════════════════════ PC：活动管理（阶段筛选 + 统一活动列表表格：报名 / 审核 / 归档） ═══════════════════════ */
 
-  var reviewAssignActivityId = 2;
-  var reviewBatchSize = 5;
-  var reviewResultActivityId = 2;
+  // 评委分组抽取结果（judge-draw 后暂存，确定分配时写入；含 round 初评/复评）
+  var judgeDrawResult = null;
 
   function activityById(id) {
     var num = Number(id);
@@ -856,28 +848,21 @@ window.MedalDemo = (function () {
     return (MDS.get('works') || []).filter(function (w) { return w.activity === act.title; });
   }
 
-  /* ── 评委分配 / 分批 ── */
-
-  function fillReviewAssignAct() {
-    var sel = document.getElementById('reviewAssignAct');
-    if (!sel) return;
-    sel.innerHTML = (MDS.get('activities') || [])
-      .map(function (a) { return '<option value="' + a.id + '">' + esc(a.title) + '</option>'; })
-      .join('');
-    sel.value = String(reviewAssignActivityId);
+  /* 按生命周期阶段筛选活动 */
+  function activitiesByStage(stage) {
+    return (MDS.get('activities') || []).filter(function (a) { return a.stage === stage; });
   }
 
-  /* 自动分批：每批 batchSize 份，评委轮询分配 */
-  function buildReviewBatches(activityId, batchSize) {
-    var works = worksForActivityId(activityId);
-    var judges = MDS.get('judges') || [];
-    var batches = [];
-    for (var i = 0; i < works.length; i += batchSize) {
-      var workIds = works.slice(i, i + batchSize).map(function (w) { return w.id; });
-      var judge = judges[batches.length % judges.length] || judges[0] || {};
-      batches.push({ batchNo: batches.length + 1, workIds: workIds, judgeId: judge.id || 0, judgeName: judge.name || '未分配', done: 0 });
-    }
-    return batches;
+  /* 活动评审完成度（初评/复评两轮：done / total） */
+  function activityReviewProgress(act) {
+    var batches = ((MDS.get('reviewBatches') || {})[act.id]) || [];
+    var prog = { initial: { done: 0, total: 0 }, re: { done: 0, total: 0 } };
+    batches.forEach(function (b) {
+      var key = (b.round || '初评') === '复评' ? 're' : 'initial';
+      prog[key].total += b.workIds.length;
+      prog[key].done += b.done || 0;
+    });
+    return prog;
   }
 
   function saveReviewBatches(activityId, batches) {
@@ -888,196 +873,546 @@ window.MedalDemo = (function () {
     });
   }
 
-  function renderReviewAssign(root) {
-    fillReviewAssignAct();
-    var act = activityById(reviewAssignActivityId);
-    var works = worksForActivityId(reviewAssignActivityId);
-    var hint = document.getElementById('reviewAssignHint');
-    if (hint) hint.textContent = act ? ('「' + act.title + '」作品池共 ' + works.length + ' 份 · 每批 ' + reviewBatchSize + ' 份 · 评委自动轮询分配') : '请选择活动';
-    var count = document.getElementById('reviewAssignCount');
-    if (count) count.textContent = '共 ' + works.length + ' 份作品';
-    var workTbody = document.getElementById('reviewAssignWorks');
-    if (workTbody) {
-      workTbody.innerHTML = works.length
-        ? works.map(function (w) {
-            return '<tr><td><strong>' + esc(w.title) + '</strong></td><td>' + esc(w.teacher) + '</td><td>' + esc(w.type) + '</td><td>' + esc(w.size) + '</td></tr>';
+  /* 报名名单：由活动对象范围内在职老师派生（模拟报名数据，取活动 participants 人） */
+  function signupListForActivity(act) {
+    var teachers = scopeTeachers(act) || [];
+    var count = Math.min(act.participants || 0, teachers.length);
+    var rows = [];
+    for (var i = 0; i < count; i++) {
+      var t = teachers[i];
+      rows.push({ name: t.name, className: t.className, kindergarten: t.kindergarten, signupTime: amMockSignupTime(act, i) });
+    }
+    return rows;
+  }
+
+  /* 模拟报名时间：在报名区间内按报名人数分摊日期 */
+  function amMockSignupTime(act, i) {
+    var start = act.signupStart || '';
+    if (!start) return '—';
+    var d = new Date(start);
+    d.setDate(d.getDate() + (i % 10));
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var day = ('0' + d.getDate()).slice(-2);
+    return d.getFullYear() + '-' + m + '-' + day + ' 09:0' + (i % 9 + 1);
+  }
+
+  /* 报名详情弹窗：填充报名者信息及其上传的作品 */
+  function fillSignupDetailDialog(act, teacher) {
+    var title = document.getElementById('signupDetailTitle');
+    if (title) title.textContent = '「' + act.title + '」报名详情';
+    var meta = document.getElementById('signupDetailMeta');
+    var list = signupListForActivity(act);
+    var item = list.filter(function (s) { return s.name === teacher; })[0] || { name: teacher, className: '—', kindergarten: '—', signupTime: '—' };
+    if (meta) meta.textContent = '报名教师：' + item.name + ' · 班级：' + item.className + ' · 幼儿园：' + item.kindergarten + ' · 报名时间：' + item.signupTime;
+    // 该报名者上传的作品（works 中 activity+teacher 匹配）
+    var works = worksForActivityId(act.id).filter(function (w) { return w.teacher === teacher; });
+    var body = document.getElementById('signupDetailBody');
+    if (body) {
+      if (works.length) {
+        body.innerHTML = works.map(function (w) {
+          return (
+            '<div class="draw-group-card" style="margin-bottom:8px;">' +
+            '<div class="draw-group-head">' + esc(w.title || w.teacher + ' 的作品') + '</div>' +
+            '<div style="font-size:12px;color:#606266;margin-top:6px;">' +
+            '作品类型：' + esc(w.type) + ' · 大小：' + esc(w.size) + '<br>' +
+            '提交时间：' + esc(w.submitTime) + ' · 查重：' + esc(w.check) +
+            '</div>' +
+            '</div>'
+          );
+        }).join('');
+      } else {
+        body.innerHTML = '<div class="pc-empty"><div class="empty-icon">📄</div><div>该教师暂未上传作品</div></div>';
+      }
+    }
+    Proto.openDialog('signupDetailDialog');
+  }
+
+  /* 评分详情弹窗：填充每位评委对该作品的评分情况 */
+  function fillScoreDetailDialog(act, work) {
+    var title = document.getElementById('scoreDetailTitle');
+    if (title) title.textContent = '「' + (work.title || work.teacher + ' 的作品') + '」评分详情';
+    var meta = document.getElementById('scoreDetailMeta');
+    if (meta) meta.textContent = '活动：' + act.title + ' · 作品教师：' + work.teacher + ' · 作品类型：' + work.type;
+    var records = (MDS.get('reviewRecords') || []).filter(function (r) {
+      return r.activity === act.title && r.work.indexOf(work.teacher) >= 0;
+    });
+    var tbody = document.getElementById('scoreDetailTbody');
+    if (tbody) {
+      tbody.innerHTML = records.length
+        ? records.map(function (r) {
+            return (
+              '<tr>' +
+              '<td><strong>' + esc(r.judge) + '</strong></td>' +
+              '<td>' + (r.round ? esc(r.round) : '—') + '</td>' +
+              '<td>' + esc(r.scores) + '</td>' +
+              '<td style="font-size:12px;color:#606266;">' + esc(r.comment) + '</td>' +
+              '<td>' + esc(r.time) + '</td>' +
+              '</tr>'
+            );
           }).join('')
-        : '<tr><td colspan="4" style="text-align:center;color:#909399;padding:30px 0;">该活动暂无作品</td></tr>';
+        : '<tr><td colspan="5" style="text-align:center;color:#909399;padding:30px 0;">暂无评分记录</td></tr>';
     }
-    renderReviewBatchTable();
+    Proto.openDialog('scoreDetailDialog');
   }
 
-  function renderReviewBatchTable() {
-    var tbody = document.getElementById('reviewBatchTbody');
-    if (!tbody) return;
-    var batches = ((MDS.get('reviewBatches') || {})[reviewAssignActivityId]) || [];
-    var works = worksForActivityId(reviewAssignActivityId);
-    var judges = MDS.get('judges') || [];
-    var judgeOpts = judges
-      .map(function (j) { return '<option value="' + j.id + '">' + esc(j.name) + '（' + esc(j.weight) + '）</option>'; })
-      .join('');
-    tbody.innerHTML = batches.length
-      ? batches.map(function (b) {
-          var detail = b.workIds
-            .map(function (id) {
-              var w = works.filter(function (x) { return x.id === id; })[0];
-              return w ? w.title : '';
-            })
-            .filter(Boolean)
-            .join('、');
-          return (
-            '<tr>' +
-            '<td><strong>第 ' + b.batchNo + ' 批</strong></td>' +
-            '<td style="font-size:12px;color:#606266;">' + esc(detail) + '</td>' +
-            '<td>' + b.workIds.length + '</td>' +
-            '<td><select class="pc-select review-batch-judge" data-batch="' + b.batchNo + '" style="width:200px;">' + judgeOpts + '</select></td>' +
-            '<td><span class="action-btn action-delete" data-action="review-batch-del" data-batch="' + b.batchNo + '">删除</span></td>' +
-            '</tr>'
-          );
-        }).join('')
-      : '<tr><td colspan="5" style="text-align:center;color:#909399;padding:30px 0;">暂无分批，点击「自动分批」生成</td></tr>';
-    // 回填当前选中评委
-    batches.forEach(function (b) {
-      var sel = tbody.querySelector('.review-batch-judge[data-batch="' + b.batchNo + '"]');
-      if (sel) sel.value = String(b.judgeId);
+  /* ── 主渲染：选择活动 → 步骤条（报名/评审/归档）→ 阶段内容 ── */
+
+  var amActivityId = 2;    // 当前选中的活动
+  var amStep = '';         // 当前查看的阶段：signup / review / archive（默认=活动当前阶段）
+  var amRound = '初评';     // 评审阶段当前 tab：初评 / 复评
+
+  /* 已进入阶段流的活动（报名 / 审核 / 归档） */
+  function amPhaseActivities() {
+    return (MDS.get('activities') || []).filter(function (a) {
+      return a.stage === 'signup' || a.stage === 'review' || a.stage === 'archive';
     });
   }
 
-  /* ── 打分监控 ── */
+  function stageText(stage) {
+    return stage === 'signup' ? '报名阶段' : stage === 'review' ? '活动评审' : '活动结果';
+  }
 
-  function renderReviewMonitor(root) {
-    var rootEl = document.getElementById('reviewMonitorRoot');
-    var html = '';
-    var batches = MDS.get('reviewBatches') || {};
-    (MDS.get('activities') || []).forEach(function (act) {
-      var list = batches[act.id];
-      if (!list || !list.length) return;
-      html += '<div class="scheme-card" style="margin-bottom:12px;">';
-      html += '<div class="scheme-head"><span class="scheme-name">' + esc(act.title) + '</span><span class="enable-tag">评奖中</span></div>';
-      list.forEach(function (b) {
-        var total = b.workIds.length || 0;
-        var pct = total ? Math.round((b.done / total) * 100) : 0;
-        var finished = total > 0 && b.done >= total;
-        html +=
-          '<div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px dashed var(--pc-border-divider);">' +
-          '<span style="width:70px;font-weight:600;">第 ' + b.batchNo + ' 批</span>' +
-          '<span style="width:140px;font-size:12px;color:#606266;">评委：' + esc(b.judgeName) + '</span>' +
-          '<div class="progress-tri" style="flex:1;max-width:280px;height:8px;">' +
-          '<span class="seg seg-registered" style="width:' + pct + '%;"></span></div>' +
-          '<span style="font-size:12px;color:#909399;">' + b.done + ' / ' + total + '</span>' +
-          '<span class="status-tag ' + (finished ? 'status-success' : 'status-warning') + '">' + (finished ? '已完成' : '进行中') + '</span>' +
-          '</div>';
-      });
-      html += '</div>';
-    });
-    if (!html) {
-      html = '<div class="pc-empty"><div class="empty-icon">📋</div><div>暂无分批任务，请先在「评委分配」中分批</div></div>';
+  // 活动阶段流转顺序：报名 → 评审 → 归档
+  var STAGE_ORDER = ['signup', 'review', 'archive'];
+
+  /* 活动发起弹窗：按「是否需要专家评审」控制评审阶段多选显隐（仅专家评审时需选择） */
+  function syncReviewStageWrap(scope) {
+    var radioName = scope === 'add' ? 'actExpertReview' : 'eActExpertReview';
+    var wrapId = scope === 'add' ? 'actReviewStageWrap' : 'eActReviewStageWrap';
+    var checked = document.querySelector('input[name="' + radioName + '"]:checked');
+    var wrap = document.getElementById(wrapId);
+    if (wrap) wrap.style.display = (checked && checked.value === '1') ? '' : 'none';
+  }
+
+  /* 主渲染：筛选条件（选活动）→ 步骤条 → 阶段内容 */
+  function renderActivityManage(root) {
+    var box = document.getElementById('activityManageRoot');
+    if (!box) return;
+    var all = amPhaseActivities();
+    var act = activityById(amActivityId);
+    if (!act || !(act.stage === 'signup' || act.stage === 'review' || act.stage === 'archive')) {
+      amActivityId = (all[0] && all[0].id) || 0;
+      act = activityById(amActivityId);
     }
-    if (rootEl) rootEl.innerHTML = html;
-    renderReviewRecordTable();
-  }
-
-  function renderReviewRecordTable() {
-    var tbody = document.getElementById('reviewRecordTbody');
-    if (!tbody) return;
-    var records = MDS.get('reviewRecords') || [];
-    tbody.innerHTML = records.length
-      ? records.map(function (r) {
-          return (
-            '<tr>' +
-            '<td>' + esc(r.activity) + '</td>' +
-            '<td>' + esc(r.work) + '</td>' +
-            '<td>' + esc(r.judge) + '</td>' +
-            '<td>' + esc(r.scores) + '</td>' +
-            '<td style="font-size:12px;color:#606266;">' + esc(r.comment) + '</td>' +
-            '<td>' + esc(r.time) + '</td>' +
-            '</tr>'
-          );
-        }).join('')
-      : '<tr><td colspan="6" style="text-align:center;color:#909399;padding:30px 0;">暂无打分记录</td></tr>';
-  }
-
-  /* ── 结果管理 ── */
-
-  function fillReviewResultAct() {
-    var sel = document.getElementById('reviewResultAct');
-    if (!sel) return;
-    sel.innerHTML = (MDS.get('activities') || [])
-      .map(function (a) { return '<option value="' + a.id + '">' + esc(a.title) + '</option>'; })
+    // 默认步骤 = 活动当前阶段
+    if (act && ['signup', 'review', 'archive'].indexOf(amStep) < 0) {
+      amStep = act.stage;
+    }
+    var actOpts = all
+      .map(function (a) { return '<option value="' + a.id + '">' + esc(a.title) + '（' + stageText(a.stage) + '）</option>'; })
       .join('');
-    sel.value = String(reviewResultActivityId);
+
+    var html =
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">筛选条件</span></div>' +
+      '<div class="card-body"><div class="search-form">' +
+      '<div class="search-item"><label>选择活动</label><select class="pc-select" id="amActivitySelect" style="width:360px;">' + actOpts + '</select></div>' +
+      '</div></div></section>' +
+      amRenderSteps(act) +
+      (amStep === 'signup' ? amRenderSignup(act) : amStep === 'review' ? amRenderReview(act) : amRenderArchive(act));
+    box.innerHTML = html;
+    // 回填选中活动
+    var sel = document.getElementById('amActivitySelect');
+    if (sel) sel.value = String(amActivityId);
   }
 
-  function renderReviewResult(root) {
-    fillReviewResultAct();
-    var act = activityById(reviewResultActivityId);
-    if (!act) return;
-    var works = worksForActivityId(reviewResultActivityId);
-    var records = MDS.get('reviewRecords') || [];
-    var results = works.map(function (w) {
-      var recs = records.filter(function (r) { return r.activity === act.title && r.work.indexOf(w.teacher) >= 0; });
-      if (!recs.length) return { work: w.title, teacher: w.teacher, total: 0, avg: 0, scored: false };
-      var total = 0, n = 0;
-      recs.forEach(function (r) {
-        (r.scores || '').split('/').forEach(function (s) {
-          var v = parseInt(s.trim(), 10);
-          if (!isNaN(v)) { total += v; n++; }
-        });
-      });
-      return { work: w.title, teacher: w.teacher, total: total, avg: n ? Math.round((total / n) * 10) / 10 : 0, scored: true };
+  /* 活动步骤条（针对当前活动，当前阶段高亮，可点击切换查看；支持手动进入下一阶段 / 返回上一阶段） */
+  function amRenderSteps(act) {
+    if (!act) return '';
+    var steps = [
+      { key: 'signup', no: 1, title: '报名阶段', desc: '发布后教师报名' },
+      { key: 'review', no: 2, title: '活动评审', desc: '分配评委 · 初评/复评' },
+      { key: 'archive', no: 3, title: '活动结果', desc: '评审结果 · 归档' },
+    ];
+    var idx = STAGE_ORDER.indexOf(act.stage);
+    var canPrev = idx > 0;
+    var canNext = idx >= 0 && idx < STAGE_ORDER.length - 1;
+    var html = '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">活动步骤 · ' + esc(act.title) + '</span><span class="table-count">当前阶段：' + stageText(act.stage) + '</span></div>' +
+      '<div class="card-body"><div class="pc-stepper">';
+    steps.forEach(function (s, i) {
+      // 仅当前阶段及之前的阶段可点击查看，后续阶段禁用
+      var clickable = STAGE_ORDER.indexOf(s.key) <= STAGE_ORDER.indexOf(act.stage);
+      var cls = 'pc-stepper-step' + (amStep === s.key ? ' is-active' : '') + (clickable ? '' : ' is-disabled');
+      html +=
+        '<div class="' + cls + '"' + (clickable ? ' data-action="am-switch-step" data-step="' + s.key + '"' : '') + '>' +
+        '<div class="step-index">' + s.no + '</div>' +
+        '<div class="step-label">' + s.title + '</div>' +
+        '<div class="step-desc">' + s.desc + '</div>' +
+        '</div>';
+      if (i < steps.length - 1) html += '<div class="pc-stepper-connector"></div>';
     });
-    // 已评分按总分降序，未评分排最后
-    results.sort(function (a, b) {
-      if (a.scored !== b.scored) return a.scored ? -1 : 1;
-      return b.total - a.total;
-    });
-    // 奖项分配（按名次依活动奖项名额）
-    var awards = (act && act.awards) || [];
-    results.forEach(function (r, i) {
-      if (!r.scored) { r.award = '待评分'; return; }
-      var remaining = i + 1;
-      r.award = '未获奖';
-      awards.forEach(function (a) {
-        if (remaining <= a.count && r.award === '未获奖') r.award = a.name;
-        remaining -= a.count;
-      });
-    });
-    var hint = document.getElementById('reviewResultHint');
-    if (hint && act) hint.textContent = act.title + ' · 总分自动计算 · 名次/奖项可手动调整';
-    var tbody = document.getElementById('reviewResultTbody');
-    if (!tbody) return;
-    tbody.innerHTML = results.length
-      ? results.map(function (r, i) {
+    // 阶段流转操作（手动控制进入下一阶段 / 返回上一阶段）
+    html += '</div>' +
+      '<div class="am-stage-nav">' +
+      '<span style="font-size:12px;color:#909399;">阶段需手动推进：</span>' +
+      (canPrev
+        ? '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="am-prev-stage">← 返回上一阶段</button>'
+        : '<span class="am-stage-nav-disabled">← 返回上一阶段</span>') +
+      (canNext
+        ? '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="am-next-stage">进入下一阶段 →</button>'
+        : '<span class="am-stage-nav-disabled">进入下一阶段 →</span>') +
+      '</div>' +
+      '</div></section>';
+    return html;
+  }
+
+  /* ── 报名阶段：报名信息列表（每条可查看详情 → 作品） ── */
+  function amRenderSignup(act) {
+    if (!act) return '';
+    var list = signupListForActivity(act);
+    var rows = list.length
+      ? list.map(function (s) {
           return (
             '<tr>' +
-            '<td><strong>' + (r.scored ? (i + 1) : '—') + '</strong></td>' +
-            '<td><strong>' + esc(r.work) + '</strong></td>' +
-            '<td>' + esc(r.teacher) + '</td>' +
-            '<td>' + (r.scored ? r.total : '—') + '</td>' +
-            '<td>' + (r.scored ? r.avg : '—') + '</td>' +
-            '<td>' + (r.scored ? '<span class="status-tag status-success">' + esc(r.award) + '</span>' : '<span class="status-tag status-warning">待评分</span>') + '</td>' +
-            '<td class="op-col"><span class="action-btn action-edit" data-action="show-toast" data-toast="演示功能：调整名次/奖项">调整</span></td>' +
+            '<td><span class="cell-avatar">' + esc(s.name.charAt(0)) + '</span>' + esc(s.name) + '</td>' +
+            '<td>' + esc(s.className) + '</td>' +
+            '<td>' + esc(s.kindergarten) + '</td>' +
+            '<td>' + esc(s.signupTime) + '</td>' +
+            '<td class="op-col"><button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-view-signup-detail" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">查看详情</button></td>' +
             '</tr>'
           );
         }).join('')
-      : '<tr><td colspan="7" style="text-align:center;color:#909399;padding:30px 0;">该活动暂无作品</td></tr>';
+      : '<tr><td colspan="5" style="text-align:center;color:#909399;padding:40px 0;">暂无报名信息</td></tr>';
+    return (
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">报名阶段 · 报名信息</span><span class="table-count">共 ' + list.length + ' 人报名</span></div>' +
+      '<div class="card-body" style="display:flex;align-items:center;gap:14px;">' +
+      '<button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="am-export-signup">⇩ 导出报名表</button>' +
+      '<span style="font-size:12px;color:#909399;">导出报名信息表格（报名教师 / 班级 / 幼儿园 / 报名时间）</span>' +
+      '</div>' +
+      '<div class="card-body no-padding">' +
+      '<table class="pc-table"><thead><tr>' +
+      '<th>报名教师</th><th>班级</th><th>幼儿园</th><th>报名时间</th><th>操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></section>'
+    );
   }
 
-  /* 评委分配事件绑定（一次性：分批表评委变更） */
-  function bindReviewEvents() {
+  /* ── 评审阶段：专家评审（初评/复评 tab + 评委分配）或 管理员直接审核（可退回标注原因） ── */
+  function amRenderReview(act) {
+    if (!act) return '';
+    // 非专家评审：由管理员直接审核（无需分配专家，可审核退回并标注原因）
+    if (act.expertReview === false) {
+      return amRenderAdminReview(act);
+    }
+    // 专家评审：初评/复评 tab（按活动配置的评审阶段多选）
+    var stages = (act.reviewStages && act.reviewStages.length) ? act.reviewStages : ['初评', '复评'];
+    if (stages.indexOf(amRound) < 0) amRound = stages[0];
+    var tabs = stages.map(function (r) {
+      return '<span class="pc-filter-tab' + (amRound === r ? ' is-active' : '') + '" data-action="am-switch-round" data-round="' + r + '">' + r + '</span>';
+    }).join('');
+    var groups = (((MDS.get('reviewGroups') || {})[act.id] || {})[amRound]) || [];
+    // 评分阶段状态：未开始 / 评审中 / 已结束（分配评委后控制是否开始）
+    var statusMap = ((MDS.get('reviewStageStatus') || {})[act.id]) || {};
+    var curStatus = statusMap[amRound] || 'notstarted';
+    var stageCtrl = '';
+    if (curStatus === 'reviewing') {
+      stageCtrl = '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="review-finish-round">结束' + amRound + '</button>';
+    } else if (curStatus === 'finished') {
+      stageCtrl = '<span class="status-tag status-success">' + amRound + '已结束</span>';
+    } else {
+      stageCtrl = '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="review-start-round">开始' + amRound + '</button>';
+    }
+    return (
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">活动评审 · ' + esc(act.title) + '</span><span class="table-count">' + amRound + ' · ' + (curStatus === 'reviewing' ? '评审中' : curStatus === 'finished' ? '已结束' : '未开始') + '</span></div>' +
+      '<div class="card-body">' +
+      '<div class="search-form">' +
+      '<div class="search-item"><label>评分阶段</label><div class="pc-filter-tabs">' + tabs + '</div></div>' +
+      '<div class="search-item">' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="wc-open">打分权重配置</button>' +
+      '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="judge-open-assign">' + (groups.length ? '重新分配' : '评委分配') + '</button>' +
+      stageCtrl +
+      '</div>' +
+      '</div>' +
+      '</div></section>' +
+      amRenderJudgeGroups(act, amRound)
+    );
+  }
+
+  /* ── 管理员直接审核模式（活动设置「无需专家评审」）：逐条审核，可审核退回并标注原因 ── */
+  function amRenderAdminReview(act) {
+    var list = signupListForActivity(act);
+    var works = worksForActivityId(act.id);
+    var adminReviews = ((MDS.get('adminReviews') || {})[act.id]) || {};
+    var rows = list.length
+      ? list.map(function (s) {
+          var w = works.filter(function (x) { return x.teacher === s.name; })[0];
+          var ar = adminReviews[s.name] || { status: 'pending', reason: '' };
+          var statusHtml = ar.status === 'approved'
+            ? '<span class="status-tag status-success">已通过</span>'
+            : ar.status === 'rejected'
+              ? '<span class="status-tag status-danger">已退回</span>' + (ar.reason ? '<div style="font-size:12px;color:#e03a2e;margin-top:4px;">原因：' + esc(ar.reason) + '</div>' : '')
+              : '<span class="status-tag status-warning">待审核</span>';
+          var ops = '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-view-signup-detail" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">查看详情</button>';
+          if (ar.status !== 'approved') {
+            ops += '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="admin-approve" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">审核通过</button>';
+          }
+          if (ar.status !== 'rejected') {
+            ops += '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="admin-reject-open" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">审核退回</button>';
+          }
+          return (
+            '<tr>' +
+            '<td><strong>' + esc(s.name) + '</strong></td>' +
+            '<td>' + esc(s.className) + '</td>' +
+            '<td>' + (w ? esc(w.title) : '<span style="color:#c0c4cc;">未提交作品</span>') + '</td>' +
+            '<td>' + statusHtml + '</td>' +
+            '<td class="op-col">' + ops + '</td>' +
+            '</tr>'
+          );
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:#909399;padding:40px 0;">暂无报名信息</td></tr>';
+    return (
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">活动评审 · ' + esc(act.title) + '</span><span class="table-count">管理员直接审核（无需分配专家）</span></div>' +
+      '<div style="font-size:12px;color:#909399;padding:10px 16px 0;">该活动未开启专家评审，由管理员逐条审核；退回时将标注退回原因。</div>' +
+      '<div class="card-body no-padding">' +
+      '<table class="pc-table"><thead><tr>' +
+      '<th>报名教师</th><th>班级</th><th>作品</th><th>审核状态</th><th>操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></section>'
+    );
+  }
+
+  /* 已分配评委分组卡片（每个分组一个卡片，卡片内表格展示该组评委） */
+  function amRenderJudgeGroups(act, round) {
+    if (!act) return '';
+    var groups = (((MDS.get('reviewGroups') || {})[act.id] || {})[round]) || [];
+    var groupMap = {};
+    groups.forEach(function (g) {
+      if (!groupMap[g.groupNo]) groupMap[g.groupNo] = { groupNo: g.groupNo, workCount: g.workCount, judges: [] };
+      groupMap[g.groupNo].judges.push(g);
+    });
+    var groupNos = Object.keys(groupMap).sort(function (a, b) { return Number(a) - Number(b); });
+    var cards = groupNos.length
+      ? groupNos.map(function (no) {
+          var gr = groupMap[no];
+          var rows = gr.judges.map(function (j) {
+            return (
+              '<tr>' +
+              '<td><strong>' + esc(j.judgeName) + '</strong></td>' +
+              '<td>' + esc(j.judgeAccount || '—') + '</td>' +
+              '<td>' + (j.workCount || 0) + '</td>' +
+              '</tr>'
+            );
+          }).join('');
+          return (
+            '<section class="pc-card">' +
+            '<div class="card-head"><span class="card-title">第 ' + gr.groupNo + ' 组</span><span class="table-count">需评 ' + (gr.workCount || 0) + ' 份作品</span></div>' +
+            '<div class="card-body no-padding">' +
+            '<table class="pc-table"><thead><tr>' +
+            '<th>评委名称</th><th>评委账号</th><th>需评作品数</th>' +
+            '</tr></thead><tbody>' + rows + '</tbody></table>' +
+            '</div></section>'
+          );
+        }).join('')
+      : '<section class="pc-card"><div class="card-body"><div class="pc-empty"><div class="empty-icon">👥</div><div>暂无评委分配，点击「评委分配」设置分组并抽取评委</div></div></div></section>';
+    return cards;
+  }
+
+  /* 作品综合评分：该作品所有评委评分的平均分（保留 1 位小数）；无评分返回 null */
+  function workAvgScore(act, work) {
+    var records = MDS.get('reviewRecords') || [];
+    var recs = records.filter(function (r) { return r.activity === act.title && r.work.indexOf(work.teacher) >= 0; });
+    var total = 0, n = 0;
+    recs.forEach(function (r) {
+      (r.scores || '').split('/').forEach(function (s) {
+        var v = parseInt(s.trim(), 10);
+        if (!isNaN(v)) { total += v; n++; }
+      });
+    });
+    if (!n) return null;
+    return Math.round((total / n) * 10) / 10;
+  }
+
+  /* 奖项等级配置：优先取已保存配置，否则从活动奖项设置派生默认名次范围 */
+  function awardConfigForAct(act) {
+    var cfg = ((MDS.get('awardConfigs') || {})[act.id]);
+    if (cfg && cfg.length) return cfg;
+    var out = [];
+    var from = 1;
+    (act.awards || []).forEach(function (aw) {
+      out.push({ name: aw.name, rankFrom: from, rankTo: from + (aw.count || 1) - 1 });
+      from += aw.count || 1;
+    });
+    return out;
+  }
+
+  /* 设置奖项等级弹窗：填充 / 渲染 / 保存 */
+  function fillAwardConfigDialog(act) {
+    var title = document.getElementById('awardConfigTitle');
+    if (title) title.textContent = '设置奖项等级 · ' + act.title;
+    renderAwardConfigRows(awardConfigForAct(act));
+    Proto.openDialog('awardConfigDialog');
+  }
+
+  function renderAwardConfigRows(configs) {
+    var tbody = document.getElementById('awardConfigTbody');
+    if (!tbody) return;
+    tbody.innerHTML = (configs.length ? configs : [{}]).map(function (c) {
+      return (
+        '<tr>' +
+        '<td><input class="pc-input ac-name" placeholder="奖项名称" value="' + esc(c.name || '') + '"></td>' +
+        '<td><input class="pc-input ac-range" placeholder="如 1-3" value="' + esc(c.range || (c.rankFrom != null ? c.rankFrom + '-' + c.rankTo : '')) + '" style="width:110px;"></td>' +
+        '<td><span class="action-btn action-delete" data-action="ac-del">删除</span></td>' +
+        '</tr>'
+      );
+    }).join('');
+  }
+
+  /* ── 打分权重配置：填充指标项列表 / 渲染行 / 权重合计 ── */
+  function fillWeightConfigDialog(act) {
+    var title = document.getElementById('weightConfigTitle');
+    if (title) title.textContent = '打分权重配置 · ' + act.title;
+    var configs = ((MDS.get('scoreConfigs') || {})[act.id]) || [
+      { name: '创新性', weight: 40 },
+      { name: '实用性', weight: 30 },
+      { name: '完整性', weight: 30 },
+    ];
+    renderWeightConfigRows(configs);
+    updateWeightTotal();
+    Proto.openDialog('weightConfigDialog');
+  }
+
+  function renderWeightConfigRows(configs) {
+    var tbody = document.getElementById('weightConfigTbody');
+    if (!tbody) return;
+    tbody.innerHTML = (configs.length ? configs : [{}]).map(function (c) {
+      return (
+        '<tr>' +
+        '<td><input class="pc-input wc-name" placeholder="指标名称" value="' + esc(c.name || '') + '"></td>' +
+        '<td><input class="pc-input wc-weight" type="number" min="0" max="100" placeholder="权重" value="' + (c.weight != null ? c.weight : '') + '" style="width:100px;"></td>' +
+        '<td><span class="action-btn action-delete" data-action="wc-del">删除</span></td>' +
+        '</tr>'
+      );
+    }).join('');
+  }
+
+  function updateWeightTotal() {
+    var tbody = document.getElementById('weightConfigTbody');
+    var hint = document.getElementById('weightConfigHint');
+    if (!tbody || !hint) return;
+    var total = 0;
+    tbody.querySelectorAll('.wc-weight').forEach(function (el) {
+      total += parseInt(el.value, 10) || 0;
+    });
+    var ok = total === 100;
+    hint.innerHTML = '权重合计：<strong>' + total + '%</strong>' +
+      (ok
+        ? ' <span style="color:#67c23a;">✓ 合计 100%，可保存</span>'
+        : ' <span style="color:#e6a23c;">应合计 100%（当前 ' + total + '%）</span>');
+  }
+
+  /* ── 归档阶段：评审结果列表（综合评分 + 名次 + 奖项等级 + 查看详情/评分详情） ── */
+  function amRenderArchive(act) {
+    if (!act) return '';
+    var list = signupListForActivity(act);
+    var works = worksForActivityId(act.id);
+    var awards = awardConfigForAct(act);
+    // 组装：报名 + 作品 + 综合评分
+    var items = list.map(function (s) {
+      var w = works.filter(function (x) { return x.teacher === s.name; })[0];
+      var score = w ? workAvgScore(act, w) : null;
+      return { s: s, w: w, score: score };
+    });
+    // 排序：有综合评分者按评分降序排前，未评分者排最后
+    items.sort(function (a, b) {
+      if (a.score === null && b.score === null) return 0;
+      if (a.score === null) return 1;
+      if (b.score === null) return -1;
+      return b.score - a.score;
+    });
+    // 分配自动名次；支持手动调整覆盖（rankOverrides[actId][教师名] = 名次）
+    var rankOverrides = ((MDS.get('rankOverrides') || {})[act.id]) || {};
+    var autoRank = 0;
+    items.forEach(function (it) {
+      if (it.score !== null) autoRank++;
+      it.autoRank = it.score !== null ? autoRank : null;
+      it.rank = it.score !== null ? (rankOverrides[it.s.name] || it.autoRank) : null;
+    });
+    var rows = items.length
+      ? items.map(function (it) {
+          var awardName = '';
+          if (it.rank !== null) {
+            awards.forEach(function (a) {
+              if (it.rank >= a.rankFrom && it.rank <= a.rankTo) awardName = a.name;
+            });
+          }
+          var s = it.s, w = it.w;
+          var ops = '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-view-signup-detail" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">查看详情</button>';
+          if (w) {
+            ops += '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-view-score-detail" data-work-id="' + w.id + '" data-activity="' + act.id + '">查看评分详情</button>';
+          }
+          if (it.rank !== null) {
+            ops += '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="rank-adjust-open" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '" data-rank="' + it.rank + '">调整名次</button>';
+          }
+          return (
+            '<tr>' +
+            '<td><strong>' + esc(s.name) + '</strong></td>' +
+            '<td>' + esc(s.className) + '</td>' +
+            '<td>' + (w ? esc(w.title) : '<span style="color:#c0c4cc;">未提交作品</span>') + '</td>' +
+            '<td>' + (it.score === null ? '<span style="color:#c0c4cc;">—</span>' : '<span class="status-tag status-success">' + it.score + '</span>') + '</td>' +
+            '<td>' + (it.rank === null ? '<span style="color:#c0c4cc;">—</span>' : '<strong>' + it.rank + '</strong>' + (it.rank !== it.autoRank ? '<span style="color:#e6a23c;font-size:12px;margin-left:4px;">手动</span>' : '')) + '</td>' +
+            '<td>' + (it.rank !== null && awardName ? '<span class="status-tag status-primary">' + esc(awardName) + '</span>' : '<span style="color:#c0c4cc;">—</span>') + '</td>' +
+            '<td class="op-col">' + ops + '</td>' +
+            '</tr>'
+          );
+        }).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:#909399;padding:40px 0;">暂无报名信息</td></tr>';
+    // 结果状态 + 发布/归档（流程完整：未发布 → 发布结果 → 归档）
+    var statusBtn = '';
+    if (act.resultStatus === 'pending') {
+      statusBtn = '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="am-publish-result" data-id="' + act.id + '">发布结果</button>';
+    } else if (act.resultStatus === 'published') {
+      statusBtn = '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-archive" data-id="' + act.id + '">归档</button>';
+    }
+    return (
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">活动结果 · 评审结果</span><span class="table-count">' + (act.resultStatus === 'archived' ? '已归档' : act.resultStatus === 'published' ? '已发布' : '未发布') + '</span></div>' +
+      '<div class="card-body" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="ac-open">设置奖项等级</button>' +
+      '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="am-calc-score">计算综合得分</button>' +
+      statusBtn +
+      '<button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="am-export-archive">⇩ 导出全量数据</button>' +
+      '</div>' +
+      '<div class="card-body no-padding">' +
+      '<table class="pc-table"><thead><tr>' +
+      '<th>报名教师</th><th>班级</th><th>作品</th><th>综合评分</th><th>名次</th><th>奖项等级</th><th>操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></section>'
+    );
+  }
+
+  /* ── 报名/评审/归档三阶段内容由 renderActivityManage 承载（见 amRenderSignup / amRenderReview / amRenderArchive） ── */
+
+  /* 事件绑定（一次性：活动管理页切换活动） */
+  function bindManageEvents() {
     document.addEventListener('change', function (e) {
       var t = e.target;
-      if (!t || !t.classList || !t.classList.contains('review-batch-judge')) return;
-      var batchNo = Number(t.getAttribute('data-batch'));
-      var judgeId = Number(t.value);
-      var judge = (MDS.get('judges') || []).filter(function (j) { return j.id === judgeId; })[0];
-      MDS.update('reviewBatches', function (map) {
-        var next = Object.assign({}, map || {});
-        next[reviewAssignActivityId] = (next[reviewAssignActivityId] || []).map(function (b) {
-          return b.batchNo === batchNo ? Object.assign({}, b, { judgeId: judgeId, judgeName: judge ? judge.name : '' }) : b;
-        });
-        return next;
-      });
+      if (!t || !t.id) return;
+      // 活动管理页：切换活动 → 重设为活动当前阶段
+      if (t.id === 'amActivitySelect') {
+        amActivityId = Number(t.value);
+        amStep = '';
+        renderActivityManage(qs('#pcPage'));
+        return;
+      }
+    });
+    // 活动发起弹窗：是否需要专家评审 → 控制评审阶段多选显隐
+    document.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || !t.name) return;
+      if (t.name === 'actExpertReview') syncReviewStageWrap('add');
+      if (t.name === 'eActExpertReview') syncReviewStageWrap('edit');
+    });
+    // 打分权重配置弹窗：指标权重输入实时刷新合计
+    document.addEventListener('input', function (e) {
+      var t = e.target;
+      if (!t || !t.classList) return;
+      if (t.classList.contains('wc-name') || t.classList.contains('wc-weight')) {
+        updateWeightTotal();
+      }
     });
   }
 
@@ -2129,13 +2464,14 @@ window.MedalDemo = (function () {
           if (a.id !== id) return a;
           var status = next;
           // 两态流转：未发布 ↔ 已发布，作品数不变；发布时记录发布时间，撤回时清空
+          // 发布后进入「活动管理」报名阶段（stage='signup'），撤回时回到草稿
           var publishTime = a.publishTime || '';
           if (status === 'PUBLISHED') {
             publishTime = publishTime || todayStr();
           } else {
             publishTime = '';
           }
-          return Object.assign({}, a, { status: status, publishTime: publishTime });
+          return Object.assign({}, a, { status: status, publishTime: publishTime, stage: status === 'PUBLISHED' ? 'signup' : '' });
         });
       });
       renderActivityTable();
@@ -2144,6 +2480,10 @@ window.MedalDemo = (function () {
 
     Proto.registerAction('act-add', function () {
       renderAwardRows('actAwardTbody');
+      // 默认专家评审=是，显示评审阶段多选
+      var expertYes = document.querySelector('input[name="actExpertReview"][value="1"]');
+      if (expertYes) expertYes.checked = true;
+      syncReviewStageWrap('add');
       Proto.openDialog('actAddDialog');
     });
 
@@ -2153,15 +2493,21 @@ window.MedalDemo = (function () {
         Proto.showToast('请填写活动名称');
         return;
       }
+      // 是否需要专家评审（radio）：是=1 / 否=0
+      var expertChecked = document.querySelector('input[name="actExpertReview"]:checked');
       var a = {
         id: Date.now(),
         title: title,
         type: (document.getElementById('actType') || {}).value || '论文比赛',
         status: 'DRAFT',
+        stage: '',
         signupStart: (document.getElementById('actStart') || {}).value || '',
         signupEnd: (document.getElementById('actEnd') || {}).value || '',
         targetKindergartens: readScopeChecks('kgScope').length ? readScopeChecks('kgScope') : ['全部幼儿园'],
         format: (document.getElementById('actFormat') || {}).value || '文档',
+        // 是否专家评审；评审阶段多选仅在专家评审时有效（非专家评审则无需评审阶段）
+        expertReview: expertChecked ? expertChecked.value === '1' : true,
+        reviewStages: (expertChecked && expertChecked.value === '0') ? [] : (readScopeChecks('reviewStages').length ? readScopeChecks('reviewStages') : ['初评', '复评']),
         awards: readAwardRows('actAwardTbody'),
         desc: (document.getElementById('actDesc') || {}).value || '',
         publishTime: '',
@@ -2188,6 +2534,11 @@ window.MedalDemo = (function () {
         if (input) input.value = fields[fid];
       });
       fillScopeChecks('eKgScope', a.targetKindergartens);
+      fillScopeChecks('eReviewStages', a.reviewStages || ['初评', '复评']);
+      var expertRadio = document.querySelector('input[name="eActExpertReview"][value="' + (a.expertReview === false ? '0' : '1') + '"]');
+      if (expertRadio) expertRadio.checked = true;
+      // 按是否专家评审控制评审阶段多选显隐
+      syncReviewStageWrap('edit');
       renderAwardRows('eActAwardTbody', a.awards);
       document.getElementById('eActId').value = id;
       Proto.openDialog('actEditDialog');
@@ -2205,6 +2556,14 @@ window.MedalDemo = (function () {
             signupEnd: (document.getElementById('eActEnd') || {}).value || a.signupEnd,
             targetKindergartens: readScopeChecks('eKgScope').length ? readScopeChecks('eKgScope') : a.targetKindergartens,
             format: (document.getElementById('eActFormat') || {}).value || a.format,
+            expertReview: (function () {
+              var checked = document.querySelector('input[name="eActExpertReview"]:checked');
+              return checked ? checked.value === '1' : (a.expertReview !== false);
+            })(),
+            reviewStages: (function () {
+              var checked = document.querySelector('input[name="eActExpertReview"]:checked');
+              return (checked && checked.value === '0') ? [] : (readScopeChecks('eReviewStages').length ? readScopeChecks('eReviewStages') : a.reviewStages);
+            })(),
             awards: readAwardRows('eActAwardTbody'),
             desc: (document.getElementById('eActDesc') || {}).value || a.desc,
           });
@@ -2552,28 +2911,455 @@ window.MedalDemo = (function () {
       location.href = '../pc/admin.html?role=principal';
     });
 
-    // ── 评奖：评委分配 / 分批 ──
-    Proto.registerAction('review-rebatch', function () {
-      reviewBatchSize = parseInt((qs('#reviewBatchSize') || {}).value, 10) || 5;
-      var batches = buildReviewBatches(reviewAssignActivityId, reviewBatchSize);
-      saveReviewBatches(reviewAssignActivityId, batches);
-      renderReviewAssign(qs('#pcPage'));
-      Proto.showToast('已按每批 ' + reviewBatchSize + ' 份重新分批');
+    // ── 活动管理：分配评委独立页面 ──
+    // 审核阶段「分配评委」→ 跳转独立页面
+    // ── 活动管理：步骤条 / 阶段操作 ──
+    // 步骤条切换阶段视图
+    Proto.registerAction('am-switch-step', function (el) {
+      amStep = el.getAttribute('data-step') || 'signup';
+      renderActivityManage(qs('#pcPage'));
     });
 
-    Proto.registerAction('review-save', function () {
-      Proto.showToast('分批与评委分配已保存');
+    // 进入下一阶段（手动推进：报名 → 评审 → 归档）
+    Proto.registerAction('am-next-stage', function () {
+      var act = activityById(amActivityId);
+      if (!act) return;
+      var idx = STAGE_ORDER.indexOf(act.stage);
+      if (idx < 0 || idx >= STAGE_ORDER.length - 1) {
+        Proto.showToast('活动已处于最后阶段');
+        return;
+      }
+      var next = STAGE_ORDER[idx + 1];
+      MDS.update('activities', function (arr) {
+        return arr.map(function (x) {
+          if (x.id !== amActivityId) return x;
+          var upd = Object.assign({}, x, { stage: next });
+          // 进入归档阶段时结果状态缺省为「未发布」，供管理端发布
+          if (next === 'archive' && !x.resultStatus) upd.resultStatus = 'pending';
+          return upd;
+        });
+      });
+      amStep = next;
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('已进入「' + stageText(next) + '」');
     });
 
-    Proto.registerAction('review-batch-del', function (el) {
-      var batchNo = Number(el.getAttribute('data-batch'));
-      MDS.update('reviewBatches', function (map) {
+    // 返回上一阶段（手动回退：归档 → 评审 → 报名）
+    Proto.registerAction('am-prev-stage', function () {
+      var act = activityById(amActivityId);
+      if (!act) return;
+      var idx = STAGE_ORDER.indexOf(act.stage);
+      if (idx <= 0) {
+        Proto.showToast('活动已处于第一阶段');
+        return;
+      }
+      var prev = STAGE_ORDER[idx - 1];
+      MDS.update('activities', function (arr) {
+        return arr.map(function (x) {
+          return x.id === amActivityId ? Object.assign({}, x, { stage: prev }) : x;
+        });
+      });
+      amStep = prev;
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('已返回「' + stageText(prev) + '」');
+    });
+
+    // 评审阶段：初评/复评 tab 切换
+    Proto.registerAction('am-switch-round', function (el) {
+      amRound = el.getAttribute('data-round') || '初评';
+      renderActivityManage(qs('#pcPage'));
+    });
+
+    // 报名/归档阶段：查看报名详情（展示该报名者上传的作品）
+    Proto.registerAction('am-view-signup-detail', function (el) {
+      var act = activityById(Number(el.getAttribute('data-activity')));
+      var teacher = el.getAttribute('data-teacher');
+      if (!act) return;
+      fillSignupDetailDialog(act, teacher);
+    });
+
+    // 归档阶段：查看评分详情（每位评委对该作品的评分）
+    Proto.registerAction('am-view-score-detail', function (el) {
+      var act = activityById(Number(el.getAttribute('data-activity')));
+      var work = (MDS.get('works') || []).filter(function (w) { return w.id === Number(el.getAttribute('data-work-id')); })[0];
+      if (!act || !work) return;
+      fillScoreDetailDialog(act, work);
+    });
+
+    // ── 报名阶段：导出报名信息表格（提示导出成功） ──
+    Proto.registerAction('am-export-signup', function () {
+      var a = activityById(amActivityId);
+      if (!a) return;
+      var list = signupListForActivity(a);
+      Proto.showToast('报名信息表格导出成功（共 ' + list.length + ' 条报名）');
+    });
+
+    // ── 归档阶段：导出全量数据（提示导出成功） ──
+    Proto.registerAction('am-export-archive', function () {
+      var a = activityById(amActivityId);
+      if (!a) return;
+      var list = signupListForActivity(a);
+      Proto.showToast('全量数据导出成功（共 ' + list.length + ' 条报名 · 含作品与综合评分）');
+    });
+
+    // ── 归档阶段：设置奖项等级弹窗（自定义奖项名称及名次范围） ──
+    Proto.registerAction('ac-open', function () {
+      var a = activityById(amActivityId);
+      if (!a) return;
+      fillAwardConfigDialog(a);
+    });
+
+    // 添加奖项等级
+    Proto.registerAction('ac-add', function () {
+      var tbody = document.getElementById('awardConfigTbody');
+      if (tbody) {
+        tbody.insertAdjacentHTML('beforeend',
+          '<tr>' +
+          '<td><input class="pc-input ac-name" placeholder="奖项名称"></td>' +
+          '<td><input class="pc-input ac-range" placeholder="如 1-3" style="width:110px;"></td>' +
+          '<td><span class="action-btn action-delete" data-action="ac-del">删除</span></td>' +
+          '</tr>'
+        );
+      }
+    });
+
+    // 删除奖项等级
+    Proto.registerAction('ac-del', function (el) {
+      var tr = el.closest('tr');
+      if (tr) tr.remove();
+    });
+
+    // 保存奖项等级配置
+    Proto.registerAction('ac-save', function () {
+      var tbody = document.getElementById('awardConfigTbody');
+      var rows = [];
+      tbody.querySelectorAll('tr').forEach(function (tr) {
+        var name = ((tr.querySelector('.ac-name') || {}).value || '').trim();
+        var rangeStr = ((tr.querySelector('.ac-range') || {}).value || '').trim();
+        if (!name || !rangeStr) return;
+        var parts = rangeStr.split('-');
+        var rankFrom = parseInt(parts[0], 10);
+        var rankTo = parseInt(parts[1], 10);
+        if (isNaN(rankFrom) || isNaN(rankTo) || rankFrom < 1 || rankTo < rankFrom) return;
+        rows.push({ name: name, rankFrom: rankFrom, rankTo: rankTo });
+      });
+      if (!rows.length) {
+        Proto.showToast('请至少配置一个奖项等级（含名称与名次范围）');
+        return;
+      }
+      MDS.update('awardConfigs', function (map) {
         var next = Object.assign({}, map || {});
-        var list = (next[reviewAssignActivityId] || []).filter(function (b) { return b.batchNo !== batchNo; });
-        next[reviewAssignActivityId] = list.map(function (b, i) { return Object.assign({}, b, { batchNo: i + 1 }); });
+        next[amActivityId] = rows;
         return next;
       });
-      renderReviewBatchTable();
+      Proto.closeDialog('awardConfigDialog');
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('奖项等级配置已保存');
+    });
+
+    // ── 归档阶段：计算综合得分（需确认） ──
+    Proto.registerAction('am-calc-score', function () {
+      if (!confirm('是否需要计算综合得分？\n将根据各评委评分自动汇总计算综合得分。')) return;
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('综合得分已计算完成');
+    });
+
+    // ── 归档阶段：调整名次（手动调整获奖名次） ──
+    Proto.registerAction('rank-adjust-open', function (el) {
+      var teacher = el.getAttribute('data-teacher');
+      var rank = Number(el.getAttribute('data-rank'));
+      var a = activityById(Number(el.getAttribute('data-activity')));
+      var title = document.getElementById('rankAdjustTitle');
+      if (title) title.textContent = '调整名次 · ' + (a ? a.title : '');
+      var meta = document.getElementById('rankAdjustMeta');
+      if (meta) meta.textContent = '报名教师：' + teacher;
+      var cur = document.getElementById('rankAdjustCurrent');
+      if (cur) cur.textContent = '第 ' + rank + ' 名';
+      var input = document.getElementById('rankAdjustNew');
+      if (input) input.value = '';
+      window.__rankAdjust = { teacher: teacher };
+      Proto.openDialog('rankAdjustDialog');
+    });
+
+    Proto.registerAction('rank-save', function () {
+      var act = activityById(amActivityId);
+      var info = window.__rankAdjust;
+      var newRank = parseInt((qs('#rankAdjustNew') || {}).value, 10);
+      if (!act || !info || !info.teacher) return;
+      if (isNaN(newRank) || newRank < 1) {
+        Proto.showToast('请输入正确的名次');
+        return;
+      }
+      MDS.update('rankOverrides', function (map) {
+        var next = Object.assign({}, map || {});
+        var actMap = Object.assign({}, next[act.id] || {});
+        actMap[info.teacher] = newRank;
+        next[act.id] = actMap;
+        return next;
+      });
+      window.__rankAdjust = null;
+      Proto.closeDialog('rankAdjustDialog');
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('已将「' + info.teacher + '」名次调整为第 ' + newRank + ' 名');
+    });
+
+    // ── 评审阶段 · 管理员直接审核（非专家评审）：审核通过 / 审核退回（标注原因） ──
+    Proto.registerAction('admin-approve', function (el) {
+      var actId = Number(el.getAttribute('data-activity'));
+      var teacher = el.getAttribute('data-teacher');
+      MDS.update('adminReviews', function (map) {
+        var next = Object.assign({}, map || {});
+        var actMap = Object.assign({}, next[actId] || {});
+        actMap[teacher] = { status: 'approved', reason: '' };
+        next[actId] = actMap;
+        return next;
+      });
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('已通过「' + teacher + '」的审核');
+    });
+
+    Proto.registerAction('admin-reject-open', function (el) {
+      var actId = Number(el.getAttribute('data-activity'));
+      var teacher = el.getAttribute('data-teacher');
+      var a = activityById(actId);
+      var title = document.getElementById('adminRejectTitle');
+      if (title) title.textContent = '审核退回 · ' + (a ? a.title : '');
+      var meta = document.getElementById('adminRejectMeta');
+      if (meta) meta.textContent = '报名教师：' + teacher;
+      var reason = document.getElementById('adminRejectReason');
+      if (reason) reason.value = '';
+      window.__adminReject = { activityId: actId, teacher: teacher };
+      Proto.openDialog('adminRejectDialog');
+    });
+
+    Proto.registerAction('admin-reject-save', function () {
+      var info = window.__adminReject;
+      var reason = ((qs('#adminRejectReason') || {}).value || '').trim();
+      if (!info || !info.teacher) return;
+      if (!reason) {
+        Proto.showToast('请填写退回原因');
+        return;
+      }
+      MDS.update('adminReviews', function (map) {
+        var next = Object.assign({}, map || {});
+        var actMap = Object.assign({}, next[info.activityId] || {});
+        actMap[info.teacher] = { status: 'rejected', reason: reason };
+        next[info.activityId] = actMap;
+        return next;
+      });
+      window.__adminReject = null;
+      Proto.closeDialog('adminRejectDialog');
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('已退回「' + info.teacher + '」并标注原因');
+    });
+
+    // ── 评审阶段：控制评分阶段开始 / 结束（分配评委后开始初评/复评） ──
+    Proto.registerAction('review-start-round', function () {
+      MDS.update('reviewStageStatus', function (map) {
+        var next = Object.assign({}, map || {});
+        var actMap = Object.assign({}, next[amActivityId] || {});
+        actMap[amRound] = 'reviewing';
+        next[amActivityId] = actMap;
+        return next;
+      });
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast(amRound + '已开始，评委可进行打分');
+    });
+
+    Proto.registerAction('review-finish-round', function () {
+      MDS.update('reviewStageStatus', function (map) {
+        var next = Object.assign({}, map || {});
+        var actMap = Object.assign({}, next[amActivityId] || {});
+        actMap[amRound] = 'finished';
+        next[amActivityId] = actMap;
+        return next;
+      });
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast(amRound + '已结束');
+    });
+
+    // ── 打分权重配置弹窗（评审阶段：添加指标项并设置权重） ──
+    Proto.registerAction('wc-open', function () {
+      var a = activityById(amActivityId);
+      if (!a) return;
+      fillWeightConfigDialog(a);
+    });
+
+    // 添加指标项
+    Proto.registerAction('wc-add', function () {
+      var tbody = document.getElementById('weightConfigTbody');
+      if (tbody) {
+        tbody.insertAdjacentHTML('beforeend',
+          '<tr>' +
+          '<td><input class="pc-input wc-name" placeholder="指标名称"></td>' +
+          '<td><input class="pc-input wc-weight" type="number" min="0" max="100" placeholder="权重" style="width:100px;"></td>' +
+          '<td><span class="action-btn action-delete" data-action="wc-del">删除</span></td>' +
+          '</tr>'
+        );
+      }
+      updateWeightTotal();
+    });
+
+    // 删除指标项
+    Proto.registerAction('wc-del', function (el) {
+      var tr = el.closest('tr');
+      if (tr) tr.remove();
+      updateWeightTotal();
+    });
+
+    // 保存打分权重配置
+    Proto.registerAction('wc-save', function () {
+      var tbody = document.getElementById('weightConfigTbody');
+      var rows = [];
+      tbody.querySelectorAll('tr').forEach(function (tr) {
+        var name = ((tr.querySelector('.wc-name') || {}).value || '').trim();
+        var weight = parseInt((tr.querySelector('.wc-weight') || {}).value, 10);
+        if (!name) return;
+        rows.push({ name: name, weight: isNaN(weight) ? 0 : weight });
+      });
+      if (!rows.length) {
+        Proto.showToast('请至少添加一个指标项');
+        return;
+      }
+      var total = rows.reduce(function (s, r) { return s + (r.weight || 0); }, 0);
+      if (total !== 100) {
+        Proto.showToast('权重合计应为 100%，当前 ' + total + '%');
+        return;
+      }
+      MDS.update('scoreConfigs', function (map) {
+        var next = Object.assign({}, map || {});
+        next[amActivityId] = rows;
+        return next;
+      });
+      Proto.closeDialog('weightConfigDialog');
+      Proto.showToast('打分权重配置已保存');
+    });
+
+    // ── 评委分配弹窗（评审阶段 初评/复评 各自分配） ──
+    // 打开弹窗：设定分组数 / 每组评委数（针对当前 amRound）
+    Proto.registerAction('judge-open-assign', function () {
+      judgeDrawResult = null;
+      var preview = document.getElementById('judgeDrawPreview');
+      if (preview) preview.innerHTML = '';
+      var title = document.getElementById('judgeAssignTitle');
+      var a = activityById(amActivityId);
+      if (title) title.textContent = '评委分配 · ' + (a ? a.title : '') + '（' + amRound + '）';
+      Proto.openDialog('judgeAssignDialog');
+    });
+
+    // 评委分配弹窗：进行分组抽取（系统自动抽取评委并分配需评作品数）
+    Proto.registerAction('judge-draw', function () {
+      var btn = document.querySelector('[data-action="judge-draw"]');
+      var groupCount = parseInt((qs('#judgeGroupCount') || {}).value, 10) || 2;
+      var perGroup = parseInt((qs('#judgePerGroup') || {}).value, 10) || 1;
+      var needed = groupCount * perGroup;
+      var judges = MDS.get('judges') || [];
+      if (needed > judges.length) {
+        Proto.showToast('评委不足：需要 ' + needed + ' 位评委，当前共 ' + judges.length + ' 位');
+        return;
+      }
+      var preview = document.getElementById('judgeDrawPreview');
+      // 抽签反馈：先显示抽取中动画，再出结果
+      if (preview) preview.innerHTML = '<div class="draw-loading">🎯 正在从 ' + judges.length + ' 位评委中抽取 ' + needed + ' 位…</div>';
+      if (btn) btn.setAttribute('disabled', 'disabled');
+      setTimeout(function () {
+        // 从评委池随机抽签（洗牌取前 needed 位）
+        var pool = judges.slice();
+        for (var i = pool.length - 1; i > 0; i--) {
+          var k = Math.floor(Math.random() * (i + 1));
+          var tmp = pool[i]; pool[i] = pool[k]; pool[k] = tmp;
+        }
+        var picked = pool.slice(0, needed);
+        // 实际作品数取活动 worksCount（各分组需评作品数之和与它保持一致）
+        var curAct = activityById(amActivityId);
+        var totalWorks = curAct ? (curAct.worksCount || 0) : 0;
+        // 每组需评作品数：均匀分配（前几组可稍多），总和与实际作品数一致
+        var base = Math.floor(totalWorks / groupCount);
+        var remainder = totalWorks % groupCount;
+        // 分组：每组 perGroup 位评委，共 groupCount 组
+        var groups = [];
+        for (var g = 0; g < groupCount; g++) {
+          var groupJudges = picked.slice(g * perGroup, g * perGroup + perGroup);
+          groups.push({
+            groupNo: g + 1,
+            workCount: base + (g < remainder ? 1 : 0),
+            judges: groupJudges.map(function (j) {
+              return { judgeId: j.id, judgeName: j.name, judgeAccount: j.account || '', weight: j.weight || '' };
+            }),
+          });
+        }
+        judgeDrawResult = { round: amRound, groups: groups };
+        // 渲染分组结果卡片（成员徽章）
+        if (preview) {
+          preview.innerHTML =
+            '<div style="font-weight:600;color:#606266;margin-bottom:8px;">' + amRound + '分组抽取结果 · 共 ' + totalWorks + ' 份作品，需评作品数合计 ' + totalWorks + ' 份：</div>' +
+            '<div style="display:flex;flex-direction:column;gap:8px;">' +
+            groups.map(function (gr) {
+              return (
+                '<div class="draw-group-card">' +
+                '<div class="draw-group-head">第 ' + gr.groupNo + ' 组 · 需评 ' + gr.workCount + ' 份作品</div>' +
+                '<div>' +
+                gr.judges.map(function (j) {
+                  return '<span class="draw-judge-tag">' + esc(j.judgeName) + ' · ' + esc(j.judgeAccount || '—') + '</span>';
+                }).join(' ') +
+                '</div>' +
+                '</div>'
+              );
+            }).join('') +
+            '</div>';
+        }
+        if (btn) btn.removeAttribute('disabled');
+        Proto.showToast('已完成' + amRound + '分组抽取，点击「确定分配」生效');
+      }, 600);
+    });
+
+    // 评委分配弹窗：确定分配（写入 reviewGroups[actId][round]，完成评委分配）
+    Proto.registerAction('judge-confirm', function () {
+      if (!judgeDrawResult || !judgeDrawResult.groups || !judgeDrawResult.groups.length) {
+        Proto.showToast('请先点击「进行分组抽取」');
+        return;
+      }
+      // 扁平化为每行一个评委（分组 / 评委名称 / 评委账号 / 需评作品数）
+      var rows = [];
+      judgeDrawResult.groups.forEach(function (g) {
+        g.judges.forEach(function (j) {
+          rows.push({ groupNo: g.groupNo, judgeId: j.judgeId, judgeName: j.judgeName, judgeAccount: j.judgeAccount, workCount: g.workCount });
+        });
+      });
+      MDS.update('reviewGroups', function (map) {
+        var next = Object.assign({}, map || {});
+        var actGroups = Object.assign({}, next[amActivityId] || {});
+        actGroups[judgeDrawResult.round] = rows;
+        next[amActivityId] = actGroups;
+        return next;
+      });
+      Proto.closeDialog('judgeAssignDialog');
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast(judgeDrawResult.round + '评委分配完成');
+    });
+
+    // 归档阶段：发布评审结果（需确认）
+    Proto.registerAction('am-publish-result', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      var a = activityById(id);
+      if (!confirm('确定发布「' + (a ? a.title : '') + '」的评审结果吗？\n发布后活动进入归档阶段，教师端可查看获奖公示。')) return;
+      MDS.update('activities', function (arr) {
+        return arr.map(function (x) { return x.id === id ? Object.assign({}, x, { resultStatus: 'published' }) : x; });
+      });
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('评审结果已发布，活动进入归档');
+    });
+
+    // 归档阶段：归档（需确认）
+    Proto.registerAction('am-archive', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      var a = activityById(id);
+      if (!confirm('确定将「' + (a ? a.title : '') + '」归档吗？\n归档后活动进入历史归档，可查看与导出全量数据。')) return;
+      MDS.update('activities', function (arr) {
+        return arr.map(function (x) { return x.id === id ? Object.assign({}, x, { resultStatus: 'archived' }) : x; });
+      });
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('活动已归档');
     });
 
     // ── 评委端：打分 ──
@@ -2799,7 +3585,7 @@ window.MedalDemo = (function () {
     registerActions();
     injectRoleFab();
     bindNotifyEvents();
-    bindReviewEvents();
+    bindManageEvents();
 
     // 入口页：显示当前角色 + 重置按钮
     var curRoleEl = document.getElementById('curRole');
@@ -2930,24 +3716,9 @@ window.MedalDemo = (function () {
         renderWorksTable();
       });
     }
-    if (document.getElementById('reviewAssignAct')) {
-      renderReviewAssign(qs('#pcPage'));
-      var raAct = document.getElementById('reviewAssignAct');
-      raAct.addEventListener('change', function () {
-        reviewAssignActivityId = Number(raAct.value);
-        renderReviewAssign(qs('#pcPage'));
-      });
-    }
-    if (document.getElementById('reviewMonitorRoot')) {
-      renderReviewMonitor(qs('#pcPage'));
-    }
-    if (document.getElementById('reviewResultAct')) {
-      renderReviewResult(qs('#pcPage'));
-      var rrAct = document.getElementById('reviewResultAct');
-      rrAct.addEventListener('change', function () {
-        reviewResultActivityId = Number(rrAct.value);
-        renderReviewResult(qs('#pcPage'));
-      });
+    if (document.getElementById('activityManageRoot')) {
+      renderActivityManage(qs('#pcPage'));
+      // 活动切换由 bindManageEvents 委托处理（change 事件）
     }
     if (document.getElementById('rankBoardPanel')) {
       renderRankGarden(qs('#pcPage'));

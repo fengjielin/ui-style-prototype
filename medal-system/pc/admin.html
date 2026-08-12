@@ -59,8 +59,8 @@
           <div id="overviewRoot"></div>
         </div>
 
-        <!-- ═════════ ② 活动列表（activity-list） ═════════ -->
-        <div class="pc-page-block" data-page-key="activity-list">
+        <!-- ═════════ ② 活动发起（activity-launch）：发起/发布活动 ═════════ -->
+        <div class="pc-page-block" data-page-key="activity-launch">
           <section class="pc-card">
             <div class="card-head"><span class="card-title">筛选条件</span></div>
             <div class="card-body">
@@ -105,9 +105,10 @@
 
           <section class="pc-card">
             <div class="card-head">
-              <span class="card-title">活动列表</span>
+              <span class="card-title">活动发起</span>
               <span class="table-count" id="actCount">共 0 条记录</span>
             </div>
+            <div style="font-size:12px;color:#909399;padding:10px 16px 0;">发布后活动进入「活动管理」报名阶段，教师可报名参加。</div>
             <div class="card-body no-padding">
               <table class="pc-table">
                 <thead>
@@ -117,7 +118,6 @@
                     <th>活动类型</th>
                     <th>报名时间</th>
                     <th>活动对象</th>
-                    <th>作品数</th>
                     <th>发布时间</th>
                     <th>状态</th>
                     <th>操作</th>
@@ -201,127 +201,12 @@
           </section>
         </div>
 
-        <!-- ═════════ ④ 评奖管理：评委分配/分批（review-assign） ═════════ -->
-        <div class="pc-page-block" data-page-key="review-assign">
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">分批配置</span></div>
-            <div class="card-body">
-              <div class="search-form">
-                <div class="search-item">
-                  <label>活动</label>
-                  <select class="pc-select" id="reviewAssignAct" style="width:240px;"></select>
-                </div>
-                <div class="search-item">
-                  <label>每批作品数</label>
-                  <input class="pc-input" id="reviewBatchSize" type="number" min="1" value="5" style="width:90px;">
-                </div>
-                <div class="search-item">
-                  <button type="button" class="pc-btn pc-btn-add" data-action="review-rebatch">自动分批</button>
-                  <button type="button" class="pc-btn pc-btn-default" data-action="review-save">保存分批</button>
-                </div>
-              </div>
-              <div style="margin-top:12px;font-size:12px;color:#909399;" id="reviewAssignHint">作品池共 0 份 · 评委自动轮询分配</div>
-            </div>
-          </section>
-
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">作品池</span><span class="table-count" id="reviewAssignCount">共 0 份作品</span></div>
-            <div class="card-body no-padding">
-              <table class="pc-table">
-                <thead>
-                  <tr>
-                    <th>作品</th>
-                    <th>教师</th>
-                    <th>作品类型</th>
-                    <th>大小</th>
-                  </tr>
-                </thead>
-                <tbody id="reviewAssignWorks"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">分批与评委分配</span></div>
-            <div class="card-body no-padding">
-              <table class="pc-table">
-                <thead>
-                  <tr>
-                    <th style="width:80px;">批次</th>
-                    <th>作品明细</th>
-                    <th style="width:80px;">作品数</th>
-                    <th style="width:230px;">分配评委</th>
-                    <th style="width:70px;">操作</th>
-                  </tr>
-                </thead>
-                <tbody id="reviewBatchTbody"></tbody>
-              </table>
-            </div>
-          </section>
+        <!-- ═════════ ④ 活动管理（activity-manage）：选择活动 → 步骤条（报名/评审/归档）→ 阶段内容 ═════════ -->
+        <div class="pc-page-block" data-page-key="activity-manage">
+          <div id="activityManageRoot"></div>
         </div>
 
-        <!-- ═════════ ⑤ 评奖管理：打分监控（review-monitor） ═════════ -->
-        <div class="pc-page-block" data-page-key="review-monitor">
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">打分进度</span><span class="table-count">评委分批打分进度看板</span></div>
-            <div class="card-body" id="reviewMonitorRoot"></div>
-          </section>
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">打分记录留痕</span></div>
-            <div class="card-body no-padding">
-              <table class="pc-table">
-                <thead>
-                  <tr>
-                    <th>活动</th>
-                    <th>作品</th>
-                    <th>评委</th>
-                    <th>三项评分</th>
-                    <th>评语</th>
-                    <th>时间</th>
-                  </tr>
-                </thead>
-                <tbody id="reviewRecordTbody"></tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-
-        <!-- ═════════ ⑥ 评奖管理：结果管理（review-result） ═════════ -->
-        <div class="pc-page-block" data-page-key="review-result">
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">筛选条件</span></div>
-            <div class="card-body">
-              <div class="search-form">
-                <div class="search-item">
-                  <label>活动</label>
-                  <select class="pc-select" id="reviewResultAct" style="width:240px;"></select>
-                </div>
-              </div>
-            </div>
-          </section>
-          <section class="pc-card">
-            <div class="card-head">
-              <span class="card-title">评奖结果</span>
-              <span class="table-count" id="reviewResultHint">总分自动计算 · 名次/奖项可手动调整</span>
-            </div>
-            <div class="card-body no-padding">
-              <table class="pc-table">
-                <thead>
-                  <tr>
-                    <th style="width:60px;">名次</th>
-                    <th>作品</th>
-                    <th>教师</th>
-                    <th style="width:100px;">评委总分</th>
-                    <th style="width:100px;">平均分</th>
-                    <th style="width:110px;">奖项</th>
-                    <th style="width:70px;">操作</th>
-                  </tr>
-                </thead>
-                <tbody id="reviewResultTbody"></tbody>
-              </table>
-            </div>
-          </section>
-        </div>
+        <!-- ═════════ ⑤⑥ 打分监控 / 结果管理 / 评委分配 已并入「活动管理」页（activity-manage）各阶段 ═════════ -->
 
         <!-- ═════════ ⑦ 园内排行榜（rank-garden） ═════════ -->
         <div class="pc-page-block" data-page-key="rank-garden">
@@ -618,6 +503,23 @@
             </select>
           </div>
           <div class="pc-form-item full-width">
+            <label>是否需要专家评审</label>
+            <div class="scope-checks">
+              <label class="scope-check"><input type="radio" name="actExpertReview" value="1" checked>是（分配专家评审）</label>
+              <label class="scope-check"><input type="radio" name="actExpertReview" value="0">否（管理员直接审核）</label>
+            </div>
+          </div>
+          <!-- 评审阶段多选：仅在「需要专家评审=是」时显示 -->
+          <div id="actReviewStageWrap">
+            <div class="pc-form-item full-width">
+              <label>评审阶段（多选）</label>
+              <div class="scope-checks">
+                <label class="scope-check"><input type="checkbox" value="初评" data-scope-group="reviewStages" checked>初评</label>
+                <label class="scope-check"><input type="checkbox" value="复评" data-scope-group="reviewStages" checked>复评</label>
+              </div>
+            </div>
+          </div>
+          <div class="pc-form-item full-width">
             <label>奖项设置</label>
             <table class="pc-table award-crud-table">
               <thead>
@@ -691,6 +593,23 @@
             </div>
           </div>
           <div class="pc-form-item full-width">
+            <label>是否需要专家评审</label>
+            <div class="scope-checks">
+              <label class="scope-check"><input type="radio" name="eActExpertReview" value="1">是（分配专家评审）</label>
+              <label class="scope-check"><input type="radio" name="eActExpertReview" value="0">否（管理员直接审核）</label>
+            </div>
+          </div>
+          <!-- 评审阶段多选：仅在「需要专家评审=是」时显示 -->
+          <div id="eActReviewStageWrap">
+            <div class="pc-form-item full-width">
+              <label>评审阶段（多选）</label>
+              <div class="scope-checks">
+                <label class="scope-check"><input type="checkbox" value="初评" data-scope-group="eReviewStages">初评</label>
+                <label class="scope-check"><input type="checkbox" value="复评" data-scope-group="eReviewStages">复评</label>
+              </div>
+            </div>
+          </div>
+          <div class="pc-form-item full-width">
             <label>奖项设置</label>
             <table class="pc-table award-crud-table">
               <thead>
@@ -738,6 +657,151 @@
         <span style="margin-right:auto;font-size:12px;color:#909399;" id="notifyCheckedCount">已选 0 位老师</span>
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="notifyDialog">取 消</button>
         <button type="button" class="pc-btn pc-btn-add" data-action="notify-send">发送通知</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 评委分配弹窗（评审阶段「评委分配」：分组数 / 每组评委数 / 分组抽取 / 确定分配） ══════════════════ -->
+  <div class="mask-layer" id="judgeAssignDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="judgeAssignTitle">评委分配</div>
+      <div class="dialog-body">
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>分组数</label>
+            <input class="pc-input" id="judgeGroupCount" type="number" min="1" value="2" placeholder="请输入分组数">
+          </div>
+          <div class="pc-form-item">
+            <label>每组评委数</label>
+            <input class="pc-input" id="judgePerGroup" type="number" min="1" value="1" placeholder="请输入每组评委数">
+          </div>
+        </form>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+          <button type="button" class="pc-btn pc-btn-add" data-action="judge-draw">进行分组抽取</button>
+          <span style="font-size:12px;color:#909399;">系统自动抽取评委并分配需评作品</span>
+        </div>
+        <div id="judgeDrawPreview" style="margin-top:12px;font-size:13px;color:#606266;line-height:1.8;"></div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="judgeAssignDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="judge-confirm">确定分配</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 报名详情弹窗（报名/归档阶段「查看详情」：展示报名者上传的作品） ══════════════════ -->
+  <div class="mask-layer" id="signupDetailDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="signupDetailTitle">报名详情</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="signupDetailMeta"></div>
+        <div id="signupDetailBody"></div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="signupDetailDialog">关 闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 评分详情弹窗（归档阶段「查看评分详情」：每位评委评分情况） ══════════════════ -->
+  <div class="mask-layer" id="scoreDetailDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="scoreDetailTitle">评分详情</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="scoreDetailMeta"></div>
+        <div style="max-height:320px;overflow-y:auto;border:1px solid var(--pc-border-card);border-radius:6px;">
+          <table class="pc-table">
+            <thead><tr><th>评委</th><th>评分阶段</th><th>三项评分</th><th>评语</th><th>时间</th></tr></thead>
+            <tbody id="scoreDetailTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="scoreDetailDialog">关 闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 设置奖项等级弹窗（归档阶段「设置奖项等级」：自定义奖项名称及名次范围） ══════════════════ -->
+  <div class="mask-layer" id="awardConfigDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="awardConfigTitle">设置奖项等级</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;">自定义奖项等级的名称及获奖名次范围。</div>
+        <table class="pc-table">
+          <thead><tr><th>奖项名称</th><th style="width:150px;">名次范围</th><th style="width:100px;">操作</th></tr></thead>
+          <tbody id="awardConfigTbody"></tbody>
+        </table>
+        <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="ac-add" style="margin-top:8px;">＋ 添加奖项等级</button>
+        <div style="margin-top:10px;font-size:12px;color:#909399;">名次范围示例：1-3 表示第 1 至 3 名获得该奖项</div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="awardConfigDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="ac-save">保 存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 调整名次弹窗（归档阶段「调整名次」：手动调整获奖名次） ══════════════════ -->
+  <div class="mask-layer" id="rankAdjustDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="rankAdjustTitle">调整名次</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="rankAdjustMeta"></div>
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>当前名次</label>
+            <div id="rankAdjustCurrent" style="font-size:14px;font-weight:600;"></div>
+          </div>
+          <div class="pc-form-item">
+            <label>调整至名次</label>
+            <input class="pc-input" id="rankAdjustNew" type="number" min="1" placeholder="请输入新名次">
+          </div>
+        </form>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="rankAdjustDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="rank-save">确 定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 管理员审核退回弹窗（评审阶段·非专家评审「审核退回」：标注退回原因） ══════════════════ -->
+  <div class="mask-layer" id="adminRejectDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="adminRejectTitle">审核退回</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="adminRejectMeta"></div>
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item full-width">
+            <label>退回原因<span class="required">*</span></label>
+            <textarea class="pc-input" id="adminRejectReason" rows="3" placeholder="请填写退回原因" style="height:auto;min-height:72px;resize:vertical;"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="adminRejectDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="admin-reject-save">确定退回</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 打分权重配置弹窗（评审阶段「打分权重配置」：添加指标项并设置权重） ══════════════════ -->
+  <div class="mask-layer" id="weightConfigDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="weightConfigTitle">打分权重配置</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;">配置打分指标项及权重占比，可添加一个或多个指标项，权重合计需为 100%。</div>
+        <table class="pc-table">
+          <thead><tr><th>指标名称</th><th style="width:150px;">权重 %</th><th style="width:100px;">操作</th></tr></thead>
+          <tbody id="weightConfigTbody"></tbody>
+        </table>
+        <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="wc-add" style="margin-top:8px;">＋ 添加指标项</button>
+        <div style="margin-top:10px;font-size:13px;color:#606266;" id="weightConfigHint"></div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="weightConfigDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="wc-save">保 存</button>
       </div>
     </div>
   </div>
