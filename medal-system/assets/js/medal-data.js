@@ -466,13 +466,10 @@ window.MDS = (function () {
       { id: 3, name: '大一班', head: '王强', students: 33, registeredParents: 31, activeMembers: 25 },
     ],
 
-    /* 系统基础配置（结算日可配置，需求文档 6.4） */
+    /* 系统基础配置 */
     sysConfig: {
       semester: '2025-2026 第二学期',
       year: '2026 年度',
-      settleDay: '每月最后一日',
-      rankRefresh: '实时（精确到分钟）',
-      bonusDate: '次月 5 日',
     },
 
     /* 操作日志 */
