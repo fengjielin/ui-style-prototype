@@ -55,6 +55,88 @@ window.MedalDemo = (function () {
     return window.__medalRole || 'admin';
   }
 
+  /* ═══════════════════════ 电子奖状：变量 / 背景预设 / 渲染工具 ═══════════════════════ */
+
+  /* 奖状模板可用变量（占位符用中文标签，便于用户理解） */
+  var CERT_VARIABLES = [
+    { key: '{{教师姓名}}', label: '教师姓名' },
+    { key: '{{活动名称}}', label: '活动名称' },
+    { key: '{{奖项等级}}', label: '奖项等级' },
+    { key: '{{名次}}', label: '名次' },
+    { key: '{{班级}}', label: '班级' },
+    { key: '{{幼儿园}}', label: '幼儿园' },
+    { key: '{{获奖日期}}', label: '获奖日期' },
+  ];
+
+  /* 预设背景（有序列表：key + 中文名 + CSS 背景） */
+  var CERT_BG_PRESETS = [
+    { key: 'red-gold', label: '红金渐变', css: 'linear-gradient(135deg,#fff3e0,#ffe0b2,#fff8e1)' },
+    { key: 'blue-gold', label: '蓝金渐变', css: 'linear-gradient(135deg,#e3f2fd,#bbdefb,#fff8e1)' },
+    { key: 'green-gold', label: '绿金渐变', css: 'linear-gradient(135deg,#e8f5e9,#c8e6c9,#fff8e1)' },
+    { key: 'plain-white', label: '纯白', css: '#ffffff' },
+  ];
+
+  /* 预设键 → CSS 背景（找不到回退首个预设） */
+  function certBgCss(key) {
+    for (var i = 0; i < CERT_BG_PRESETS.length; i++) {
+      if (CERT_BG_PRESETS[i].key === key) return CERT_BG_PRESETS[i].css;
+    }
+    return CERT_BG_PRESETS[0].css;
+  }
+
+  /* 预设键 → 中文名 */
+  function certBgLabel(key) {
+    for (var i = 0; i < CERT_BG_PRESETS.length; i++) {
+      if (CERT_BG_PRESETS[i].key === key) return CERT_BG_PRESETS[i].label;
+    }
+    return CERT_BG_PRESETS[0].label;
+  }
+
+  function certTemplateById(id) {
+    var num = Number(id);
+    return (MDS.get('certTemplates') || []).filter(function (t) { return t.id === num; })[0] || null;
+  }
+
+  /* 生成奖状模板下拉选项（含「不绑定」空项） */
+  function certTemplateOptions() {
+    var templates = MDS.get('certTemplates') || [];
+    var opts = ['<option value="">不绑定</option>'];
+    templates.forEach(function (t) {
+      opts.push('<option value="' + t.id + '">' + esc(t.name) + '</option>');
+    });
+    return opts.join('');
+  }
+
+  /* 背景 → 内联样式：image 用 background-image:url；preset 用 certBgCss */
+  function certBgStyle(tpl) {
+    if (tpl && tpl.backgroundType === 'image' && tpl.background) {
+      return 'background-image:url(' + tpl.background + ');background-size:cover;background-position:center;';
+    }
+    return 'background:' + certBgCss(tpl && tpl.background) + ';';
+  }
+
+  /* 内容渲染：esc 后按占位符替换为已 esc 值，\n → <br> */
+  function renderCertText(content, map) {
+    var html = esc(content || '');
+    Object.keys(map || {}).forEach(function (k) {
+      html = html.split(k).join(esc(map[k]));
+    });
+    return html.replace(/\n/g, '<br>');
+  }
+
+  /* 变量取值（activity + 单个报名项 → 占位符映射） */
+  function certVarMap(act, item) {
+    return {
+      '{{教师姓名}}': item.name,
+      '{{活动名称}}': act.title,
+      '{{奖项等级}}': item.awardName || '参与奖',
+      '{{名次}}': item.rank != null ? '第' + item.rank + '名' : '—',
+      '{{班级}}': item.className,
+      '{{幼儿园}}': item.kindergarten,
+      '{{获奖日期}}': todayStr(),
+    };
+  }
+
   /* ═══════════════════════ 角色切换浮动按钮 / 面板（复用 demo.css 类） ═══════════════════════ */
 
   function injectRoleFab() {
@@ -344,6 +426,7 @@ window.MedalDemo = (function () {
     'bonus-semester': renderBonusSemester,
     'user-teacher': renderUserTeacher,
     'judge-scoring': renderJudgeTasks,
+    'cert-template': renderCertTemplate,
   };
 
   /* 渲染内容区：真实页切换对应内容块，其余显示建设中占位 */
@@ -1306,9 +1389,8 @@ window.MedalDemo = (function () {
         : ' <span style="color:#e6a23c;">应合计 100%（当前 ' + total + '%）</span>');
   }
 
-  /* ── 归档阶段：评审结果列表（综合评分 + 名次 + 奖项等级 + 查看详情/评分详情） ── */
-  function amRenderArchive(act) {
-    if (!act) return '';
+  /* 归档结果组装：报名 + 作品 + 综合评分 → 排序 → 名次 → 奖项（结果页与电子奖状共用的单一数据源） */
+  function buildArchiveItems(act) {
     var list = signupListForActivity(act);
     var works = worksForActivityId(act.id);
     var awards = awardConfigForAct(act);
@@ -1333,14 +1415,27 @@ window.MedalDemo = (function () {
       it.autoRank = it.score !== null ? autoRank : null;
       it.rank = it.score !== null ? (rankOverrides[it.s.name] || it.autoRank) : null;
     });
+    // 奖项等级：按名次区间匹配
+    items.forEach(function (it) {
+      var awardName = '';
+      if (it.rank !== null) {
+        awards.forEach(function (a) {
+          if (it.rank >= a.rankFrom && it.rank <= a.rankTo) awardName = a.name;
+        });
+      }
+      it.awardName = awardName;
+    });
+    return items;
+  }
+
+  /* ── 归档阶段：评审结果列表（综合评分 + 名次 + 奖项等级 + 电子奖状 + 查看详情/评分详情） ── */
+  function amRenderArchive(act) {
+    if (!act) return '';
+    var items = buildArchiveItems(act);
+    // 电子奖状生成状态（会话态）：{ [actId]: { [教师名]: true } }
+    var certStatus = ((MDS.get('certStatus') || {})[act.id]) || {};
     var rows = items.length
       ? items.map(function (it) {
-          var awardName = '';
-          if (it.rank !== null) {
-            awards.forEach(function (a) {
-              if (it.rank >= a.rankFrom && it.rank <= a.rankTo) awardName = a.name;
-            });
-          }
           var s = it.s, w = it.w;
           var ops = '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-view-signup-detail" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">查看详情</button>';
           if (w) {
@@ -1349,6 +1444,9 @@ window.MedalDemo = (function () {
           if (it.rank !== null) {
             ops += '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="rank-adjust-open" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '" data-rank="' + it.rank + '">调整名次</button>';
           }
+          if (certStatus[s.name]) {
+            ops += '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="cert-view" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">查看奖状</button>';
+          }
           return (
             '<tr>' +
             '<td><strong>' + esc(s.name) + '</strong></td>' +
@@ -1356,12 +1454,13 @@ window.MedalDemo = (function () {
             '<td>' + (w ? esc(w.title) : '<span style="color:#c0c4cc;">未提交作品</span>') + '</td>' +
             '<td>' + (it.score === null ? '<span style="color:#c0c4cc;">—</span>' : '<span class="status-tag status-success">' + it.score + '</span>') + '</td>' +
             '<td>' + (it.rank === null ? '<span style="color:#c0c4cc;">—</span>' : '<strong>' + it.rank + '</strong>' + (it.rank !== it.autoRank ? '<span style="color:#e6a23c;font-size:12px;margin-left:4px;">手动</span>' : '')) + '</td>' +
-            '<td>' + (it.rank !== null && awardName ? '<span class="status-tag status-primary">' + esc(awardName) + '</span>' : '<span style="color:#c0c4cc;">—</span>') + '</td>' +
+            '<td>' + (it.rank !== null && it.awardName ? '<span class="status-tag status-primary">' + esc(it.awardName) + '</span>' : '<span style="color:#c0c4cc;">—</span>') + '</td>' +
+            '<td>' + (certStatus[s.name] ? '<span class="status-tag status-success">已生成</span>' : '<span style="color:#c0c4cc;">—</span>') + '</td>' +
             '<td class="op-col">' + ops + '</td>' +
             '</tr>'
           );
         }).join('')
-      : '<tr><td colspan="7" style="text-align:center;color:#909399;padding:40px 0;">暂无报名信息</td></tr>';
+      : '<tr><td colspan="8" style="text-align:center;color:#909399;padding:40px 0;">暂无报名信息</td></tr>';
     // 结果状态 + 发布/归档（流程完整：未发布 → 发布结果 → 归档）
     var statusBtn = '';
     if (act.resultStatus === 'pending') {
@@ -1375,18 +1474,126 @@ window.MedalDemo = (function () {
       '<div class="card-body" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">' +
       '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="ac-open">设置奖项等级</button>' +
       '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="am-calc-score">计算综合得分</button>' +
+      '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="cert-generate">🎓 生成电子奖状</button>' +
       statusBtn +
       '<button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="am-export-archive">⇩ 导出全量数据</button>' +
       '</div>' +
       '<div class="card-body no-padding">' +
       '<table class="pc-table"><thead><tr>' +
-      '<th>报名教师</th><th>班级</th><th>作品</th><th>综合评分</th><th>名次</th><th>奖项等级</th><th>操作</th>' +
+      '<th>报名教师</th><th>班级</th><th>作品</th><th>综合评分</th><th>名次</th><th>奖项等级</th><th>电子奖状</th><th>操作</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table>' +
       '</div></section>'
     );
   }
 
   /* ── 报名/评审/归档三阶段内容由 renderActivityManage 承载（见 amRenderSignup / amRenderReview / amRenderArchive） ── */
+
+  /* ═══════════════════════ PC：电子奖状模板管理 ═══════════════════════ */
+
+  /* 预览用的示例变量取值（模板编辑时展示占位符渲染效果） */
+  function certSampleMap() {
+    return {
+      '{{教师姓名}}': '张老师',
+      '{{活动名称}}': '示例活动名称',
+      '{{奖项等级}}': '一等奖',
+      '{{名次}}': '第1名',
+      '{{班级}}': '中一班',
+      '{{幼儿园}}': '童蹊幼儿园',
+      '{{获奖日期}}': todayStr(),
+    };
+  }
+
+  /* 构建单张奖状预览 HTML（背景 + 标题 + 变量替换后的内容） */
+  function buildCertPreviewHtml(tpl, map) {
+    return (
+      '<div class="cert-preview" style="' + certBgStyle(tpl) + '">' +
+      '<div class="cert-preview-inner">' +
+      '<div class="cert-preview-title">荣誉证书</div>' +
+      '<div class="cert-preview-content">' + renderCertText((tpl && tpl.content) || '', map) + '</div>' +
+      '</div>' +
+      '</div>'
+    );
+  }
+
+  /* 奖状模板列表页：模板卡片网格 */
+  function renderCertTemplate(root) {
+    var box = document.getElementById('certTemplateList');
+    if (!box) return;
+    var templates = MDS.get('certTemplates') || [];
+    if (!templates.length) {
+      box.innerHTML = '<section class="pc-card"><div class="card-body"><div class="pc-empty"><div class="empty-icon">🎓</div><div>暂无奖状模板，点击「新增奖状模板」创建</div></div></div></section>';
+      return;
+    }
+    box.innerHTML =
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">奖状模板</span><span class="table-count">共 ' + templates.length + ' 个模板</span></div>' +
+      '<div class="card-body"><div class="cert-tpl-grid">' +
+      templates.map(function (t) {
+        var bgText = t.backgroundType === 'image' ? '自定义背景图' : certBgLabel(t.background);
+        return (
+          '<div class="cert-tpl-card">' +
+          '<div class="cert-tpl-thumb">' + buildCertPreviewHtml(t, certSampleMap()) + '</div>' +
+          '<div class="cert-tpl-info">' +
+          '<div class="cert-tpl-name">' + esc(t.name) + '</div>' +
+          '<div class="cert-tpl-meta">背景：' + esc(bgText) + '</div>' +
+          '<div class="cert-tpl-ops">' +
+          '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="cert-tpl-edit" data-id="' + t.id + '">编辑</button>' +
+          '<button type="button" class="pc-btn pc-btn-delete pc-btn-sm" data-action="cert-tpl-delete" data-id="' + t.id + '">删除</button>' +
+          '</div>' +
+          '</div>' +
+          '</div>'
+        );
+      }).join('') +
+      '</div></div></section>';
+  }
+
+  /* 渲染背景预设色板（含选中态） */
+  function renderCertBgPicker(activeKey) {
+    var box = document.getElementById('certBgPresets');
+    if (!box) return;
+    box.innerHTML = CERT_BG_PRESETS.map(function (p) {
+      var isActive = p.key === activeKey ? ' is-active' : '';
+      return '<span class="cert-bg-preset' + isActive + '" data-action="cert-bg-preset" data-preset="' + p.key + '" style="background:' + p.css + ';" title="' + esc(p.label) + '"></span>';
+    }).join('');
+  }
+
+  /* 打开模板编辑弹窗：tpl 为 null 表示新增，否则编辑 */
+  function fillCertTemplateDialog(tpl) {
+    var title = document.getElementById('certTplDialogTitle');
+    if (title) title.textContent = tpl ? '编辑奖状模板' : '新增奖状模板';
+    var idInput = document.getElementById('certTplId');
+    if (idInput) idInput.value = tpl ? tpl.id : '';
+    var name = document.getElementById('certTplName');
+    if (name) name.value = tpl ? tpl.name : '';
+    var content = document.getElementById('certTplContent');
+    if (content) content.value = tpl ? tpl.content : '';
+    window.__certTplBgType = tpl ? (tpl.backgroundType || 'preset') : 'preset';
+    window.__certTplBg = tpl ? (tpl.background || CERT_BG_PRESETS[0].key) : CERT_BG_PRESETS[0].key;
+    renderCertBgPicker(window.__certTplBgType === 'preset' ? window.__certTplBg : '');
+    // 变量插入按钮
+    var chips = document.getElementById('certVarChips');
+    if (chips) {
+      chips.innerHTML = CERT_VARIABLES.map(function (v) {
+        return '<button type="button" class="cert-var-chip" data-action="cert-insert-var" data-key="' + esc(v.key) + '" title="插入变量">' + esc(v.label) + '</button>';
+      }).join('');
+    }
+    renderCertTplPreview();
+    Proto.openDialog('certTemplateDialog');
+  }
+
+  /* 模板编辑弹窗实时预览（读取当前表单值） */
+  function renderCertTplPreview() {
+    var box = document.getElementById('certTplPreview');
+    if (!box) return;
+    var content = (document.getElementById('certTplContent') || {}).value || '';
+    var tpl = {
+      name: (document.getElementById('certTplName') || {}).value || '奖状模板',
+      backgroundType: window.__certTplBgType,
+      background: window.__certTplBg,
+      content: content,
+    };
+    box.innerHTML = buildCertPreviewHtml(tpl, certSampleMap());
+  }
 
   /* 事件绑定（一次性：活动管理页切换活动） */
   function bindManageEvents() {
@@ -3041,6 +3248,9 @@ window.MedalDemo = (function () {
       var expertYes = document.querySelector('input[name="actExpertReview"][value="1"]');
       if (expertYes) expertYes.checked = true;
       syncReviewStageWrap('add');
+      // 奖状模板下拉：动态填充（含「不绑定」）
+      var actCertSel = document.getElementById('actCertTemplate');
+      if (actCertSel) { actCertSel.innerHTML = certTemplateOptions(); actCertSel.value = ''; }
       Proto.openDialog('actAddDialog');
     });
 
@@ -3067,6 +3277,7 @@ window.MedalDemo = (function () {
         reviewStages: (expertChecked && expertChecked.value === '0') ? [] : (readScopeChecks('reviewStages').length ? readScopeChecks('reviewStages') : ['初评', '复评']),
         awards: readAwardRows('actAwardTbody'),
         desc: (document.getElementById('actDesc') || {}).value || '',
+        certTemplateId: (function () { var v = (document.getElementById('actCertTemplate') || {}).value; return v ? Number(v) : null; })(),
         publishTime: '',
         participants: 0,
         worksCount: 0,
@@ -3097,6 +3308,9 @@ window.MedalDemo = (function () {
       // 按是否专家评审控制评审阶段多选显隐
       syncReviewStageWrap('edit');
       renderAwardRows('eActAwardTbody', a.awards);
+      // 奖状模板下拉：回填绑定
+      var eCertSel = document.getElementById('eActCertTemplate');
+      if (eCertSel) { eCertSel.innerHTML = certTemplateOptions(); eCertSel.value = a.certTemplateId ? String(a.certTemplateId) : ''; }
       document.getElementById('eActId').value = id;
       Proto.openDialog('actEditDialog');
     });
@@ -3123,6 +3337,7 @@ window.MedalDemo = (function () {
             })(),
             awards: readAwardRows('eActAwardTbody'),
             desc: (document.getElementById('eActDesc') || {}).value || a.desc,
+            certTemplateId: (function () { var v = (document.getElementById('eActCertTemplate') || {}).value; return v ? Number(v) : null; })(),
           });
         });
       });
@@ -4060,6 +4275,137 @@ window.MedalDemo = (function () {
       Proto.showToast('活动已归档');
     });
 
+    // ── 电子奖状模板：新增 / 编辑 / 删除 / 保存 ──
+    Proto.registerAction('cert-tpl-add', function () {
+      fillCertTemplateDialog(null);
+    });
+
+    Proto.registerAction('cert-tpl-edit', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      var tpl = certTemplateById(id);
+      if (tpl) fillCertTemplateDialog(tpl);
+    });
+
+    Proto.registerAction('cert-tpl-delete', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      var tpl = certTemplateById(id);
+      if (!confirm('确定删除模板「' + (tpl ? tpl.name : '') + '」吗？\n已绑定该模板的活动将不再能生成奖状。')) return;
+      MDS.update('certTemplates', function (arr) {
+        return (arr || []).filter(function (t) { return t.id !== id; });
+      });
+      renderCertTemplate();
+      Proto.showToast('已删除奖状模板');
+    });
+
+    Proto.registerAction('cert-tpl-save', function () {
+      var name = (document.getElementById('certTplName') || {}).value || '';
+      var content = (document.getElementById('certTplContent') || {}).value || '';
+      if (!name.trim()) { Proto.showToast('请填写模板名称'); return; }
+      if (!content.trim()) { Proto.showToast('请填写模板内容'); return; }
+      var id = Number((document.getElementById('certTplId') || {}).value) || null;
+      var tpl = {
+        name: name.trim(),
+        backgroundType: window.__certTplBgType || 'preset',
+        background: window.__certTplBg || CERT_BG_PRESETS[0].key,
+        content: content,
+      };
+      if (id) {
+        MDS.update('certTemplates', function (arr) {
+          return (arr || []).map(function (t) { return t.id === id ? Object.assign({}, t, tpl) : t; });
+        });
+      } else {
+        tpl.id = Date.now();
+        MDS.update('certTemplates', function (arr) {
+          return (arr || []).concat([tpl]);
+        });
+      }
+      Proto.closeDialog('certTemplateDialog');
+      renderCertTemplate();
+      Proto.showToast(id ? '模板已更新' : '已新增奖状模板');
+    });
+
+    // ── 电子奖状模板：背景预设 / 上传背景图 / 插入变量 ──
+    Proto.registerAction('cert-bg-preset', function (el) {
+      window.__certTplBgType = 'preset';
+      window.__certTplBg = el.getAttribute('data-preset');
+      renderCertBgPicker(window.__certTplBg);
+      renderCertTplPreview();
+    });
+
+    Proto.registerAction('cert-bg-upload', function () {
+      var input = document.getElementById('certBgFile');
+      if (input) input.click();
+    });
+
+    Proto.registerAction('cert-insert-var', function (el) {
+      var key = el.getAttribute('data-key');
+      var ta = document.getElementById('certTplContent');
+      if (!ta || !key) return;
+      var start = ta.selectionStart == null ? ta.value.length : ta.selectionStart;
+      var end = ta.selectionEnd == null ? ta.value.length : ta.selectionEnd;
+      ta.value = ta.value.slice(0, start) + key + ta.value.slice(end);
+      var pos = start + key.length;
+      ta.focus();
+      ta.setSelectionRange(pos, pos);
+      renderCertTplPreview();
+    });
+
+    // ── 电子奖状：生成（确认后写入会话态生成状态） / 查看 ──
+    Proto.registerAction('cert-generate', function () {
+      var act = activityById(amActivityId);
+      if (!act) return;
+      if (!certTemplateById(act.certTemplateId)) {
+        Proto.showToast('该活动未绑定奖状模板，请先在「活动发起」中绑定模板');
+        return;
+      }
+      // 只为有奖项等级（获奖）的老师生成电子奖状
+      var winners = buildArchiveItems(act).filter(function (it) { return it.awardName; });
+      if (!winners.length) { Proto.showToast('暂无可生成奖状的获奖教师'); return; }
+      if (!confirm('确定要为「' + act.title + '」的 ' + winners.length + ' 位获奖教师生成电子奖状吗？\n生成后可在下方结果列表中查看每位教师的奖状。')) return;
+      var names = {};
+      winners.forEach(function (it) { names[it.s.name] = true; });
+      MDS.update('certStatus', function (map) {
+        var next = Object.assign({}, map || {});
+        next[act.id] = Object.assign({}, next[act.id] || {}, names);
+        return next;
+      });
+      renderActivityManage(qs('#pcPage'));
+      Proto.showToast('已为 ' + winners.length + ' 位获奖教师生成电子奖状');
+    });
+
+    Proto.registerAction('cert-view', function (el) {
+      var act = activityById(Number(el.getAttribute('data-activity')));
+      var teacher = el.getAttribute('data-teacher');
+      if (!act) return;
+      var tpl = certTemplateById(act.certTemplateId);
+      var item = buildArchiveItems(act).filter(function (it) { return it.s.name === teacher; })[0];
+      if (!item) return;
+      var body = document.getElementById('certPreviewBody');
+      if (body) {
+        body.innerHTML = buildCertPreviewHtml(tpl, certVarMap(act, {
+          name: item.s.name,
+          className: item.s.className,
+          kindergarten: item.s.kindergarten,
+          rank: item.rank,
+          awardName: item.awardName,
+        }));
+      }
+      Proto.openDialog('certPreviewDialog');
+    });
+
+    // ── 电子奖状：活动发起/编辑「预览」按钮 → 弹窗预览所选模板内容 ──
+    Proto.registerAction('cert-bind-preview', function (el) {
+      var scope = el.getAttribute('data-scope') || 'add';
+      var selectId = scope === 'add' ? 'actCertTemplate' : 'eActCertTemplate';
+      var sel = document.getElementById(selectId);
+      var id = sel ? Number(sel.value) : null;
+      var tpl = id ? certTemplateById(id) : null;
+      if (!tpl) { Proto.showToast('请先选择奖状模板'); return; }
+      var body = document.getElementById('certPreviewBody');
+      if (body) body.innerHTML = buildCertPreviewHtml(tpl, certSampleMap());
+      Proto.openDialog('certPreviewDialog');
+    });
+
     // ── 评委端：打分 ──
     Proto.registerAction('judge-open', function (el) {
       var id = Number(el.getAttribute('data-id'));
@@ -4479,6 +4825,26 @@ window.MedalDemo = (function () {
     }
     if (document.getElementById('medalTeacherTbody')) {
       renderTeacherTable();
+    }
+    // 电子奖状模板页
+    if (document.getElementById('certTemplateList')) {
+      renderCertTemplate(qs('#pcPage'));
+    }
+    // 电子奖状模板：上传背景图（FileReader 转 data URL 预览）
+    var certBgFile = document.getElementById('certBgFile');
+    if (certBgFile) {
+      certBgFile.addEventListener('change', function () {
+        var file = certBgFile.files && certBgFile.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          window.__certTplBgType = 'image';
+          window.__certTplBg = e.target.result;
+          renderCertBgPicker('');
+          renderCertTplPreview();
+        };
+        reader.readAsDataURL(file);
+      });
     }
   }
 

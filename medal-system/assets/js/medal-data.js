@@ -80,13 +80,14 @@ window.MDS = (function () {
     admin: [
       { title: '首页工作台', children: [{ key: 'overview', title: '数据概览' }] },
       {
-        title: '活动管理',
+        title: '活动组织',
         children: [
           { key: 'activity-launch', title: '活动发起' },
           // 活动类型配置不做单独子菜单，由数据字典定义
           // 作品管理不做独立菜单，由活动发起「查看作品」入口进入（medal.js EXTRA_PAGES）
           // 打分监控 / 结果管理 / 活动归档并入「活动管理」页的审核 / 归档阶段（步骤条）
           { key: 'activity-manage', title: '活动管理' },
+          { key: 'cert-template', title: '奖状模板' },
         ],
       },
       {
@@ -145,6 +146,7 @@ window.MDS = (function () {
           // 作品管理不做独立菜单，由活动发起「查看作品」入口进入（medal.js EXTRA_PAGES）
           // 打分监控 / 结果管理 / 活动归档并入「活动管理」页的审核 / 归档阶段（步骤条）
           { key: 'activity-manage', title: '活动管理' },
+          { key: 'cert-template', title: '奖状模板' },
         ],
       },
       {
@@ -216,7 +218,7 @@ window.MDS = (function () {
       // stage 生命周期阶段：'' 草稿 / signup 报名 / review 审核 / archive 归档（驱动「活动管理」步骤条）
       // resultStatus 归档阶段结果状态：pending 未发布 / published 已发布 / archived 已归档
       { id: 1, title: '2026 春季论文评选大赛', type: '论文比赛', status: 'PUBLISHED', stage: 'review', publishTime: '2026-06-25', signupStart: '2026-07-01', signupEnd: '2026-08-20', targetKindergartens: ['全部幼儿园'], format: '文档/PDF', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '面向全体教师的春季教育教学论文评选，围绕教学实践总结与反思展开，鼓励一线教师沉淀教学经验。', participants: 46, worksCount: 38 },
-      { id: 2, title: '课件制作技能大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', publishTime: '2026-06-05', signupStart: '2026-06-10', signupEnd: '2026-07-15', targetKindergartens: ['童蹊幼儿园'], format: '课件/PPT/图片', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '提升教师多媒体课件制作能力，展示信息技术与课堂教学的融合成果。', participants: 32, worksCount: 32 },
+      { id: 2, title: '课件制作技能大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', publishTime: '2026-06-05', signupStart: '2026-06-10', signupEnd: '2026-07-15', targetKindergartens: ['童蹊幼儿园'], format: '课件/PPT/图片', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '提升教师多媒体课件制作能力，展示信息技术与课堂教学的融合成果。', participants: 32, worksCount: 32, certTemplateId: 1 },
       { id: 3, title: '家园互动创意活动评选', type: '朋友圈点赞比赛', status: 'PUBLISHED', stage: 'signup', publishTime: '2026-07-25', signupStart: '2026-08-01', signupEnd: '2026-09-15', targetKindergartens: ['全部幼儿园'], format: '文档/图片/压缩包', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '征集家园共育创意活动方案，促进幼儿园与家庭之间的深度互动与协作。', participants: 8, worksCount: 0 },
       { id: 4, title: '六一主题环创比赛', type: '朋友圈点赞比赛', status: 'DRAFT', stage: '', publishTime: '', signupStart: '', signupEnd: '', targetKindergartens: ['童蹊幼儿园', '阳光幼儿园'], format: '图片/压缩包', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '围绕六一儿童节主题开展班级环境创设评比，营造节日氛围、提升幼儿参与感。', participants: 0, worksCount: 0 },
       { id: 5, title: '亲子阅读打卡活动', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'published', publishTime: '2026-02-20', signupStart: '2026-03-01', signupEnd: '2026-04-30', targetKindergartens: ['全部幼儿园'], format: '文档', awards: [{ name: '一等奖', count: 5 }, { name: '二等奖', count: 8 }, { name: '三等奖', count: 12 }], desc: '以亲子共读为主题的持续阅读打卡活动，培养幼儿早期阅读习惯。', participants: 58, worksCount: 58 },
@@ -227,7 +229,7 @@ window.MDS = (function () {
       // 审核阶段：初评中 / 复评待分配
       { id: 9, title: '户外活动设计大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', expertReview: false, reviewStages: ['初评', '复评'], publishTime: '2026-07-20', signupStart: '2026-07-22', signupEnd: '2026-08-08', targetKindergartens: ['阳光幼儿园', '蓝天幼儿园'], format: '课件/压缩包', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '提升教师户外活动组织与设计能力，展示户外游戏课程化探索成果。', participants: 20, worksCount: 12 },
       // 归档阶段：评审已完成，待发布结果
-      { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'pending', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'], format: '文档', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，初评复评均已完成，待发布评审结果。', participants: 30, worksCount: 30 },
+      { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'pending', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'], format: '文档', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，初评复评均已完成，待发布评审结果。', participants: 30, worksCount: 30, certTemplateId: 1 },
     ],
 
     /* 活动类型字典（可配置，多层级） */
@@ -629,9 +631,35 @@ window.MDS = (function () {
       { id: 'n4', title: '【奖金】7 月奖金清单已生成', desc: '7 月月度奖金清单已生成，请查看发放明细……', time: '08-02 10:15', from: '财务', read: true },
       { id: 'n5', title: '【活动】春季论文大赛截止提醒', desc: '2026 春季论文评选大赛将于 8 月 20 日截止提交……', time: '08-10 14:30', from: '管理员', read: false },
     ],
+
+    /* 电子奖状模板：背景（预设/上传图）+ 模板内容（含 {{变量}} 占位）+ 绑定到活动 */
+    /* backgroundType：preset 预设样式 / image 上传背景图（background 存 data URL） */
+    certTemplates: [
+      {
+        id: 1,
+        name: '荣誉奖状 · 红金经典',
+        backgroundType: 'preset',
+        background: 'red-gold',
+        content: '兹授予 {{教师姓名}} 老师\n在「{{活动名称}}」活动中\n荣获 {{奖项等级}}\n特发此状，以资鼓励。\n{{幼儿园}} · {{获奖日期}}',
+      },
+      {
+        id: 2,
+        name: '荣誉证书 · 蓝金典雅',
+        backgroundType: 'preset',
+        background: 'blue-gold',
+        content: '{{教师姓名}}（{{班级}}）\n在「{{活动名称}}」中表现优异\n荣获 {{奖项等级}}\n{{幼儿园}} · {{获奖日期}}',
+      },
+      {
+        id: 3,
+        name: '优秀教师证书 · 简约白',
+        backgroundType: 'preset',
+        background: 'plain-white',
+        content: '恭喜 {{教师姓名}} 老师\n于「{{活动名称}}」\n获得 {{奖项等级}}\n{{获奖日期}}',
+      },
+    ],
   };
 
-  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activitySchemes', 'bonusGradients'];
+  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activitySchemes', 'bonusGradients', 'certTemplates'];
 
   /* ────────────────────────── PC 端界面状态（可持久化，重置时恢复默认） ────────────────────────── */
   var UI_DEFAULTS = {
@@ -719,6 +747,14 @@ window.MDS = (function () {
             a.awards = parseAwardStr(a.award);
             delete a.award;
             migrated = true;
+          }
+          // 电子奖状模板绑定：旧缓存活动缺 certTemplateId 时，按 id 从 mock 种子补齐
+          if (a.certTemplateId == null) {
+            var seedAct2 = MOCK.activities.filter(function (m) { return m.id === a.id; })[0];
+            if (seedAct2 && seedAct2.certTemplateId != null) {
+              a.certTemplateId = seedAct2.certTemplateId;
+              migrated = true;
+            }
           }
         });
         if (migrated) {

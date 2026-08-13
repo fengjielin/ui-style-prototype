@@ -575,6 +575,17 @@
           </section>
         </div>
 
+        <!-- ═════════ ⑪ 电子奖状模板（cert-template）：配置奖状背景/内容/变量，活动绑定后生成 ═════════ -->
+        <div class="pc-page-block" data-page-key="cert-template">
+          <section class="pc-card">
+            <div class="card-body" style="display:flex;align-items:center;gap:12px;">
+              <button type="button" class="pc-btn pc-btn-add" data-action="cert-tpl-add">＋ 新增奖状模板</button>
+              <span style="font-size:12px;color:#909399;">配置奖状背景、模板内容与模板变量；活动发起时绑定模板后，在活动结果中生成电子奖状。</span>
+            </div>
+          </section>
+          <div id="certTemplateList"></div>
+        </div>
+
       </div><!-- /#pcPage -->
 
       <!-- ── 其他菜单占位内容容器 ── -->
@@ -646,6 +657,13 @@
                 <label class="scope-check"><input type="checkbox" value="初评" data-scope-group="reviewStages" checked>初评</label>
                 <label class="scope-check"><input type="checkbox" value="复评" data-scope-group="reviewStages" checked>复评</label>
               </div>
+            </div>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>奖状模板</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <select class="pc-select" id="actCertTemplate" style="flex:1;"></select>
+              <button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="cert-bind-preview" data-scope="add">预览</button>
             </div>
           </div>
           <div class="pc-form-item full-width">
@@ -736,6 +754,13 @@
                 <label class="scope-check"><input type="checkbox" value="初评" data-scope-group="eReviewStages">初评</label>
                 <label class="scope-check"><input type="checkbox" value="复评" data-scope-group="eReviewStages">复评</label>
               </div>
+            </div>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>奖状模板</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <select class="pc-select" id="eActCertTemplate" style="flex:1;"></select>
+              <button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="cert-bind-preview" data-scope="edit">预览</button>
             </div>
           </div>
           <div class="pc-form-item full-width">
@@ -1224,6 +1249,56 @@
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="mtEditDialog">取 消</button>
         <button type="button" class="pc-btn pc-btn-add" data-action="teacher-save-edit">确 定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 电子奖状模板编辑弹窗（配置背景/内容/变量） ══════════════════ -->
+  <div class="mask-layer" id="certTemplateDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="certTplDialogTitle">新增奖状模板</div>
+      <input type="hidden" id="certTplId">
+      <div class="dialog-body">
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item full-width">
+            <label>模板名称<span class="required">*</span></label>
+            <input class="pc-input" id="certTplName" placeholder="请输入模板名称">
+          </div>
+          <div class="pc-form-item full-width">
+            <label>奖状背景</label>
+            <div class="cert-bg-preset-grid" id="certBgPresets"></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+              <button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="cert-bg-upload">🖼 上传背景图</button>
+              <input type="file" id="certBgFile" accept="image/*" style="display:none;">
+              <span style="font-size:12px;color:#909399;">选择预设色板或上传自定义背景图</span>
+            </div>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>模板内容<span class="required">*</span></label>
+            <div class="cert-var-chips" id="certVarChips"></div>
+            <textarea class="pc-input" id="certTplContent" rows="6" placeholder="输入奖状内容，点击上方变量按钮插入变量（如 {{教师姓名}}）" style="height:auto;min-height:120px;resize:vertical;font-family:inherit;"></textarea>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>实时预览</label>
+            <div id="certTplPreview"></div>
+          </div>
+        </form>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="certTemplateDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="cert-tpl-save">保 存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 电子奖状预览弹窗（活动结果「查看奖状」） ══════════════════ -->
+  <div class="mask-layer" id="certPreviewDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head">电子奖状预览</div>
+      <div class="dialog-body" id="certPreviewBody"></div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="certPreviewDialog">关 闭</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="show-toast" data-toast="演示功能：下载/保存奖状">下载奖状</button>
       </div>
     </div>
   </div>
