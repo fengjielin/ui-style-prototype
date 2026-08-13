@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * 童蹊积分勋章激励体系 · 原型演示系统 页面渲染 + 业务交互（window.MedalDemo）
+ * 童蹊社区-原型 · 原型演示系统 页面渲染 + 业务交互（window.MedalDemo）
  * 依赖：medal-data.js（window.MDS）、prototype.js（window.Proto）
  * 用途：
  *   - 角色解析（URL 参数 > localStorage > 默认 admin）
