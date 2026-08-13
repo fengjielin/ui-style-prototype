@@ -56,10 +56,11 @@ window.MDS = (function () {
   var ROLE_KEYS = ['admin', 'principal', 'teacher', 'judge', 'parent'];
 
   /* ────────────────────────── 移动端 tabBar（勋章不再是独立 tab，入口全走首页卡片；选中金黄 #f9ca24） ────────────────────────── */
-  /* 教师/园长：首页 + 我的（我的不可点击，仅展示，disabled=true）；家长：首页 + 活动 + 我的（家长简版） */
+  /* 教师：首页 + 消息 + 我的；园长：首页 + 我的；家长：首页 + 活动 + 我的（我的仅教师端 disabled 展示） */
   var TAB_BARS = {
     teacher: [
       { key: 'home', text: '首页', icon: '⌂', href: 'home.html' },
+      { key: 'notice', text: '消息', icon: '✉', href: 'notice.html' },
       { key: 'mine', text: '我的', icon: '◉', href: 'mine.html', disabled: true },
     ],
     principal: [
@@ -94,8 +95,8 @@ window.MDS = (function () {
       {
         title: '排行榜',
         children: [
-          { key: 'rank-garden', title: '园内排行榜' },
           { key: 'rank-platform', title: '全平台排行榜' },
+          { key: 'rank-garden', title: '园内排行榜' },
           { key: 'rank-parent', title: '家长进度看板' },
         ],
       },
@@ -155,12 +156,11 @@ window.MDS = (function () {
         children: [{ key: 'judge-scoring', title: '评委打分' }],
       },
     ],
-    /* 教师：PC 个人工作台（教师视角：我的活动 / 园内排行 / 我的勋章 / 我的奖金） */
+    /* 教师：PC 个人工作台（教师视角：我的活动 / 园内排行 / 我的勋章） */
     teacher: [
       { title: '活动中心', children: [{ key: 'teacher-activity', title: '我的活动' }] },
       { title: '排行榜', children: [{ key: 'teacher-rank', title: '园内排行榜' }] },
       { title: '我的勋章', children: [{ key: 'teacher-medal', title: '勋章档案' }] },
-      { title: '我的奖金', children: [{ key: 'teacher-bonus', title: '奖金明细' }] },
     ],
     parent: [],
   };
@@ -547,11 +547,98 @@ window.MDS = (function () {
       ],
     },
 
-    /* 家长进度（班级维度：注册/未注册/会员激活 三色） */
+    /* 分园园内教师排名（园长端本园榜 / 管理员端全平台榜合并；rank 为园内名次，无 isMe）
+       结构：{ 园名: { total/usage/interaction/promotion/conversion: [{rank,name,className,score,trend}] } } */
+    gardenRanks: {
+      '童蹊幼儿园': {
+        total: [
+          { rank: 1, name: '张慧', className: '中一班', score: 1960, trend: 'up' },
+          { rank: 2, name: '刘洋', className: '大一班', score: 1780, trend: 'up' },
+          { rank: 3, name: '李娜', className: '小一班', score: 1690, trend: 'down' },
+          { rank: 4, name: '赵敏', className: '小一班', score: 1560, trend: 'up' },
+          { rank: 5, name: '陈晨', className: '中一班', score: 1480, trend: 'down' },
+          { rank: 6, name: '王强', className: '大一班', score: 1320, trend: 'up' },
+        ],
+        usage: [
+          { rank: 1, name: '张慧', className: '中一班', score: 520, trend: 'up' },
+          { rank: 2, name: '李娜', className: '小一班', score: 480, trend: 'flat' },
+          { rank: 3, name: '刘洋', className: '大一班', score: 470, trend: 'down' },
+          { rank: 4, name: '赵敏', className: '小一班', score: 460, trend: 'up' },
+          { rank: 5, name: '陈晨', className: '中一班', score: 440, trend: 'up' },
+          { rank: 6, name: '王强', className: '大一班', score: 420, trend: 'down' },
+        ],
+        interaction: [
+          { rank: 1, name: '张慧', className: '中一班', score: 610, trend: 'up' },
+          { rank: 2, name: '刘洋', className: '大一班', score: 540, trend: 'up' },
+          { rank: 3, name: '李娜', className: '小一班', score: 520, trend: 'flat' },
+          { rank: 4, name: '赵敏', className: '小一班', score: 500, trend: 'down' },
+          { rank: 5, name: '陈晨', className: '中一班', score: 480, trend: 'up' },
+          { rank: 6, name: '王强', className: '大一班', score: 460, trend: 'down' },
+        ],
+        promotion: [
+          { rank: 1, name: '李娜', className: '小一班', score: 420, trend: 'up' },
+          { rank: 2, name: '张慧', className: '中一班', score: 380, trend: 'up' },
+          { rank: 3, name: '陈晨', className: '中一班', score: 360, trend: 'up' },
+          { rank: 4, name: '王强', className: '大一班', score: 320, trend: 'flat' },
+          { rank: 5, name: '赵敏', className: '小一班', score: 310, trend: 'up' },
+          { rank: 6, name: '刘洋', className: '大一班', score: 260, trend: 'down' },
+        ],
+        conversion: [
+          { rank: 1, name: '张慧', className: '中一班', score: 300, trend: 'up' },
+          { rank: 2, name: '刘洋', className: '大一班', score: 280, trend: 'up' },
+          { rank: 3, name: '李娜', className: '小一班', score: 260, trend: 'flat' },
+          { rank: 4, name: '赵敏', className: '小一班', score: 240, trend: 'up' },
+          { rank: 5, name: '王强', className: '大一班', score: 190, trend: 'down' },
+          { rank: 6, name: '陈晨', className: '中一班', score: 180, trend: 'up' },
+        ],
+      },
+      '阳光幼儿园': {
+        total: [{ rank: 1, name: '周涛', className: '大一班', score: 1180, trend: 'flat' }],
+        usage: [{ rank: 1, name: '周涛', className: '大一班', score: 380, trend: 'up' }],
+        interaction: [{ rank: 1, name: '周涛', className: '大一班', score: 410, trend: 'up' }],
+        promotion: [{ rank: 1, name: '周涛', className: '大一班', score: 270, trend: 'flat' }],
+        conversion: [{ rank: 1, name: '周涛', className: '大一班', score: 200, trend: 'flat' }],
+      },
+      '蓝天幼儿园': {
+        total: [
+          { rank: 1, name: '郑爽', className: '中一班', score: 2150, trend: 'up' },
+          { rank: 2, name: '吴倩', className: '小一班', score: 1240, trend: 'down' },
+        ],
+        usage: [
+          { rank: 1, name: '郑爽', className: '中一班', score: 640, trend: 'up' },
+          { rank: 2, name: '吴倩', className: '小一班', score: 400, trend: 'flat' },
+        ],
+        interaction: [
+          { rank: 1, name: '郑爽', className: '中一班', score: 590, trend: 'up' },
+          { rank: 2, name: '吴倩', className: '小一班', score: 430, trend: 'flat' },
+        ],
+        promotion: [
+          { rank: 1, name: '郑爽', className: '中一班', score: 340, trend: 'down' },
+          { rank: 2, name: '吴倩', className: '小一班', score: 290, trend: 'down' },
+        ],
+        conversion: [
+          { rank: 1, name: '郑爽', className: '中一班', score: 380, trend: 'up' },
+          { rank: 2, name: '吴倩', className: '小一班', score: 220, trend: 'down' },
+        ],
+      },
+    },
+
+    /* 各园汇总（跨园对比 KPI + 柱状图）：teachers 在职教师数 / avgTotal 平均总分 / parents 家长总数 / registered 已注册 / members 会员激活 */
+    gardenSummary: [
+      { name: '童蹊幼儿园', teachers: 6, avgTotal: 1628, parents: 100, registered: 94, members: 76 },
+      { name: '阳光幼儿园', teachers: 1, avgTotal: 1180, parents: 60, registered: 45, members: 30 },
+      { name: '蓝天幼儿园', teachers: 2, avgTotal: 1695, parents: 66, registered: 56, members: 42 },
+    ],
+
+    /* 家长进度（班级维度：注册/未注册/会员激活 三色；kindergarten 所属园，供园长按本园 / 管理员按全园分组） */
     parentProgress: [
-      { className: '小一班', total: 32, registered: 30, active: 24 },
-      { className: '中一班', total: 35, registered: 33, active: 27 },
-      { className: '大一班', total: 33, registered: 31, active: 25 },
+      { className: '小一班', kindergarten: '童蹊幼儿园', total: 32, registered: 30, active: 24 },
+      { className: '中一班', kindergarten: '童蹊幼儿园', total: 35, registered: 33, active: 27 },
+      { className: '大一班', kindergarten: '童蹊幼儿园', total: 33, registered: 31, active: 25 },
+      { className: '阳光一班', kindergarten: '阳光幼儿园', total: 30, registered: 22, active: 15 },
+      { className: '阳光二班', kindergarten: '阳光幼儿园', total: 30, registered: 23, active: 15 },
+      { className: '蓝天一班', kindergarten: '蓝天幼儿园', total: 33, registered: 28, active: 21 },
+      { className: '蓝天二班', kindergarten: '蓝天幼儿园', total: 33, registered: 28, active: 21 },
     ],
 
     /* 教师个人多维数据看板（移动端 + PC 教师工作台统计排行，需求文档 2.3 / 统计排行描述）
@@ -736,7 +823,7 @@ window.MDS = (function () {
         name: '荣誉奖状 · 红金经典',
         backgroundType: 'preset',
         background: 'red-gold',
-        content: '兹授予 {{教师姓名}} 老师\n在「{{活动名称}}」活动中\n荣获 {{奖项等级}}\n特发此状，以资鼓励。\n{{幼儿园}} · {{获奖日期}}',
+        content: '兹授予 {{教师姓名}} 老师\n在「{{活动名称}}」活动中\n荣获 {{奖项等级}}\n{{幼儿园}} · {{获奖日期}}',
       },
       {
         id: 2,
@@ -899,7 +986,7 @@ window.MDS = (function () {
       }
       // 只读 mock（不入库）：幼儿园/活动类型/作品/门槛/榜单/首页原始内容等演示数据
       // （activitySchemes / bonusGradients 已移入 MUTABLE_KEYS 持久化，奖金梯度与活动奖金规则可编辑保留）
-      ['kindergartens', 'activityTypes', 'works', 'judges', 'monthlyScheme', 'scoreLogs', 'medalThresholds', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'parentProgress', 'teacherScores', 'homeAttendance', 'homeGrid'].forEach(function (key) {
+      ['kindergartens', 'activityTypes', 'works', 'judges', 'monthlyScheme', 'scoreLogs', 'medalThresholds', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'homeAttendance', 'homeGrid'].forEach(function (key) {
         cache[key] = JSON.parse(JSON.stringify(MOCK[key]));
       });
       var role = lsGet('role');

@@ -2,19 +2,18 @@
 <html lang="zh-CN">
 <!--
   ============================================================
-  童蹊社区-原型 · 移动端 · 园长小程序端（独立全屏页）
-  定位：园长专用小程序二级页，从首页「童蹊社区」宫格进入（不复用共享 home.html 的园长渲染）
-  内容（medal.js renderPrincipalMini 按 ?view= 参数渲染，无 Hero）：
-    ?view=rank（默认，排行榜入口）：KPI 卡 + 园内教师排位分综合榜卡片
-    ?view=parent（家长进度入口）：班级家长注册进度（三色）
-  说明：园长端不内部跨端切换，管理端/小程序端均从入口页直达
-  对应文档：2026-08-11-01 需求拆解 / 2026-08-11-02 菜单设计
+  童蹊社区-原型 · 移动端 · 消息页（tab 页，教师端）
+  入口：底部 tabBar「消息」
+  结构：顶部橙导航栏 + 活动消息列表 + 底部 tabBar
+  内容（medal.js renderMobileNotice 渲染）：发送给当前教师（张慧）的活动通知
+  交互：点击消息 → 跳转 activity-detail.html?activityId=xxx 查看并报名
+  对应文档：需求 2.4 通知/回执（教师端活动消息接收）
   ============================================================
 -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>园长排行榜 · 积分勋章</title>
+  <title>消息 · 积分勋章</title>
   <link rel="stylesheet" href="../../assets/css/tokens-mobile.css">
   <link rel="stylesheet" href="../../assets/css/common.css">
   <link rel="stylesheet" href="../../assets/css/base-mobile.css">
@@ -26,15 +25,18 @@
   <div class="mb-page">
 
     <header class="mb-navbar">
-      <span class="nav-back" data-action="navigate" data-path="home.html">‹</span>
-      <span class="nav-title" id="principalNavTitle">园内排行</span>
+      <span class="nav-back"></span>
+      <span class="nav-title">消息</span>
       <span class="nav-action" data-action="show-toast" data-toast="更多">⋯</span>
     </header>
 
-    <main class="mb-content no-tabbar">
-      <!-- 内容区（medal.js renderPrincipalMini 渲染） -->
-      <div id="principalMiniRoot"></div>
+    <main class="mb-content">
+      <div class="mb-section-title"><span class="title">活动消息</span><span class="subtitle">发给我的活动通知</span></div>
+      <!-- 活动消息列表（medal.js 渲染） -->
+      <div class="mb-list" id="mobileNoticeList"></div>
     </main>
+
+    <nav class="mb-tabbar" id="tabbarRoot"></nav>
 
   </div>
 

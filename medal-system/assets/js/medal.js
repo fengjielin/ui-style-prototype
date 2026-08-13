@@ -432,6 +432,7 @@ window.MedalDemo = (function () {
     'activity-manage': renderActivityManage,
     'activity-query': renderActivityQuery,
     'rank-garden': renderRankGarden,
+    'rank-platform': renderRankPlatform,
     'rank-parent': renderRankParent,
     'score-scheme': renderScoreScheme,
     'medal-threshold': renderMedalThreshold,
@@ -445,7 +446,6 @@ window.MedalDemo = (function () {
     'teacher-activity': renderTeacherActivity,
     'teacher-rank': renderTeacherRank,
     'teacher-medal': renderTeacherMedal,
-    'teacher-bonus': renderTeacherBonus,
   };
 
   /* 渲染内容区：真实页切换对应内容块，其余显示建设中占位 */
@@ -1872,56 +1872,133 @@ window.MedalDemo = (function () {
     });
   }
 
-  /* ═══════════════════════ PC：园内排行榜（5 榜 + TOP10 + 本人定位） ═══════════════════════ */
+  /* ═══════════════════════ PC：园内排行榜（KPI + 全园 TOP10 综合榜） ═══════════════════════ */
 
-  var RANK_BOARDS = [
-    { key: 'total', name: '综合榜' },
-    { key: 'usage', name: '平台使用榜' },
-    { key: 'interaction', name: '家园互动榜' },
-    { key: 'promotion', name: '外部推广榜' },
-    { key: 'conversion', name: '会员转化榜' },
-  ];
+  /* 切换园状态（管理员端园内排行榜；园长固定童蹊幼儿园） */
+  var gardenFilter = '童蹊幼儿园';
 
-  function renderRankGarden(root) {
-    var panel = document.getElementById('rankBoardPanel');
-    if (!panel) return;
-    var rankData = MDS.get('rankData') || {};
-    var boards = RANK_BOARDS.map(function (b) {
-      var items = rankData[b.key] || [];
-      var listHtml = items
-        .map(function (it) {
-          var isMe = it.isMe ? ' is-me' : '';
-          var badgeCls = it.rank <= 3 ? 'rk-' + it.rank : 'rk-n';
-          var trendIcon = it.trend === 'up' ? '↑' : it.trend === 'down' ? '↓' : '→';
-          var trendCls = it.trend === 'up' ? 'trend-up' : it.trend === 'down' ? 'trend-down' : 'trend-flat';
-          return (
-            '<div class="rank-item' + isMe + '">' +
-            '<span class="rank-badge ' + badgeCls + '">' + it.rank + '</span>' +
-            '<span class="rank-name">' + esc(it.name) + (isMe ? '<span class="me-tag">我</span>' : '') + '</span>' +
-            '<span class="rank-class">' + esc(it.className) + '</span>' +
-            '<span class="rank-score">' + it.score + '<span class="unit">分</span></span>' +
-            '<span class="rank-trend ' + trendCls + '">' + trendIcon + '</span>' +
-            '</div>'
-          );
-        })
-        .join('');
-      return (
-        '<div data-tab-content="' + b.key + '"' + (b.key === 'total' ? '' : ' hidden') + '>' +
-        '<div class="rank-list">' + listHtml + '</div>' +
-        '</div>'
-      );
+  /* 全平台榜：合并 3 园 gardenRanks（管理员端全平台教师榜数据源），按 score 重排园内名次 */
+  function mergeGardenRanks() {
+    var gardenRanks = MDS.get('gardenRanks') || {};
+    var boards = ['total', 'usage', 'interaction', 'promotion', 'conversion'];
+    var merged = {};
+    boards.forEach(function (b) {
+      var items = [];
+      Object.keys(gardenRanks).forEach(function (g) {
+        items = items.concat(gardenRanks[g][b] || []);
+      });
+      items.sort(function (a, b) { return b.score - a.score; });
+      items.forEach(function (it, i) { it.rank = i + 1; });
+      merged[b] = items;
     });
-    panel.innerHTML = boards.join('');
+    return merged;
+  }
+
+  /* 排位分综合榜表格（园长/管理员视角，无「本人」高亮）：data = buildRankScoreTable 返回 */
+  function rankScoreTableHtml(data) {
+    var tableRows = data.rows.map(function (r) {
+      var dimCells = data.dims.map(function (d) {
+        var cell = r[d.key];
+        return '<td><span class="score-cell">' + cell.score + '</span><span class="sub">分</span> / <span class="rank-cell' + (cell.rank <= 3 ? ' rank-top' : '') + '">第 ' + cell.rank + '</span></td>';
+      }).join('');
+      return (
+        '<tr>' +
+        '<td>' + esc(r.name) + '<div style="font-size:11px;color:#909399;">' + esc(r.className) + '</div></td>' +
+        dimCells +
+        '<td><span class="total-cell">' + r.totalPoints + '</span><span class="sub">分</span></td>' +
+        '<td><span class="rank-cell' + (r.totalRank <= 3 ? ' rank-top' : '') + '">第 ' + r.totalRank + '</span></td>' +
+        '</tr>'
+      );
+    }).join('');
+    return (
+      '<table class="pc-table rank-score-table"><thead><tr>' +
+      '<th>姓名</th>' +
+      data.dims.map(function (d) {
+        return '<th>' + esc(d.name) + '<br><span style="font-weight:400;font-size:11px;color:#909399;">得分 / 排名</span></th>';
+      }).join('') +
+      '<th>总得分</th><th>总排名</th>' +
+      '</tr></thead><tbody>' + tableRows + '</tbody></table>'
+    );
+  }
+
+  /* 园内排行榜 KPI 总览 + 管理员端「切换园」下拉 */
+  function renderGardenKpi(garden) {
+    var summary = (MDS.get('gardenSummary') || []).filter(function (g) { return g.name === garden; })[0] || {};
+    var progress = (MDS.get('parentProgress') || []).filter(function (p) { return p.kindergarten === garden; });
+    var totalP = 0, regP = 0, actP = 0;
+    progress.forEach(function (p) { totalP += p.total; regP += p.registered; actP += p.active; });
+    var regRate = totalP ? Math.round((regP / totalP) * 100) : 0;
+    var memberRate = totalP ? Math.round((actP / totalP) * 100) : 0;
+
+    var html = '<div class="stat-grid" style="margin-bottom:0;">';
+    html += statCard('在职教师', '参与活动教师', (summary.teachers || 0) + ' 人', '👩‍🏫', 'rgba(37,99,235,0.12)');
+    html += statCard('平均总分', '园内教师平均', (summary.avgTotal || 0) + ' 分', '📊', 'rgba(255,138,0,0.14)');
+    html += statCard('家长注册率', '已注册家长', regRate + '%', '📱', 'rgba(102,204,153,0.14)');
+    html += statCard('会员转化率', '会员激活', memberRate + '%', '⭐', 'rgba(245,158,11,0.14)');
+    html += '</div>';
+
+    // 管理员端：切换园下拉（园长端固定本园，不显示）
+    if (currentRole() === 'admin') {
+      var options = (MDS.get('kindergartens') || []).map(function (k) {
+        return '<option value="' + esc(k.name) + '"' + (k.name === garden ? ' selected' : '') + '>' + esc(k.name) + '</option>';
+      }).join('');
+      html += '<div class="stat-filter-bar"><span class="filter-label">切换园</span>' +
+        '<select class="filter-select" data-garden-filter>' + options + '</select></div>';
+    }
+    return html;
+  }
+
+  /* 园内排行榜：KPI 总览 + 全园 TOP10 综合榜（对齐教师端「全园 TOP10 综合榜」；园长固定本园，管理员可切换园） */
+  function renderRankGarden(root) {
+    var box = document.getElementById('rankGardenRoot');
+    if (!box) return;
+    var garden = currentRole() === 'admin' ? gardenFilter : '童蹊幼儿园';
+    var gardenRanks = MDS.get('gardenRanks') || {};
+    var rankData = gardenRanks[garden] || {};
+    var N = (rankData.total || []).length || 1;
+
+    box.innerHTML =
+      renderGardenKpi(garden) +
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">全园 TOP10 综合榜</span><span class="table-count">' + esc(garden) + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span></div>' +
+      '<div class="card-body no-padding">' + rankScoreTableHtml(buildRankScoreTable(rankData, N)) + '</div>' +
+      '</section>' +
+      '<div class="rank-rule-note">' +
+      '排位分规则：全园在职参与活动老师共 <b>' + N + '</b> 名，单维度按数值从高到低倒序排名，第 1 名得 ' + N + ' 分、第 2 名得 ' + (N - 1) + ' 分……第 ' + N + ' 名得 1 分；并列名次得相同排位分、后续名次顺延。总积分 = 平台使用 + 家园互动 + 外部推广 + 会员转化 四项排位分之和。' +
+      '</div>';
   }
 
   /* ═══════════════════════ PC：家长进度看板（三色进度） ═══════════════════════ */
+
+  function parentProgressRow(p) {
+    var regPct = Math.round((p.registered / p.total) * 100);
+    var actPct = Math.round((p.active / p.total) * 100);
+    var unregPct = 100 - regPct;
+    return (
+      '<div class="parent-progress-row">' +
+      '<span class="row-class">' + esc(p.className) + '</span>' +
+      '<div style="flex:1;">' +
+      '<div class="progress-tri">' +
+      '<span class="seg seg-registered" style="width:' + regPct + '%"></span>' +
+      '<span class="seg seg-active" style="width:' + actPct + '%"></span>' +
+      '<span class="seg seg-unregistered" style="width:' + unregPct + '%"></span>' +
+      '</div>' +
+      '</div>' +
+      '<span class="row-nums">已注册 ' + p.registered + ' / 激活 ' + p.active + ' / 未注册 ' + (p.total - p.registered) + '</span>' +
+      '</div>'
+    );
+  }
 
   function renderRankParent(root) {
     var box = document.getElementById('parentProgressRoot');
     if (!box) return;
     var progress = MDS.get('parentProgress') || [];
+    var isAdmin = currentRole() === 'admin';
+    // 园长只看本园（童蹊），管理员看全园并按园分组
+    var list = isAdmin ? progress : progress.filter(function (p) { return p.kindergarten === '童蹊幼儿园'; });
+
     var totalAll = 0, regAll = 0, actAll = 0;
-    progress.forEach(function (p) {
+    list.forEach(function (p) {
       totalAll += p.total;
       regAll += p.registered;
       actAll += p.active;
@@ -1943,26 +2020,89 @@ window.MedalDemo = (function () {
     html += '<span class="lg-item"><span class="lg-dot" style="background:#d1d5db;"></span>未注册</span>';
     html += '</div>';
 
-    // 班级进度行
-    progress.forEach(function (p) {
-      var regPct = Math.round((p.registered / p.total) * 100);
-      var actPct = Math.round((p.active / p.total) * 100);
-      var unregPct = 100 - regPct;
-      html +=
-        '<div class="parent-progress-row">' +
-        '<span class="row-class">' + esc(p.className) + '</span>' +
-        '<div style="flex:1;">' +
-        '<div class="progress-tri">' +
-        '<span class="seg seg-registered" style="width:' + regPct + '%"></span>' +
-        '<span class="seg seg-active" style="width:' + actPct + '%"></span>' +
-        '<span class="seg seg-unregistered" style="width:' + unregPct + '%"></span>' +
-        '</div>' +
-        '</div>' +
-        '<span class="row-nums">已注册 ' + p.registered + ' / 激活 ' + p.active + ' / 未注册 ' + (p.total - p.registered) + '</span>' +
-        '</div>';
-    });
+    if (isAdmin) {
+      // 管理员端：按园分组
+      (MDS.get('kindergartens') || []).forEach(function (g) {
+        var gardenList = list.filter(function (p) { return p.kindergarten === g.name; });
+        if (!gardenList.length) return;
+        html += '<div class="garden-group-title">' + esc(g.name) + '</div>';
+        gardenList.forEach(function (p) { html += parentProgressRow(p); });
+      });
+    } else {
+      list.forEach(function (p) { html += parentProgressRow(p); });
+    }
 
     box.innerHTML = html;
+  }
+
+  /* ═══════════════════════ PC：全平台排行榜（管理员端） ═══════════════════════ */
+
+  function initGardenCompareChart(summary) {
+    if (typeof echarts === 'undefined') return;
+    var el = document.getElementById('gardenCompareChart');
+    if (!el) return;
+    var chart = echarts.init(el);
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { left: 46, right: 16, top: 20, bottom: 40 },
+      xAxis: {
+        type: 'category', data: summary.map(function (g) { return g.name; }),
+        axisLine: { lineStyle: { color: '#e5e7eb' } }, axisTick: { show: false }, axisLabel: { color: '#909399' },
+      },
+      yAxis: {
+        type: 'value', name: '分', nameTextStyle: { color: '#909399' },
+        splitLine: { lineStyle: { color: '#ebeef5' } }, axisLabel: { color: '#909399' },
+      },
+      series: [
+        {
+          name: '平均总分', type: 'bar', barMaxWidth: 48,
+          data: summary.map(function (g) { return g.avgTotal; }),
+          itemStyle: { color: '#ff8a00' },
+          label: { show: true, position: 'top', color: '#303133' },
+        },
+      ],
+    });
+  }
+
+  function renderRankPlatform(root) {
+    var box = document.getElementById('rankPlatformRoot');
+    if (!box) return;
+    var summary = MDS.get('gardenSummary') || [];
+    var totalTeachers = 0, totalReg = 0, totalMem = 0;
+    summary.forEach(function (g) { totalTeachers += g.teachers; totalReg += g.registered; totalMem += g.members; });
+
+    var html = '';
+    // KPI 总览
+    html += '<div class="stat-grid" style="margin-bottom:0;">';
+    html += statCard('幼儿园', '平台园所总数', summary.length + ' 所', '🏫', 'rgba(37,99,235,0.12)');
+    html += statCard('在职教师', '参与活动教师', totalTeachers + ' 人', '👩‍🏫', 'rgba(102,204,153,0.14)');
+    html += statCard('家长注册', '已注册家长', totalReg + ' 人', '📱', 'rgba(255,138,0,0.14)');
+    html += statCard('会员激活', '会员总数', totalMem + ' 人', '⭐', 'rgba(245,158,11,0.14)');
+    html += '</div>';
+
+    // 跨园对比
+    html += '<section class="pc-card">';
+    html += '<div class="card-head"><span class="card-title">跨园对比</span><span class="table-count">平均总分 / 在职教师 / 家长转化</span></div>';
+    html += '<div class="card-body">';
+    html += '<div class="chart-echarts" id="gardenCompareChart" style="height:260px;"></div>';
+    html += '<table class="pc-table" style="margin-top:12px;"><thead><tr><th>幼儿园</th><th>在职教师</th><th>平均总分</th><th>家长注册</th><th>会员激活</th><th>注册率</th></tr></thead><tbody>';
+    summary.forEach(function (g) {
+      var regRate = Math.round((g.registered / g.parents) * 100);
+      html += '<tr><td>' + esc(g.name) + '</td><td>' + g.teachers + ' 人</td><td>' + g.avgTotal + ' 分</td><td>' + g.registered + ' 人</td><td>' + g.members + ' 人</td><td>' + regRate + '%</td></tr>';
+    });
+    html += '</tbody></table>';
+    html += '</div></section>';
+
+    // 全平台教师排位分榜
+    var merged = mergeGardenRanks();
+    var N = (merged.total || []).length || 1;
+    html += '<section class="pc-card">';
+    html += '<div class="card-head"><span class="card-title">全平台教师排位分榜</span><span class="table-count">TOP ' + N + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span></div>';
+    html += '<div class="card-body no-padding">' + rankScoreTableHtml(buildRankScoreTable(merged, N)) + '</div>';
+    html += '</section>';
+
+    box.innerHTML = html;
+    initGardenCompareChart(summary);
   }
 
   /* ═══════════════════════ PC：积分方案管理（月度权重配置 + 活动方案 CRUD） ═══════════════════════ */
@@ -2868,6 +3008,7 @@ window.MedalDemo = (function () {
     if (path.indexOf('activity.html') >= 0) return 'activity';
     if (path.indexOf('rank.html') >= 0) return 'rank';
     if (path.indexOf('medal.html') >= 0) return 'medal';
+    if (path.indexOf('notice.html') >= 0) return 'notice';
     if (path.indexOf('mine.html') >= 0) return 'mine';
     return 'home';
   }
@@ -2947,20 +3088,14 @@ window.MedalDemo = (function () {
       // 教师：童蹊社区专区（合并原「积分勋章激励」卡 + 「积分勋章」宫格为单一区域）
       html += renderTeacherCommunity();
     } else if (role === 'principal') {
-      // 园长：勋章激励专区卡 + 勋章功能宫格
-      html += renderMedalHomeCard();
-      html += renderMedalGrid();
+      // 园长：童蹊社区专区（园内激励动态 + 排行榜/家长进度/勋章入口）
+      html += renderPrincipalCommunity();
     } else {
       // 家长简版首页（无勋章卡片）
       html += renderParentHome();
     }
 
     root.innerHTML = html;
-  }
-
-  /* 勋章激励专区卡：园长首页卡片（教师端已并入「童蹊社区」专区） */
-  function renderMedalHomeCard() {
-    return renderPrincipalMedalCard();
   }
 
   /* 教师「童蹊社区」专区：合并原「积分勋章激励」卡 + 「积分勋章」功能宫格为单一社区区域
@@ -3006,57 +3141,21 @@ window.MedalDemo = (function () {
     return html;
   }
 
-  /* 园长勋章卡：园内 TOP5 + 家长三色进度 + 待办 */
-  function renderPrincipalMedalCard() {
-    var rankData = MDS.get('rankData') || {};
-    var top5 = (rankData.total || []).slice(0, 5);
-    var progress = MDS.get('parentProgress') || [];
+  /* 园长「童蹊社区」专区：仅排行榜/家长进度入口宫格（对齐教师端结构，无激励卡） */
+  function renderPrincipalCommunity() {
     var html = '';
-    html += '<div class="mb-section-title"><span class="title">园内激励动态</span><span class="subtitle">积分勋章体系</span></div>';
-    html += '<div class="mb-card" style="padding:4px 14px;">';
-    top5.forEach(function (it) {
-      html +=
-        '<div class="mb-rank-item' + (it.isMe ? ' is-me' : '') + '">' +
-        '<span class="rank-badge ' + (it.rank <= 3 ? 'rk-' + it.rank : 'rk-n') + '" style="width:26px;height:26px;font-size:13px;">' + it.rank + '</span>' +
-        '<span class="rk-name">' + esc(it.name) + '</span><span class="rk-score">' + it.score + '</span></div>';
-    });
-    html += '<div style="border-top:1px dashed var(--mb-border-light);padding:10px 0 12px;">' +
-      '<div style="font-weight:600;font-size:14px;">家长注册进度</div>';
-    progress.slice(0, 2).forEach(function (p) {
-      var regPct = Math.round((p.registered / p.total) * 100);
-      var actPct = Math.round((p.active / p.total) * 100);
-      html +=
-        '<div style="margin-top:8px;"><div class="flex-between"><span style="font-size:12px;">' + esc(p.className) + '</span><span style="font-size:11px;color:#9ca3af;">注册率 ' + regPct + '%</span></div>' +
-        '<div class="progress-tri" style="margin-top:4px;"><span class="seg seg-registered" style="width:' + regPct + '%"></span>' +
-        '<span class="seg seg-active" style="width:' + actPct + '%"></span>' +
-        '<span class="seg seg-unregistered" style="width:' + (100 - regPct) + '%"></span></div></div>';
-    });
-    html += '</div>';
-    html += '</div>';
-
-    html += '<div class="mb-section-title" style="padding-top:10px;"><span class="title">待处理事项</span></div>';
-    html += '<div class="mb-card" style="padding:4px 0;">';
-    html += mbListRow('作品审核', '38 份作品待审核', 'activity.html');
-    html += mbListRow('评委分配', '课件大赛待分配评委', 'activity.html');
-    html += '</div>';
-    return html;
-  }
-
-  /* 园长勋章功能宫格：勋章模块入口（点击进入二级页；教师端已并入「童蹊社区」专区） */
-  function renderMedalGrid() {
+    html += '<div class="mb-section-title"><span class="title">童蹊社区</span><span class="subtitle">园内排行 · 家长进度</span></div>';
+    html += '<div class="mb-card community-card">';
+    html += '<div class="mb-grid community-grid">';
     var items = [
-      { name: '园内排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'rank.html' },
-      { name: '家长进度', icon: '👪', color: '#66cc99', bg: '#e6f9f0', path: 'rank.html' },
-      { name: '勋章档案', icon: '★', color: '#f5a623', bg: '#fff7e6', path: 'medal.html' },
-      { name: '奖金清单', icon: '💰', color: '#f59e0b', bg: '#fffbe6', path: 'mine.html' },
-      { name: '活动管理', icon: '📋', color: '#4facfe', bg: '#e6f4ff', path: 'activity.html' },
+      { name: '排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'principal.html' },
+      { name: '家长进度', icon: '👪', color: '#66cc99', bg: '#e6f9f0', path: 'principal.html?view=parent' },
     ];
-    var html = '<div class="mb-section-title"><span class="title">积分勋章</span><span class="subtitle">激励体系</span></div>';
-    html += '<div class="mb-grid-wrap" style="margin-top:0;"><div class="mb-grid">';
     items.forEach(function (it) {
       html += mbGridCell(it.name, it.icon, it.color, it.bg, it.path);
     });
-    html += '</div></div>';
+    html += '</div>';
+    html += '</div>';
     return html;
   }
 
@@ -3207,6 +3306,93 @@ window.MedalDemo = (function () {
       return;
     }
     list.innerHTML = filtered.map(function (a) { return activityCardHtml(a, isTeacher); }).join('');
+  }
+
+  /* ═══════════════════════ 移动端：消息页（活动通知） ═══════════════════════ */
+
+  /* 发送给当前教师（张慧）的活动通知列表（activityNotices 按活动分组，取 recipients 含本人） */
+  function renderMobileNotice() {
+    var root = document.getElementById('mobileNoticeList');
+    if (!root) return;
+    var activityNotices = MDS.get('activityNotices') || {};
+    var list = [];
+    Object.keys(activityNotices).forEach(function (actId) {
+      (activityNotices[actId] || []).forEach(function (n) {
+        var me = (n.recipients || []).filter(function (r) { return r.name === TEACHER_NAME; })[0];
+        if (!me) return;
+        var act = activityById(Number(actId));
+        list.push({
+          actId: Number(actId),
+          activityTitle: act ? act.title : '未知活动',
+          notice: n,
+          read: me.read,
+        });
+      });
+    });
+    if (!list.length) {
+      root.innerHTML = '<div class="mb-empty-tip">暂无活动消息</div>';
+      return;
+    }
+    root.innerHTML = list.map(function (item) {
+      return (
+        '<div class="mb-list-item' + (item.read ? '' : ' is-unread') + '" data-action="open-activity-detail" data-id="' + item.actId + '">' +
+        '<div class="item-title">' + esc(item.notice.title) + '</div>' +
+        '<div class="item-desc">' + esc(item.notice.content) + '</div>' +
+        '<div class="item-time">' + esc(item.activityTitle) + ' · ' + esc(item.notice.sendTime) + '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  /* ═══════════════════════ 移动端：活动详情页 ═══════════════════════ */
+
+  /* 活动详情页：活动信息卡 + 底部报名操作 */
+  function renderActivityDetail() {
+    var root = document.getElementById('activityDetailRoot');
+    if (!root) return;
+    var id = Number(getParam('activityId') || getParam('id'));
+    var act = activityById(id);
+    if (!act) {
+      root.innerHTML = '<div class="mb-empty-tip">活动不存在</div>';
+      return;
+    }
+    var mine = teacherSignupFor(act);
+    var done = act.resultStatus === 'published' || act.resultStatus === 'archived';
+    var awards = (act.awards || []).map(function (aw) { return aw.name + '×' + aw.count; }).join(' / ');
+    var statusText = done ? '已出结果' : act.stage === 'signup' ? '报名中' : act.stage === 'review' ? '评审中' : '已发布';
+    var statusCls = done ? 'st-done' : act.stage === 'signup' ? 'st-signup' : act.stage === 'review' ? 'st-review' : 'st-PUBLISHED';
+
+    var html = '';
+    // 活动信息卡
+    html += '<div class="mb-card" style="margin-top:12px;padding:16px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+      '<span style="font-size:17px;font-weight:700;color:#1f2937;">' + esc(act.title) + '</span>' +
+      '<span class="act-status ' + statusCls + '">' + statusText + '</span>' +
+      '</div>';
+    html += '<div style="font-size:12px;color:#9ca3af;margin-top:6px;">' + esc(act.type) + '</div>';
+    html += '<div style="font-size:13px;color:#6b7280;margin-top:12px;line-height:1.7;">' + esc(act.desc || '—') + '</div>';
+    html += '<div class="act-detail-rows">';
+    html += '<div class="adr"><span class="label">报名时间</span><span class="value">' + esc(act.signupStart || '—') + ' ~ ' + esc(act.signupEnd || '—') + '</span></div>';
+    html += '<div class="adr"><span class="label">作品格式</span><span class="value">' + esc(act.format || '—') + '</span></div>';
+    html += '<div class="adr"><span class="label">活动对象</span><span class="value">' + esc(actScopeText(act.targetKindergartens)) + '</span></div>';
+    html += '<div class="adr"><span class="label">奖项设置</span><span class="value">' + esc(awards || '—') + '</span></div>';
+    html += '</div>';
+    html += '</div>';
+
+    // 底部操作区
+    var btn = '';
+    if (done && isMyActivity(act)) {
+      btn = '<button type="button" class="mb-btn act-detail-btn" disabled>已出结果</button>';
+    } else if (act.stage === 'signup' && !mine) {
+      btn = '<button type="button" class="mb-btn act-detail-btn act-detail-primary" data-action="activity-detail-signup" data-id="' + act.id + '">立即报名</button>';
+    } else if (mine && !mine.workSubmitted) {
+      btn = '<button type="button" class="mb-btn act-detail-btn" disabled>已报名 · 待上传作品</button>';
+    } else {
+      btn = '<button type="button" class="mb-btn act-detail-btn" disabled>已提交作品</button>';
+    }
+    html += '<div class="act-detail-footer">' + btn + '</div>';
+
+    root.innerHTML = html;
   }
 
   /* 活动详情弹层：说明 + 时间 + 格式 + 对象 + 奖项 */
@@ -3529,43 +3715,62 @@ window.MedalDemo = (function () {
     return '<span class="status-tag">已发布</span>';
   }
 
-  /* 我的活动：当前教师（TEACHER_NAME）已报名/已提交/可报名的已发布活动（报名/上传作品为演示交互） */
+  /* 教师 PC 活动中心：分段状态（all 全部 / signup 待报名 / doing 进行中 / done 已出结果） */
+  var teacherActTab = 'all';
+
+  /* 我的活动：按活动流程（查看 → 报名 → 上传 → 结果）分段展示，操作闭环 */
   function renderTeacherActivity(root) {
     var box = document.getElementById('teacherActivityRoot');
     if (!box) return;
-    var activities = (MDS.get('activities') || []).filter(function (a) {
-      return a.status === 'PUBLISHED' && (isMyActivity(a) || a.stage === 'signup');
+    var activities = (MDS.get('activities') || []).filter(function (a) { return a.status === 'PUBLISHED'; });
+
+    var filtered = activities.filter(function (a) {
+      var mine = teacherSignupFor(a);
+      var done = a.resultStatus === 'published' || a.resultStatus === 'archived';
+      switch (teacherActTab) {
+        case 'signup': return a.stage === 'signup' && !mine;
+        case 'doing':
+          if (mine) return !done;
+          return a.stage === 'review' && isMyActivity(a);
+        case 'done': return done && isMyActivity(a);
+        default: return isMyActivity(a) || a.stage === 'signup';
+      }
     });
-    var html = '<section class="pc-card">' +
-      '<div class="card-head"><span class="card-title">我的活动</span><span class="table-count">共 ' + activities.length + ' 个活动</span></div>' +
-      '<div style="font-size:12px;color:#909399;padding:10px 16px 0;">展示与我相关的已发布活动；报名 / 上传作品为演示交互，结果由管理端评审后发布。</div>' +
-      '<div class="card-body no-padding">' +
-      '<table class="pc-table"><thead><tr>' +
-      '<th>活动名称</th><th>类型</th><th>报名时间</th><th>活动状态</th><th>我的参与</th><th>我的结果</th><th>操作</th>' +
+
+    var tabs = [
+      { key: 'all', name: '全部' },
+      { key: 'signup', name: '待报名' },
+      { key: 'doing', name: '进行中' },
+      { key: 'done', name: '已出结果' },
+    ];
+
+    var html = '';
+    // 分段 tab + 表格
+    html += '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">我的活动</span><span class="table-count">共 ' + filtered.length + ' 个</span></div>' +
+      '<div class="card-body" style="padding-bottom:0;">' +
+      '<div class="pc-filter-tabs">';
+    tabs.forEach(function (t) {
+      html += '<span class="pc-filter-tab' + (teacherActTab === t.key ? ' is-active' : '') + '" data-action="teacher-act-tab" data-tab-value="' + t.key + '">' + t.name + '</span>';
+    });
+    html += '</div></div>';
+    html += '<div class="card-body no-padding">';
+    html += '<table class="pc-table"><thead><tr>' +
+      '<th>活动名称</th><th>类型</th><th>报名时间</th><th>活动状态</th><th>我的参与</th><th>操作</th>' +
       '</tr></thead><tbody>';
 
-    if (!activities.length) {
-      html += '<tr><td colspan="7" style="text-align:center;color:#909399;padding:40px 0;">暂无可参与的活动</td></tr>';
+    if (!filtered.length) {
+      html += '<tr><td colspan="6" style="text-align:center;color:#909399;padding:40px 0;">暂无活动</td></tr>';
     } else {
-      activities.forEach(function (a) {
+      filtered.forEach(function (a) {
         var mine = teacherSignupFor(a);
         var done = a.resultStatus === 'published' || a.resultStatus === 'archived';
-        // 我的参与状态
         var partCell = mine
           ? (mine.workSubmitted ? '<span class="status-tag status-success">已提交作品</span>' : '<span class="status-tag status-warning">已报名 · 待上传</span>')
           : '<span style="color:#c0c4cc;">未报名</span>';
-        // 我的结果（已出结果且本人参与时，取综合评分/名次/奖项）
-        var resultCell = '<span style="color:#c0c4cc;">—</span>';
-        if (done && isMyActivity(a)) {
-          var item = buildArchiveItems(a).filter(function (it) { return it.s.name === TEACHER_NAME; })[0];
-          resultCell = item && item.rank != null
-            ? '<span class="status-tag status-primary">' + esc(item.awardName || '参与奖') + '</span><div style="font-size:12px;color:#909399;margin-top:2px;">第 ' + item.rank + ' 名 · 评分 ' + (item.score != null ? item.score : '—') + '</div>'
-            : '<span class="status-tag status-warning">未出结果</span>';
-        }
-        // 操作
         var ops = '';
         if (done && isMyActivity(a)) {
-          ops = '<span class="action-btn action-primary" data-action="show-toast" data-toast="结果详情见小程序端「活动中心 → 我的结果」">查看结果</span>';
+          ops = '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="teacher-result" data-id="' + a.id + '">查看结果</button>';
         } else if (a.stage === 'signup' && !mine) {
           ops = '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="teacher-signup" data-id="' + a.id + '">报名</button>';
         } else if (mine && !mine.workSubmitted) {
@@ -3580,13 +3785,42 @@ window.MedalDemo = (function () {
           '<td>' + esc(a.signupStart || '—') + ' ~ ' + esc(a.signupEnd || '—') + '</td>' +
           '<td>' + teacherActStatusTag(a) + '</td>' +
           '<td>' + partCell + '</td>' +
-          '<td>' + resultCell + '</td>' +
           '<td class="op-col">' + ops + '</td>' +
           '</tr>';
       });
     }
     html += '</tbody></table></div></section>';
     box.innerHTML = html;
+  }
+
+  /* PC 端「我的活动」结果弹窗：复用 buildArchiveItems 取本人评分/名次/奖项 */
+  function openTeacherResult(act) {
+    var title = document.getElementById('teacherResultTitle');
+    if (title) title.textContent = '「' + act.title + '」我的结果';
+    var body = document.getElementById('teacherResultBody');
+    if (body) {
+      var item = buildArchiveItems(act).filter(function (it) { return it.s.name === TEACHER_NAME; })[0];
+      var html = '';
+      if (!item) {
+        html = '<div class="pc-empty"><div class="empty-icon">📄</div><div>未参与该活动</div></div>';
+      } else if (!item.w) {
+        html = '<div class="pc-empty"><div class="empty-icon">📄</div><div>未提交作品</div></div>';
+      } else {
+        html += '<div class="teacher-result-hero">' +
+          '<div class="award">' + esc(item.awardName || '参与奖') + '</div>' +
+          '<div class="rank">' + (item.rank != null ? '第 ' + item.rank + ' 名' : '未获奖') + '</div>' +
+          '</div>';
+        html += '<table class="pc-table" style="margin-top:12px;"><tbody>';
+        html += '<tr><td style="width:96px;color:#909399;">作品</td><td>' + esc(item.w.title) + '</td></tr>';
+        if (item.score != null) {
+          html += '<tr><td style="color:#909399;">综合评分</td><td><b>' + item.score + '</b></td></tr>';
+        }
+        html += '<tr><td style="color:#909399;">奖项等级</td><td>' + esc(item.awardName || '—') + '</td></tr>';
+        html += '</tbody></table>';
+      }
+      body.innerHTML = html;
+    }
+    Proto.openDialog('teacherResultDialog');
   }
 
   /* ═══════════════════════ 教师 PC 工作台：统计排行（需求 1-5） ═══════════════════════ */
@@ -3881,9 +4115,9 @@ window.MedalDemo = (function () {
   }
 
   /* ── C. 园内排名情况：我的排位分 + 综合榜（由 rankData 4 榜单推导排位分） ── */
-  function buildRankScoreTable() {
-    var rankData = MDS.get('rankData') || {};
-    var N = rankScoreN();
+  function buildRankScoreTable(rankData, N) {
+    rankData = rankData || MDS.get('rankData') || {};
+    N = N || rankScoreN();
     var dims = [
       { key: 'usage', name: '平台使用' },
       { key: 'interaction', name: '家园互动' },
@@ -4030,11 +4264,19 @@ window.MedalDemo = (function () {
     }, 0);
   });
 
-  /* 维度筛选（活动/时间）：select 走 change 事件委托（data-action 为 click 委托，不适用于下拉），
-     更新筛选状态后仅 setOption 重绘该维度图表（PC 与移动端实例同步更新） */
+  /* 下拉 change 事件委托（data-action 为 click 委托，不适用于下拉）：
+     ① 切换园（管理员端园内排行榜）；② 维度筛选（活动/时间），仅 setOption 重绘该维度图表 */
   document.addEventListener('change', function (e) {
     var el = e && e.target;
-    if (!el || !el.getAttribute || el.getAttribute('data-stat-filter') === null) return;
+    if (!el || !el.getAttribute) return;
+    // 切换园
+    if (el.getAttribute('data-garden-filter') !== null) {
+      gardenFilter = el.value;
+      renderRankGarden();
+      return;
+    }
+    // 维度筛选
+    if (el.getAttribute('data-stat-filter') === null) return;
     var dim = el.getAttribute('data-dim');
     statFilterState[dim] = el.value;
     var opt = buildDimChartOption(dim);
@@ -4073,83 +4315,72 @@ window.MedalDemo = (function () {
     }).join('');
   }
 
-  /* 我的奖金明细：月度奖金 + 期末汇总（仅当前教师） */
-  function renderTeacherBonus(root) {
-    var box = document.getElementById('teacherBonusRoot');
-    if (!box) return;
-    var monthly = (MDS.get('monthlyBonus') || []).filter(function (b) { return b.teacher === TEACHER_NAME; });
-    var semester = (MDS.get('semesterBonus') || []).filter(function (b) { return b.teacher === TEACHER_NAME; });
-
-    var html = '';
-    // 月度奖金
-    html += '<section class="pc-card"><div class="card-head"><span class="card-title">月度奖金</span><span class="table-count">共 ' + monthly.length + ' 条</span></div><div class="card-body no-padding">';
-    if (!monthly.length) {
-      html += '<div class="pc-empty"><div class="empty-icon">💰</div><div>暂无月度奖金记录</div></div>';
-    } else {
-      html += '<table class="pc-table"><thead><tr><th>周期</th><th>勋章</th><th>奖金</th><th>总积分</th><th>状态</th></tr></thead><tbody>' +
-        monthly.map(function (b) {
-          var levelCls = b.medal === '金' ? 'gold' : b.medal === '银' ? 'silver' : 'bronze';
-          var statusCell = b.status === '已剔除'
-            ? '<span class="excluded-tag">已剔除</span>'
-            : '<span class="status-tag status-success">正常</span>';
-          return '<tr><td>最新一期</td><td><span class="medal-badge level-' + levelCls + '"></span></td>' +
-            '<td class="bonus-amount">¥ ' + b.bonus + '</td><td>' + b.total + '</td><td>' + statusCell + '</td></tr>';
-        }).join('') +
-        '</tbody></table>';
-    }
-    html += '</div></section>';
-    // 期末汇总
-    html += '<section class="pc-card"><div class="card-head"><span class="card-title">期末汇总</span><span class="table-count">共 ' + semester.length + ' 条</span></div><div class="card-body no-padding">';
-    if (!semester.length) {
-      html += '<div class="pc-empty"><div class="empty-icon">💰</div><div>暂无期末汇总记录</div></div>';
-    } else {
-      html += '<table class="pc-table"><thead><tr><th>累计勋章</th><th>月度常规奖金</th><th>专项活动奖金</th><th>合计奖金</th></tr></thead><tbody>' +
-        semester.map(function (b) {
-          return '<tr><td>' + esc(b.medals) + '</td><td>¥ ' + b.monthBonus + '</td><td>¥ ' + b.activityBonus + '</td>' +
-            '<td class="bonus-amount">¥ ' + b.total + '</td></tr>';
-        }).join('') +
-        '</tbody></table>';
-    }
-    html += '</div></section>';
-    box.innerHTML = html;
-  }
-
   /* ═══════════════════════ 园长小程序端（principal.html） ═══════════════════════ */
 
   /* 园长小程序独立首页：仅排行榜（园内排行榜 + 家长注册进度），无工作台/奖金/勋章 */
   function renderPrincipalMini() {
     var root = document.getElementById('principalMiniRoot');
     if (!root) return;
-    var p = MDS.get('userProfile');
-    var rankData = MDS.get('rankData') || {};
-    var top10 = rankData.total || [];
-    var progress = MDS.get('parentProgress') || [];
+    var view = getParam('view') || 'rank';
+    var title = document.getElementById('principalNavTitle');
+    if (title) title.textContent = view === 'parent' ? '家长进度' : '园内排行';
+    root.innerHTML = view === 'parent' ? renderPrincipalParentView() : renderPrincipalRankView();
+  }
+
+  /* 园长排行榜视图：KPI + 园内教师排位分综合榜（无 Hero） */
+  function renderPrincipalRankView() {
+    var garden = '童蹊幼儿园';
+    var gardenRanks = MDS.get('gardenRanks') || {};
+    var rankData = gardenRanks[garden] || {};
+    var N = (rankData.total || []).length || 1;
+    var scoreData = buildRankScoreTable(rankData, N);
+    var summary = (MDS.get('gardenSummary') || []).filter(function (g) { return g.name === garden; })[0] || {};
+    var progress = (MDS.get('parentProgress') || []).filter(function (pr) { return pr.kindergarten === garden; });
+
+    var totalAll = 0, regAll = 0, actAll = 0;
+    progress.forEach(function (pr) { totalAll += pr.total; regAll += pr.registered; actAll += pr.active; });
+    var regRate = totalAll ? Math.round((regAll / totalAll) * 100) : 0;
+    var memberRate = totalAll ? Math.round((actAll / totalAll) * 100) : 0;
 
     var html = '';
-    // hero（园长身份）
-    html += '<div class="hero-card">';
-    html += '<div class="hero-top">' +
-      '<div class="hero-avatar">' + esc(p.avatar) + '</div>' +
-      '<div class="hero-info"><div class="hero-name">' + esc(p.name) + '</div>' +
-      '<div class="hero-class">' + esc(p.roleLine) + '</div>' +
-      '<div class="hero-date">园长小程序 · 园内排行榜</div></div></div>';
+    // KPI 卡（2 列）
+    html += '<div class="mb-stat-kpi-grid">';
+    html += mbKpiCard('👩‍🏫', '在职教师', (summary.teachers || 0) + ' 人');
+    html += mbKpiCard('📊', '平均总分', (summary.avgTotal || 0) + ' 分');
+    html += mbKpiCard('📱', '家长注册率', regRate + '%');
+    html += mbKpiCard('⭐', '会员转化率', memberRate + '%');
     html += '</div>';
 
-    // 园内排行榜 TOP10
-    html += '<div class="mb-section-title"><span class="title">园内排行榜</span><span class="subtitle">实时更新 · TOP10</span></div>';
-    html += '<div class="mb-card" style="padding:4px 14px;">';
-    top10.forEach(function (it) {
+    // 园内教师排位分综合榜（卡片列表）
+    html += '<div class="mb-section-title"><span class="title">园内教师排位分综合榜</span><span class="subtitle">四项排位分合计</span></div>';
+    html += '<div class="mb-card" style="padding:4px 14px;margin-bottom:16px;">';
+    scoreData.rows.forEach(function (r) {
+      var dimsHtml = scoreData.dims.map(function (d) {
+        var cell = r[d.key];
+        return '<span class="rsc-dim">' + esc(d.name) + ' <b>' + cell.score + '</b><i>#' + cell.rank + '</i></span>';
+      }).join('');
       html +=
-        '<div class="mb-rank-item' + (it.isMe ? ' is-me' : '') + '">' +
-        '<span class="rank-badge ' + (it.rank <= 3 ? 'rk-' + it.rank : 'rk-n') + '" style="width:26px;height:26px;font-size:13px;">' + it.rank + '</span>' +
-        '<span class="rk-name">' + esc(it.name) + '</span>' +
-        '<span class="rk-score">' + it.score + '</span></div>';
+        '<div class="mb-rank-score-card">' +
+        '<div class="rsc-top">' +
+        '<span class="rsc-rank' + (r.totalRank <= 3 ? ' top' : '') + '">' + r.totalRank + '</span>' +
+        '<span class="rsc-name">' + esc(r.name) + '</span>' +
+        '<span class="rsc-class">' + esc(r.className) + '</span>' +
+        '<span class="rsc-total">' + r.totalPoints + ' 分</span>' +
+        '</div>' +
+        '<div class="rsc-dims">' + dimsHtml + '</div>' +
+        '</div>';
     });
     html += '</div>';
+    return html;
+  }
 
-    // 家长注册进度
-    html += '<div class="mb-section-title"><span class="title">家长注册进度</span><span class="subtitle">三色进度</span></div>';
-    html += '<div class="mb-card" style="padding:12px 14px;">';
+  /* 园长家长进度视图：班级三色进度（无 Hero） */
+  function renderPrincipalParentView() {
+    var garden = '童蹊幼儿园';
+    var progress = (MDS.get('parentProgress') || []).filter(function (pr) { return pr.kindergarten === garden; });
+    var html = '';
+    html += '<div class="mb-section-title"><span class="title">家长注册进度</span><span class="subtitle">' + esc(garden) + '</span></div>';
+    html += '<div class="mb-card" style="padding:12px 14px;margin-bottom:16px;">';
     progress.forEach(function (pr) {
       var regPct = Math.round((pr.registered / pr.total) * 100);
       var actPct = Math.round((pr.active / pr.total) * 100);
@@ -4160,8 +4391,17 @@ window.MedalDemo = (function () {
         '<span class="seg seg-unregistered" style="width:' + (100 - regPct) + '%"></span></div></div>';
     });
     html += '</div>';
+    return html;
+  }
 
-    root.innerHTML = html;
+  /* 园长小程序 KPI 卡 */
+  function mbKpiCard(icon, title, value) {
+    return (
+      '<div class="mb-stat-kpi-card">' +
+      '<div class="kpi-title"><span>' + icon + '</span>' + esc(title) + '</div>' +
+      '<div class="kpi-value">' + value + '</div>' +
+      '</div>'
+    );
   }
 
   /* ═══════════════════════ 业务 action 注册 ═══════════════════════ */
@@ -4886,10 +5126,29 @@ window.MedalDemo = (function () {
 
     // ── 移动端：活动中心（教师端完整流程：查看 → 报名 → 上传 → 结果）──
 
-    // 打开活动详情弹层
+    // 打开活动详情页（活动中心点击活动卡 → 跳转详情页）
     Proto.registerAction('activity-detail', function (el) {
-      var act = activityById(Number(el.getAttribute('data-id')));
-      if (act) openActivityDetail(act);
+      var id = el.getAttribute('data-id');
+      if (id) location.href = 'activity-detail.html?activityId=' + id;
+    });
+
+    // 消息页点击活动消息 → 跳转对应活动详情页
+    Proto.registerAction('open-activity-detail', function (el) {
+      var id = el.getAttribute('data-id');
+      if (id) location.href = 'activity-detail.html?activityId=' + id;
+    });
+
+    // 活动详情页报名：写入 teacherSignups 并回显
+    Proto.registerAction('activity-detail-signup', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      if (!id) return;
+      MDS.update('teacherSignups', function (map) {
+        var next = Object.assign({}, map || {});
+        next[id] = { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false, workTitle: '' };
+        return next;
+      });
+      renderActivityDetail();
+      Proto.showToast('报名成功，请及时上传参赛作品');
     });
 
     // 打开报名确认弹层
@@ -4968,31 +5227,80 @@ window.MedalDemo = (function () {
       Proto.showToast('已全部标记为已读');
     });
 
-    // 教师 PC 个人工作台：报名（演示交互，写入 teacherSignups）
-    Proto.registerAction('teacher-signup', function (el) {
-      var id = Number(el.getAttribute('data-id'));
-      if (!id) return;
-      MDS.update('teacherSignups', function (map) {
-        var next = Object.assign({}, map || {});
-        next[id] = { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false, workTitle: '' };
-        return next;
-      });
-      Proto.showToast('报名成功');
+    // 教师 PC 个人工作台：活动分段切换（全部/待报名/进行中/已出结果）
+    Proto.registerAction('teacher-act-tab', function (el) {
+      teacherActTab = el.getAttribute('data-tab-value') || 'all';
       renderTeacherActivity();
     });
 
-    // 教师 PC 个人工作台：上传作品（演示交互，写入 teacherSignups）
+    // 教师 PC 个人工作台：查看我的结果（弹窗展示评分/名次/奖项）
+    Proto.registerAction('teacher-result', function (el) {
+      var act = activityById(Number(el.getAttribute('data-id')));
+      if (act) openTeacherResult(act);
+    });
+
+    // 教师 PC 个人工作台：报名（打开确认弹窗）
+    Proto.registerAction('teacher-signup', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      if (!id) return;
+      signupActivityId = id;
+      var act = activityById(id);
+      var title = document.getElementById('teacherSignupTitle');
+      if (title) title.textContent = '「' + (act ? act.title : '') + '」报名';
+      var body = document.getElementById('teacherSignupBody');
+      if (body) body.innerHTML = '<div style="font-size:14px;color:#606266;line-height:1.8;">确认报名该活动？报名后请在活动报名时间内上传参赛作品。</div>';
+      Proto.openDialog('teacherSignupDialog');
+    });
+
+    // 教师 PC 个人工作台：确认报名
+    Proto.registerAction('teacher-signup-confirm', function () {
+      if (!signupActivityId) return;
+      MDS.update('teacherSignups', function (map) {
+        var next = Object.assign({}, map || {});
+        next[signupActivityId] = { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false, workTitle: '' };
+        return next;
+      });
+      Proto.closeDialog('teacherSignupDialog');
+      renderTeacherActivity();
+      Proto.showToast('报名成功，请及时上传参赛作品');
+    });
+
+    // 教师 PC 个人工作台：上传作品（打开弹窗）
     Proto.registerAction('teacher-upload', function (el) {
       var id = Number(el.getAttribute('data-id'));
       if (!id) return;
-      MDS.update('teacherSignups', function (map) {
-        var next = Object.assign({}, map || {});
-        var cur = next[id] || { signedUp: true, signupTime: nowTimeStr() };
-        next[id] = Object.assign({}, cur, { signedUp: true, workSubmitted: true, workTitle: '（教师 PC 端上传）演示作品' });
-        return next;
-      });
-      Proto.showToast('作品已上传（演示）');
+      uploadActivityId = id;
+      var input = document.getElementById('teacherWorkTitle');
+      if (input) input.value = '';
+      var fileInput = document.getElementById('teacherWorkFile');
+      if (fileInput) fileInput.value = '';
+      Proto.openDialog('teacherUploadDialog');
+    });
+
+    // 教师 PC 个人工作台：提交作品（校验作品名称 + 附件）
+    Proto.registerAction('teacher-upload-confirm', function () {
+      var input = document.getElementById('teacherWorkTitle');
+      if (input && !input.value.trim()) {
+        Proto.showToast('请先填写作品名称');
+        return;
+      }
+      var fileInput = document.getElementById('teacherWorkFile');
+      if (fileInput && !fileInput.value) {
+        Proto.showToast('请选择要上传的作品附件');
+        return;
+      }
+      var workTitle = input ? input.value.trim() : '（教师 PC 端上传）演示作品';
+      if (uploadActivityId) {
+        MDS.update('teacherSignups', function (map) {
+          var next = Object.assign({}, map || {});
+          var cur = next[uploadActivityId] || { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false };
+          next[uploadActivityId] = Object.assign({}, cur, { signedUp: true, workSubmitted: true, workTitle: workTitle });
+          return next;
+        });
+      }
+      Proto.closeDialog('teacherUploadDialog');
       renderTeacherActivity();
+      Proto.showToast('作品提交成功');
     });
 
     // ── 活动管理：分配评委独立页面 ──
@@ -5809,6 +6117,8 @@ window.MedalDemo = (function () {
     if (document.getElementById('statRoot')) renderMobileStat();
     if (document.getElementById('medalList')) renderMobileMedal();
     if (document.getElementById('noticeList')) renderNoticeList();
+    if (document.getElementById('mobileNoticeList')) renderMobileNotice();
+    if (document.getElementById('activityDetailRoot')) renderActivityDetail();
     if (document.getElementById('tabbarRoot')) renderTabBar(currentTabKey());
     if (document.getElementById('pcMenuRoot')) renderPcShell();
     if (document.getElementById('judgeTaskList')) renderJudgeTasks();
@@ -5946,6 +6256,8 @@ window.MedalDemo = (function () {
         });
       });
     }
+    if (document.getElementById('mobileNoticeList')) renderMobileNotice();
+    if (document.getElementById('activityDetailRoot')) renderActivityDetail();
     if (document.getElementById('mineBonus')) {
       renderMobileMine();
     }
