@@ -225,7 +225,7 @@ window.MDS = (function () {
       { id: 6, title: '2025 秋季论文大赛', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'archived', publishTime: '2025-08-25', signupStart: '2025-09-01', signupEnd: '2025-10-31', targetKindergartens: ['全部幼儿园'], format: '文档/PDF', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '上一学年秋季学期教育教学论文评选，现已归档保存。', participants: 51, worksCount: 51 },
       { id: 7, title: '班级环创成果评比', type: '朋友圈点赞比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'archived', publishTime: '2025-12-30', signupStart: '2026-01-05', signupEnd: '2026-02-10', targetKindergartens: ['童蹊幼儿园'], format: '图片/压缩包', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 6 }, { name: '三等奖', count: 9 }], desc: '学期初班级环创成果集中评比，检验各班环境创设的完成质量。', participants: 28, worksCount: 28 },
       // 报名阶段：已发布待报名
-      { id: 8, title: '秋季家园共育案例评选', type: '论文比赛', status: 'PUBLISHED', stage: 'signup', publishTime: '2026-08-10', signupStart: '2026-08-10', signupEnd: '2026-09-20', targetKindergartens: ['全部幼儿园'], format: '文档/PDF', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '征集家园共育优秀案例，推动家园协作经验沉淀与分享。', participants: 15, worksCount: 0 },
+      { id: 8, title: '秋季家园共育案例评选', type: '论文比赛', status: 'PUBLISHED', stage: 'signup', publishTime: '2026-08-10', signupStart: '2026-08-10', signupEnd: '2026-09-20', targetKindergartens: ['全部幼儿园'], format: '文档/PDF', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '征集家园共育优秀案例，推动家园协作经验沉淀与分享。', participants: 15, worksCount: 0, supplementEnabled: true, workDeadline: '2026-09-25' },
       // 审核阶段：初评中 / 复评待分配
       { id: 9, title: '户外活动设计大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', expertReview: false, reviewStages: ['初评', '复评'], publishTime: '2026-07-20', signupStart: '2026-07-22', signupEnd: '2026-08-08', targetKindergartens: ['阳光幼儿园', '蓝天幼儿园'], format: '课件/压缩包', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '提升教师户外活动组织与设计能力，展示户外游戏课程化探索成果。', participants: 20, worksCount: 12 },
       // 归档阶段：评审已完成，待发布结果
@@ -755,6 +755,16 @@ window.MDS = (function () {
               a.certTemplateId = seedAct2.certTemplateId;
               migrated = true;
             }
+          }
+          // 作品提交截止（缺省=报名截止）与补交开关（缺省关闭）
+          var seedAct3 = MOCK.activities.filter(function (m) { return m.id === a.id; })[0];
+          if (a.workDeadline == null) {
+            a.workDeadline = (seedAct3 && seedAct3.workDeadline) ? seedAct3.workDeadline : (a.signupEnd || '');
+            migrated = true;
+          }
+          if (a.supplementEnabled == null) {
+            a.supplementEnabled = !!(seedAct3 && seedAct3.supplementEnabled);
+            migrated = true;
           }
         });
         if (migrated) {

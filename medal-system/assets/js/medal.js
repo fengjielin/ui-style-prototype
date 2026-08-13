@@ -1146,29 +1146,42 @@ window.MedalDemo = (function () {
   function amRenderSignup(act) {
     if (!act) return '';
     var list = signupListForActivity(act);
+    var works = worksForActivityId(act.id);
     var rows = list.length
       ? list.map(function (s) {
+          var w = works.filter(function (x) { return x.teacher === s.name; })[0];
+          // 作品上传状态：根据该教师是否已上传作品判断
+          var uploadCell = w
+            ? '<span class="status-tag status-success">已提交</span><div style="font-size:12px;color:#909399;margin-top:2px;">' + esc(w.submitTime || '') + '</div>'
+            : '<span class="status-tag status-warning">未提交</span>';
           return (
             '<tr>' +
             '<td><span class="cell-avatar">' + esc(s.name.charAt(0)) + '</span>' + esc(s.name) + '</td>' +
             '<td>' + esc(s.className) + '</td>' +
             '<td>' + esc(s.kindergarten) + '</td>' +
             '<td>' + esc(s.signupTime) + '</td>' +
+            '<td>' + uploadCell + '</td>' +
             '<td class="op-col"><button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-view-signup-detail" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">查看详情</button></td>' +
             '</tr>'
           );
         }).join('')
-      : '<tr><td colspan="5" style="text-align:center;color:#909399;padding:40px 0;">暂无报名信息</td></tr>';
+      : '<tr><td colspan="6" style="text-align:center;color:#909399;padding:40px 0;">暂无报名信息</td></tr>';
+    // 补交开关状态（活动级：截止后是否仍可补交作品）
+    var supplementOn = !!act.supplementEnabled;
     return (
       '<section class="pc-card">' +
       '<div class="card-head"><span class="card-title">报名阶段 · 报名信息</span><span class="table-count">共 ' + list.length + ' 人报名</span></div>' +
-      '<div class="card-body" style="display:flex;align-items:center;gap:14px;">' +
+      '<div class="card-body" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">' +
       '<button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="am-export-signup">⇩ 导出报名表</button>' +
       '<span style="font-size:12px;color:#909399;">导出报名信息表格（报名教师 / 班级 / 幼儿园 / 报名时间）</span>' +
       '</div>' +
+      '<div class="card-body" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding-top:0;">' +
+      '<div style="display:flex;align-items:center;gap:8px;"><label style="font-size:13px;color:#606266;">作品提交截止</label><input class="pc-input" type="date" id="amWorkDeadline" value="' + esc(act.workDeadline || '') + '" style="width:160px;"></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;"><label style="font-size:13px;color:#606266;">允许补交</label><span class="am-switch' + (supplementOn ? ' is-on' : '') + '" data-action="am-supplement-toggle" data-id="' + act.id + '" title="' + (supplementOn ? '已开启：截止后仍可补交' : '已关闭：截止后不可补交') + '"><span class="am-switch-knob"></span></span><span style="font-size:12px;color:#909399;">' + (supplementOn ? '已开启' : '已关闭') + '</span></div>' +
+      '</div>' +
       '<div class="card-body no-padding">' +
       '<table class="pc-table"><thead><tr>' +
-      '<th>报名教师</th><th>班级</th><th>幼儿园</th><th>报名时间</th><th>操作</th>' +
+      '<th>报名教师</th><th>班级</th><th>幼儿园</th><th>报名时间</th><th>作品上传状态</th><th>操作</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table>' +
       '</div></section>'
     );
@@ -1610,6 +1623,14 @@ window.MedalDemo = (function () {
       // 活动方案弹窗：切换关联活动 → 带出周期 + 更新参与对象提示
       if (t.id === 'asActivity') {
         updateAsParticipants();
+        return;
+      }
+      // 报名阶段：修改作品提交截止 → 保存到当前活动
+      if (t.id === 'amWorkDeadline') {
+        MDS.update('activities', function (arr) {
+          return arr.map(function (x) { return x.id === amActivityId ? Object.assign({}, x, { workDeadline: t.value }) : x; });
+        });
+        Proto.showToast('作品提交截止已更新');
         return;
       }
     });
@@ -3905,6 +3926,17 @@ window.MedalDemo = (function () {
       if (!a) return;
       var list = signupListForActivity(a);
       Proto.showToast('报名信息表格导出成功（共 ' + list.length + ' 条报名）');
+    });
+
+    // ── 报名阶段：补交开关（截止后是否仍可补交作品） ──
+    Proto.registerAction('am-supplement-toggle', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      MDS.update('activities', function (arr) {
+        return arr.map(function (x) {
+          return x.id === id ? Object.assign({}, x, { supplementEnabled: !x.supplementEnabled }) : x;
+        });
+      });
+      renderActivityManage(qs('#pcPage'));
     });
 
     // ── 归档阶段：导出全量数据（提示导出成功） ──
