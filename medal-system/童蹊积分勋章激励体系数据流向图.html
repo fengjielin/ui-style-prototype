@@ -674,7 +674,7 @@
     <div class="panel active" data-panel="activity" id="panel-activity">
       <div class="panel-intro">
         <h2>活动组织与评审</h2>
-        <p>平台管理员 / 园长发起活动，教师报名并上传作品，评委初评复评打分，最终公示获奖、生成电子奖状并归档。评审结果同时作为专项活动积分的输入，汇入激励闭环。</p>
+        <p>平台管理员 / 园长发起活动，教师报名并上传作品，评委打分（单次评审），最终公示获奖、生成电子奖状并归档。评审结果同时作为专项活动积分的输入，汇入激励闭环。</p>
       </div>
 
       <div class="timeline">
@@ -724,7 +724,7 @@
           <div class="stage-head">
             <span class="stage-tag">一 · 收评</span>
             <h2 class="stage-title">报名 · 上传 · 评审</h2>
-            <p class="stage-desc">活动管理按步骤条流转：报名 → 评审 → 结果。评审分两种模式：专家评审（评委分配 + 初评 / 复评）或管理员直接审核（可退回标注原因）。</p>
+            <p class="stage-desc">活动管理按步骤条流转：报名 → 评审 → 结果。评审分两种模式：专家评审（评委分配 → 打分，单次评审）或管理员直接审核（可退回标注原因）。</p>
           </div>
 
           <div class="lanes cols-3">
@@ -745,7 +745,7 @@
                 <article class="node">
                   <span class="idx">02</span>
                   <h3>评委分配 / 打分权重</h3>
-                  <p>自动抽取或手动勾选每组评委并派发作品（两种方式可选）；打分指标项权重合计 100%；非专家评审由管理员直接审核</p>
+                  <p>自动分配（分组数 + 每组评委数，系统随机抽取）或手动分配（生成分组，按组勾选评委）；打分指标项权重合计 100%</p>
                 </article>
                 <article class="node">
                   <span class="idx">03</span>
@@ -804,18 +804,19 @@
                 <article class="node">
                   <span class="idx">03</span>
                   <h3>评语留痕</h3>
-                  <p>初评 / 复评多轮，谁在何时打多少分记录留痕</p>
+                  <p>单次评审，谁在何时打多少分 + 评语记录留痕</p>
                 </article>
               </div>
             </div>
           </div>
 
-          <div class="connector">评审模式与阶段（按业务叫法）</div>
+          <div class="connector">评审模式与状态（按业务叫法）</div>
           <div class="state-row">
             <span class="state-pill">专家评审</span>
             <span class="state-pill">管理员直接审核</span>
-            <span class="state-pill">初评</span>
-            <span class="state-pill">复评</span>
+            <span class="state-pill">未开始</span>
+            <span class="state-pill">评审中</span>
+            <span class="state-pill">已结束</span>
           </div>
         </section>
 
