@@ -978,15 +978,17 @@ window.MedalDemo = (function () {
 
   /* ═══════════════════════ PC：活动管理（阶段筛选 + 统一活动列表表格：报名 / 审核 / 归档） ═══════════════════════ */
 
-  // 评委手动分配状态：分组数 + 每组勾选的评委 id（key: groupNo → [judgeId]，确定分配时写入）
+  // 评委手动分配状态：分组数 + 每组已选评委 id（key: groupNo → [judgeId]，确定分配时写入）
   var judgeGroupCount = 2;
   var judgeAssignSel = {};
 
-  /* 渲染手动分配分组（每组一个卡片，卡片内为评委勾选列表；已选评委在其他组置灰） */
+  /* 渲染手动分配分组（每组一个卡片：已选评委表格 + 「选择评委」按钮，不在页面直接铺开勾选框） */
   function renderJudgeAssignGroups() {
     var box = document.getElementById('judgeDrawPreview');
     if (!box) return;
     var judges = MDS.get('judges') || [];
+    var judgeById = {};
+    judges.forEach(function (j) { judgeById[String(j.id)] = j; });
     var curAct = activityById(amActivityId);
     var totalWorks = curAct ? (curAct.worksCount || 0) : 0;
     var base = Math.floor(totalWorks / judgeGroupCount);
@@ -995,45 +997,79 @@ window.MedalDemo = (function () {
       box.innerHTML = '<div class="pc-empty" style="padding:20px 0;">暂无可分配评委，请先在「评委管理」添加评委账号</div>';
       return;
     }
-    var html = '<div style="font-weight:600;color:#606266;margin-bottom:8px;">共 ' + totalWorks + ' 份作品，按 ' + judgeGroupCount + ' 组均匀分配；请为每组勾选评委：</div>';
+    var html = '<div style="font-weight:600;color:#606266;margin-bottom:8px;">共 ' + totalWorks + ' 份作品，按 ' + judgeGroupCount + ' 组均匀分配；请为每组选择评委：</div>';
     for (var g = 1; g <= judgeGroupCount; g++) {
       var workCount = base + (g <= remainder ? 1 : 0);
-      var checks = judges.map(function (j) {
-        var checked = (judgeAssignSel[g] || []).indexOf(String(j.id)) >= 0;
+      var ids = judgeAssignSel[g] || [];
+      var rows = ids.map(function (id) {
+        var j = judgeById[id];
         return (
-          '<label class="scope-check judge-check-item">' +
-          '<input type="checkbox" class="judge-check" data-group="' + g + '" value="' + j.id + '"' + (checked ? ' checked' : '') + '>' +
-          '<span>' + esc(j.name) + ' · ' + esc(j.account || '—') + '</span>' +
-          '</label>'
+          '<tr>' +
+          '<td><strong>' + esc(j ? j.name : '') + '</strong></td>' +
+          '<td>' + esc(j ? (j.account || '—') : '—') + '</td>' +
+          '<td class="op-col"><button type="button" class="pc-btn pc-btn-delete pc-btn-sm" data-action="judge-remove" data-group="' + g + '" data-judge="' + id + '">移除</button></td>' +
+          '</tr>'
         );
       }).join('');
+      var tableHtml = ids.length
+        ? '<table class="pc-table" style="margin-top:8px;"><thead><tr><th>评委名称</th><th>评委账号</th><th style="width:90px;">操作</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        : '<div style="color:#c0c4cc;padding:8px 0;">暂未选择评委</div>';
       html +=
         '<div class="draw-group-card" style="margin-bottom:10px;">' +
         '<div class="draw-group-head">第 ' + g + ' 组 · 需评 ' + workCount + ' 份作品' +
-        '<span id="judgeCount_' + g + '" style="font-weight:400;color:#909399;margin-left:6px;">已选 ' + (judgeAssignSel[g] || []).length + ' 位评委</span></div>' +
-        '<div class="scope-checks">' + checks + '</div>' +
+        '<span style="font-weight:400;color:#909399;margin-left:6px;">已选 ' + ids.length + ' 位评委</span></div>' +
+        tableHtml +
+        '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="judge-open-select" data-group="' + g + '" style="margin-top:8px;">＋ 选择评委</button>' +
         '</div>';
     }
     box.innerHTML = html;
+  }
+
+  /* 渲染「选择评委」弹窗：评委列表（可多选），支持按姓名筛选；本组已选预勾，其他组已选置灰 */
+  function renderJudgeSelectList() {
+    var box = document.getElementById('judgeSelectList');
+    if (!box) return;
+    var g = window.__judgeSelectGroup;
+    var judges = MDS.get('judges') || [];
+    var kw = ((document.getElementById('judgeSelectSearch') || {}).value || '').trim();
+    var checked = window.__judgeSelectChecked || {};
+    var list = judges.filter(function (j) {
+      return !kw || (j.name || '').indexOf(kw) >= 0;
+    });
+    if (!list.length) {
+      box.innerHTML = '<div class="pc-empty" style="padding:20px 0;">无匹配评委</div>';
+      return;
+    }
+    var rows = list.map(function (j) {
+      var id = String(j.id);
+      return (
+        '<tr>' +
+        '<td style="width:40px;"><input type="checkbox" class="judge-check" data-group="' + g + '" value="' + id + '"' + (checked[id] ? ' checked' : '') + '></td>' +
+        '<td><strong>' + esc(j.name) + '</strong></td>' +
+        '<td>' + esc(j.account || '—') + '</td>' +
+        '<td style="font-size:12px;color:#606266;">' + esc(j.org || '—') + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+    box.innerHTML =
+      '<table class="pc-table"><thead><tr>' +
+      '<th style="width:40px;"></th><th>评委名称</th><th>评委账号</th><th>所属机构</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
     updateJudgeCheckDisabled();
   }
 
-  /* 跨组禁用：某评委已被其他分组勾选时，在当前分组置灰不可选；同步刷新每组已选计数 */
+  /* 跨组禁用：某评委已被其他分组选择时，在当前分组的选择弹窗中置灰不可选 */
   function updateJudgeCheckDisabled() {
-    document.querySelectorAll('#judgeDrawPreview .judge-check').forEach(function (cb) {
+    document.querySelectorAll('#judgeSelectList .judge-check').forEach(function (cb) {
       var g = cb.getAttribute('data-group');
       var usedElsewhere = false;
       Object.keys(judgeAssignSel).forEach(function (k) {
         if (k !== g && (judgeAssignSel[k] || []).indexOf(cb.value) >= 0) usedElsewhere = true;
       });
       cb.disabled = usedElsewhere;
-      var item = cb.closest('.judge-check-item');
-      if (item) item.classList.toggle('is-disabled', usedElsewhere);
+      var tr = cb.closest('tr');
+      if (tr) tr.classList.toggle('is-disabled', usedElsewhere);
     });
-    for (var i = 1; i <= judgeGroupCount; i++) {
-      var cnt = document.getElementById('judgeCount_' + i);
-      if (cnt) cnt.textContent = '已选 ' + (judgeAssignSel[i] || []).length + ' 位评委';
-    }
   }
 
   function activityById(id) {
@@ -1050,26 +1086,6 @@ window.MedalDemo = (function () {
   /* 按生命周期阶段筛选活动 */
   function activitiesByStage(stage) {
     return (MDS.get('activities') || []).filter(function (a) { return a.stage === stage; });
-  }
-
-  /* 活动评审完成度（初评/复评两轮：done / total） */
-  function activityReviewProgress(act) {
-    var batches = ((MDS.get('reviewBatches') || {})[act.id]) || [];
-    var prog = { initial: { done: 0, total: 0 }, re: { done: 0, total: 0 } };
-    batches.forEach(function (b) {
-      var key = (b.round || '初评') === '复评' ? 're' : 'initial';
-      prog[key].total += b.workIds.length;
-      prog[key].done += b.done || 0;
-    });
-    return prog;
-  }
-
-  function saveReviewBatches(activityId, batches) {
-    MDS.update('reviewBatches', function (map) {
-      var next = Object.assign({}, map || {});
-      next[activityId] = batches;
-      return next;
-    });
   }
 
   /* 报名名单：由活动对象范围内在职老师派生（模拟报名数据，取活动 participants 人） */
@@ -1142,14 +1158,13 @@ window.MedalDemo = (function () {
             return (
               '<tr>' +
               '<td><strong>' + esc(r.judge) + '</strong></td>' +
-              '<td>' + (r.round ? esc(r.round) : '—') + '</td>' +
               '<td>' + esc(r.scores) + '</td>' +
               '<td style="font-size:12px;color:#606266;">' + esc(r.comment) + '</td>' +
               '<td>' + esc(r.time) + '</td>' +
               '</tr>'
             );
           }).join('')
-        : '<tr><td colspan="5" style="text-align:center;color:#909399;padding:30px 0;">暂无评分记录</td></tr>';
+        : '<tr><td colspan="4" style="text-align:center;color:#909399;padding:30px 0;">暂无评分记录</td></tr>';
     }
     Proto.openDialog('scoreDetailDialog');
   }
@@ -1158,7 +1173,6 @@ window.MedalDemo = (function () {
 
   var amActivityId = 2;    // 当前选中的活动
   var amStep = '';         // 当前查看的阶段：signup / review / archive（默认=活动当前阶段）
-  var amRound = '初评';     // 评审阶段当前 tab：初评 / 复评
 
   /* 已进入阶段流的活动（报名 / 审核 / 归档） */
   function amPhaseActivities() {
@@ -1173,15 +1187,6 @@ window.MedalDemo = (function () {
 
   // 活动阶段流转顺序：报名 → 评审 → 归档
   var STAGE_ORDER = ['signup', 'review', 'archive'];
-
-  /* 活动发起弹窗：按「是否需要专家评审」控制评审阶段多选显隐（仅专家评审时需选择） */
-  function syncReviewStageWrap(scope) {
-    var radioName = scope === 'add' ? 'actExpertReview' : 'eActExpertReview';
-    var wrapId = scope === 'add' ? 'actReviewStageWrap' : 'eActReviewStageWrap';
-    var checked = document.querySelector('input[name="' + radioName + '"]:checked');
-    var wrap = document.getElementById(wrapId);
-    if (wrap) wrap.style.display = (checked && checked.value === '1') ? '' : 'none';
-  }
 
   /* 主渲染：筛选条件（选活动）→ 步骤条 → 阶段内容 */
   function renderActivityManage(root) {
@@ -1220,7 +1225,7 @@ window.MedalDemo = (function () {
     if (!act) return '';
     var steps = [
       { key: 'signup', no: 1, title: '报名阶段', desc: '发布后教师报名' },
-      { key: 'review', no: 2, title: '活动评审', desc: '分配评委 · 初评/复评' },
+      { key: 'review', no: 2, title: '活动评审', desc: '分配评委' },
       { key: 'archive', no: 3, title: '活动结果', desc: '评审结果 · 归档' },
     ];
     var idx = STAGE_ORDER.indexOf(act.stage);
@@ -1301,37 +1306,30 @@ window.MedalDemo = (function () {
     );
   }
 
-  /* ── 评审阶段：专家评审（初评/复评 tab + 评委分配）或 管理员直接审核（可退回标注原因） ── */
+  /* ── 评审阶段：专家评审（评委分配）或 管理员直接审核（可退回标注原因） ── */
   function amRenderReview(act) {
     if (!act) return '';
     // 非专家评审：由管理员直接审核（无需分配专家，可审核退回并标注原因）
     if (act.expertReview === false) {
       return amRenderAdminReview(act);
     }
-    // 专家评审：初评/复评 tab（按活动配置的评审阶段多选）
-    var stages = (act.reviewStages && act.reviewStages.length) ? act.reviewStages : ['初评', '复评'];
-    if (stages.indexOf(amRound) < 0) amRound = stages[0];
-    var tabs = stages.map(function (r) {
-      return '<span class="pc-filter-tab' + (amRound === r ? ' is-active' : '') + '" data-action="am-switch-round" data-round="' + r + '">' + r + '</span>';
-    }).join('');
-    var groups = (((MDS.get('reviewGroups') || {})[act.id] || {})[amRound]) || [];
-    // 评分阶段状态：未开始 / 评审中 / 已结束（分配评委后控制是否开始）
-    var statusMap = ((MDS.get('reviewStageStatus') || {})[act.id]) || {};
-    var curStatus = statusMap[amRound] || 'notstarted';
+    // 专家评审：单次评委分配，无评分阶段划分
+    var groups = ((MDS.get('reviewGroups') || {})[act.id]) || [];
+    // 评审状态：未开始 / 评审中 / 已结束（分配评委后控制是否开始）
+    var curStatus = ((MDS.get('reviewStageStatus') || {})[act.id]) || 'notstarted';
     var stageCtrl = '';
     if (curStatus === 'reviewing') {
-      stageCtrl = '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="review-finish-round">结束' + amRound + '</button>';
+      stageCtrl = '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="review-finish">结束评审</button>';
     } else if (curStatus === 'finished') {
-      stageCtrl = '<span class="status-tag status-success">' + amRound + '已结束</span>';
+      stageCtrl = '<span class="status-tag status-success">已结束</span>';
     } else {
-      stageCtrl = '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="review-start-round">开始' + amRound + '</button>';
+      stageCtrl = '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="review-start">开始评审</button>';
     }
     return (
       '<section class="pc-card">' +
-      '<div class="card-head"><span class="card-title">活动评审 · ' + esc(act.title) + '</span><span class="table-count">' + amRound + ' · ' + (curStatus === 'reviewing' ? '评审中' : curStatus === 'finished' ? '已结束' : '未开始') + '</span></div>' +
+      '<div class="card-head"><span class="card-title">活动评审 · ' + esc(act.title) + '</span><span class="table-count">' + (curStatus === 'reviewing' ? '评审中' : curStatus === 'finished' ? '已结束' : '未开始') + '</span></div>' +
       '<div class="card-body">' +
       '<div class="search-form">' +
-      '<div class="search-item"><label>评分阶段</label><div class="pc-filter-tabs">' + tabs + '</div></div>' +
       '<div class="search-item">' +
       '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="wc-open">打分权重配置</button>' +
       '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="judge-open-assign">' + (groups.length ? '重新分配' : '评委分配') + '</button>' +
@@ -1339,7 +1337,7 @@ window.MedalDemo = (function () {
       '</div>' +
       '</div>' +
       '</div></section>' +
-      amRenderJudgeGroups(act, amRound)
+      amRenderJudgeGroups(act)
     );
   }
 
@@ -1388,9 +1386,9 @@ window.MedalDemo = (function () {
   }
 
   /* 已分配评委分组卡片（每个分组一个卡片，卡片内表格展示该组评委） */
-  function amRenderJudgeGroups(act, round) {
+  function amRenderJudgeGroups(act) {
     if (!act) return '';
-    var groups = (((MDS.get('reviewGroups') || {})[act.id] || {})[round]) || [];
+    var groups = ((MDS.get('reviewGroups') || {})[act.id]) || [];
     var groupMap = {};
     groups.forEach(function (g) {
       if (!groupMap[g.groupNo]) groupMap[g.groupNo] = { groupNo: g.groupNo, workCount: g.workCount, judges: [] };
@@ -1914,13 +1912,6 @@ window.MedalDemo = (function () {
         return;
       }
     });
-    // 活动发起弹窗：是否需要专家评审 → 控制评审阶段多选显隐
-    document.addEventListener('change', function (e) {
-      var t = e.target;
-      if (!t || !t.name) return;
-      if (t.name === 'actExpertReview') syncReviewStageWrap('add');
-      if (t.name === 'eActExpertReview') syncReviewStageWrap('edit');
-    });
     // 打分权重配置弹窗：指标权重输入实时刷新合计
     document.addEventListener('input', function (e) {
       var t = e.target;
@@ -1929,17 +1920,21 @@ window.MedalDemo = (function () {
         updateWeightTotal();
       }
     });
-    // 评委分配弹窗：勾选/取消评委 → 同步该组已选列表并跨组禁用（事件委托，兼容分组重绘）
+    // 选择评委弹窗：按姓名筛选评委（实时过滤列表）
+    document.addEventListener('input', function (e) {
+      var t = e.target;
+      if (t && t.id === 'judgeSelectSearch') {
+        renderJudgeSelectList();
+      }
+    });
+    // 选择评委弹窗：勾选/取消评委 → 同步临时已选集（供筛选重绘时保留勾选状态）
     document.addEventListener('change', function (e) {
       var t = e.target;
       if (!t || !t.classList || !t.classList.contains('judge-check')) return;
-      var g = t.getAttribute('data-group');
-      var ids = [];
-      document.querySelectorAll('#judgeDrawPreview .judge-check[data-group="' + g + '"]:checked').forEach(function (cb) {
-        ids.push(cb.value);
-      });
-      judgeAssignSel[g] = ids;
-      updateJudgeCheckDisabled();
+      var checked = window.__judgeSelectChecked || {};
+      if (t.checked) checked[t.value] = true;
+      else delete checked[t.value];
+      window.__judgeSelectChecked = checked;
     });
   }
 
@@ -4951,10 +4946,9 @@ window.MedalDemo = (function () {
 
     Proto.registerAction('act-add', function () {
       renderAwardRows('actAwardTbody');
-      // 默认专家评审=是，显示评审阶段多选
+      // 默认专家评审=是
       var expertYes = document.querySelector('input[name="actExpertReview"][value="1"]');
       if (expertYes) expertYes.checked = true;
-      syncReviewStageWrap('add');
       // 奖状模板下拉：动态填充（含「不绑定」）
       var actCertSel = document.getElementById('actCertTemplate');
       if (actCertSel) { actCertSel.innerHTML = certTemplateOptions(); actCertSel.value = ''; }
@@ -4979,9 +4973,8 @@ window.MedalDemo = (function () {
         signupEnd: (document.getElementById('actEnd') || {}).value || '',
         targetKindergartens: readScopeChecks('kgScope').length ? readScopeChecks('kgScope') : ['全部幼儿园'],
         format: (document.getElementById('actFormat') || {}).value || '文档',
-        // 是否专家评审；评审阶段多选仅在专家评审时有效（非专家评审则无需评审阶段）
+        // 是否专家评审
         expertReview: expertChecked ? expertChecked.value === '1' : true,
-        reviewStages: (expertChecked && expertChecked.value === '0') ? [] : (readScopeChecks('reviewStages').length ? readScopeChecks('reviewStages') : ['初评', '复评']),
         awards: readAwardRows('actAwardTbody'),
         desc: (document.getElementById('actDesc') || {}).value || '',
         certTemplateId: (function () { var v = (document.getElementById('actCertTemplate') || {}).value; return v ? Number(v) : null; })(),
@@ -5009,11 +5002,8 @@ window.MedalDemo = (function () {
         if (input) input.value = fields[fid];
       });
       fillScopeChecks('eKgScope', a.targetKindergartens);
-      fillScopeChecks('eReviewStages', a.reviewStages || ['初评', '复评']);
       var expertRadio = document.querySelector('input[name="eActExpertReview"][value="' + (a.expertReview === false ? '0' : '1') + '"]');
       if (expertRadio) expertRadio.checked = true;
-      // 按是否专家评审控制评审阶段多选显隐
-      syncReviewStageWrap('edit');
       renderAwardRows('eActAwardTbody', a.awards);
       // 奖状模板下拉：回填绑定
       var eCertSel = document.getElementById('eActCertTemplate');
@@ -5037,10 +5027,6 @@ window.MedalDemo = (function () {
             expertReview: (function () {
               var checked = document.querySelector('input[name="eActExpertReview"]:checked');
               return checked ? checked.value === '1' : (a.expertReview !== false);
-            })(),
-            reviewStages: (function () {
-              var checked = document.querySelector('input[name="eActExpertReview"]:checked');
-              return (checked && checked.value === '0') ? [] : (readScopeChecks('eReviewStages').length ? readScopeChecks('eReviewStages') : a.reviewStages);
             })(),
             awards: readAwardRows('eActAwardTbody'),
             desc: (document.getElementById('eActDesc') || {}).value || a.desc,
@@ -5773,12 +5759,6 @@ window.MedalDemo = (function () {
       Proto.showToast('已返回「' + stageText(prev) + '」');
     });
 
-    // 评审阶段：初评/复评 tab 切换
-    Proto.registerAction('am-switch-round', function (el) {
-      amRound = el.getAttribute('data-round') || '初评';
-      renderActivityManage(qs('#pcPage'));
-    });
-
     // 报名/归档阶段：查看报名详情（展示该报名者上传的作品）
     Proto.registerAction('am-view-signup-detail', function (el) {
       var act = activityById(Number(el.getAttribute('data-activity')));
@@ -6004,29 +5984,25 @@ window.MedalDemo = (function () {
       Proto.showToast('已退回「' + info.teacher + '」并标注原因');
     });
 
-    // ── 评审阶段：控制评分阶段开始 / 结束（分配评委后开始初评/复评） ──
-    Proto.registerAction('review-start-round', function () {
+    // ── 评审阶段：控制评审开始 / 结束（分配评委后开始评审） ──
+    Proto.registerAction('review-start', function () {
       MDS.update('reviewStageStatus', function (map) {
         var next = Object.assign({}, map || {});
-        var actMap = Object.assign({}, next[amActivityId] || {});
-        actMap[amRound] = 'reviewing';
-        next[amActivityId] = actMap;
+        next[amActivityId] = 'reviewing';
         return next;
       });
       renderActivityManage(qs('#pcPage'));
-      Proto.showToast(amRound + '已开始，评委可进行打分');
+      Proto.showToast('评审已开始，评委可进行打分');
     });
 
-    Proto.registerAction('review-finish-round', function () {
+    Proto.registerAction('review-finish', function () {
       MDS.update('reviewStageStatus', function (map) {
         var next = Object.assign({}, map || {});
-        var actMap = Object.assign({}, next[amActivityId] || {});
-        actMap[amRound] = 'finished';
-        next[amActivityId] = actMap;
+        next[amActivityId] = 'finished';
         return next;
       });
       renderActivityManage(qs('#pcPage'));
-      Proto.showToast(amRound + '已结束');
+      Proto.showToast('评审已结束');
     });
 
     // ── 打分权重配置弹窗（评审阶段：添加指标项并设置权重） ──
@@ -6086,14 +6062,14 @@ window.MedalDemo = (function () {
       Proto.showToast('打分权重配置已保存');
     });
 
-    // ── 评委分配弹窗（评审阶段 初评/复评 各自分配，手动勾选评委） ──
-    // 打开弹窗：预填已有分配（重新分配时展示当前分组与评委），针对当前 amRound
+    // ── 评委分配弹窗（评审阶段「评委分配」：按组选择评委） ──
+    // 打开弹窗：预填已有分配（重新分配时展示当前分组与评委）
     Proto.registerAction('judge-open-assign', function () {
       var a = activityById(amActivityId);
       var title = document.getElementById('judgeAssignTitle');
-      if (title) title.textContent = '评委分配 · ' + (a ? a.title : '') + '（' + amRound + '）';
+      if (title) title.textContent = '评委分配 · ' + (a ? a.title : '');
       // 预填已有分配：按 groupNo 聚合评委 id，供重新分配时回显
-      var existing = (((MDS.get('reviewGroups') || {})[amActivityId] || {})[amRound]) || [];
+      var existing = ((MDS.get('reviewGroups') || {})[amActivityId]) || [];
       var groupMap = {};
       existing.forEach(function (r) {
         if (!groupMap[r.groupNo]) groupMap[r.groupNo] = [];
@@ -6117,7 +6093,41 @@ window.MedalDemo = (function () {
       renderJudgeAssignGroups();
     });
 
-    // 评委分配弹窗：确定分配（校验每组均勾选评委后写入 reviewGroups[actId][round]）
+    // 评委分配弹窗：打开「选择评委」弹窗（针对某组，评委列表可多选，确定后回填到该组表格）
+    Proto.registerAction('judge-open-select', function (el) {
+      var g = el.getAttribute('data-group');
+      window.__judgeSelectGroup = g;
+      // 初始化临时已选集（从该组已选评委复制），供筛选重绘时保留勾选状态
+      var checked = {};
+      (judgeAssignSel[g] || []).forEach(function (id) { checked[id] = true; });
+      window.__judgeSelectChecked = checked;
+      var title = document.getElementById('judgeSelectTitle');
+      if (title) title.textContent = '第 ' + g + ' 组 · 选择评委';
+      var search = document.getElementById('judgeSelectSearch');
+      if (search) search.value = '';
+      renderJudgeSelectList();
+      Proto.openDialog('judgeSelectDialog');
+    });
+
+    // 选择评委弹窗：确定（把临时已选集写回该组，关闭后刷新分组表格）
+    Proto.registerAction('judge-select-confirm', function () {
+      var g = window.__judgeSelectGroup;
+      var checked = window.__judgeSelectChecked || {};
+      judgeAssignSel[g] = Object.keys(checked);
+      window.__judgeSelectChecked = {};
+      Proto.closeDialog('judgeSelectDialog');
+      renderJudgeAssignGroups();
+    });
+
+    // 评委分配弹窗：移除该组某位评委（从已选列表删除后刷新分组表格）
+    Proto.registerAction('judge-remove', function (el) {
+      var g = el.getAttribute('data-group');
+      var jid = el.getAttribute('data-judge');
+      judgeAssignSel[g] = (judgeAssignSel[g] || []).filter(function (id) { return id !== jid; });
+      renderJudgeAssignGroups();
+    });
+
+    // 评委分配弹窗：确定分配（校验每组均选择评委后写入 reviewGroups[actId]）
     Proto.registerAction('judge-confirm', function () {
       var judges = MDS.get('judges') || [];
       var judgeById = {};
@@ -6132,7 +6142,7 @@ window.MedalDemo = (function () {
       for (var g = 1; g <= judgeGroupCount; g++) {
         var ids = judgeAssignSel[g] || [];
         if (!ids.length) {
-          Proto.showToast('请为第 ' + g + ' 组勾选至少一位评委');
+          Proto.showToast('请为第 ' + g + ' 组选择至少一位评委');
           return;
         }
         var workCount = base + (g <= remainder ? 1 : 0);
@@ -6149,14 +6159,12 @@ window.MedalDemo = (function () {
       }
       MDS.update('reviewGroups', function (map) {
         var next = Object.assign({}, map || {});
-        var actGroups = Object.assign({}, next[amActivityId] || {});
-        actGroups[amRound] = rows;
-        next[amActivityId] = actGroups;
+        next[amActivityId] = rows;
         return next;
       });
       Proto.closeDialog('judgeAssignDialog');
       renderActivityManage(qs('#pcPage'));
-      Proto.showToast(amRound + '评委分配完成');
+      Proto.showToast('评委分配完成');
     });
 
     // 归档阶段：发布评审结果（需确认）

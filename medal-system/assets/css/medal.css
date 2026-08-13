@@ -1796,6 +1796,12 @@ tr.row-excluded td {
   cursor: not-allowed;
 }
 
+/* 选择评委弹窗：已被其他组选中的评委行置灰不可选 */
+#judgeSelectList tbody tr.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ═══════════════════════ PC：活动管理 · 活动步骤条（针对单个活动） ═══════════════════════ */
 
 .pc-stepper {

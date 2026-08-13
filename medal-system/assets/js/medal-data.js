@@ -204,10 +204,10 @@ window.MDS = (function () {
       { id: 7, title: '班级环创成果评比', type: '朋友圈点赞比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'archived', publishTime: '2025-12-30', signupStart: '2026-01-05', signupEnd: '2026-02-10', targetKindergartens: ['童蹊幼儿园'], format: '图片/压缩包', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 6 }, { name: '三等奖', count: 9 }], desc: '学期初班级环创成果集中评比，检验各班环境创设的完成质量。', participants: 28, worksCount: 28 },
       // 报名阶段：已发布待报名
       { id: 8, title: '秋季家园共育案例评选', type: '论文比赛', status: 'PUBLISHED', stage: 'signup', publishTime: '2026-08-10', signupStart: '2026-08-10', signupEnd: '2026-09-20', targetKindergartens: ['全部幼儿园'], format: '文档/PDF', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '征集家园共育优秀案例，推动家园协作经验沉淀与分享。', participants: 15, worksCount: 0, supplementEnabled: true, workDeadline: '2026-09-25' },
-      // 审核阶段：初评中 / 复评待分配
-      { id: 9, title: '户外活动设计大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', expertReview: false, reviewStages: ['初评', '复评'], publishTime: '2026-07-20', signupStart: '2026-07-22', signupEnd: '2026-08-08', targetKindergartens: ['阳光幼儿园', '蓝天幼儿园'], format: '课件/压缩包', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '提升教师户外活动组织与设计能力，展示户外游戏课程化探索成果。', participants: 20, worksCount: 12 },
+      // 审核阶段：管理员直接审核
+      { id: 9, title: '户外活动设计大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', expertReview: false, publishTime: '2026-07-20', signupStart: '2026-07-22', signupEnd: '2026-08-08', targetKindergartens: ['阳光幼儿园', '蓝天幼儿园'], format: '课件/压缩包', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '提升教师户外活动组织与设计能力，展示户外游戏课程化探索成果。', participants: 20, worksCount: 12 },
       // 归档阶段：评审已完成，待发布结果
-      { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'pending', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'], format: '文档', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，初评复评均已完成，待发布评审结果。', participants: 30, worksCount: 30, certTemplateId: 1 },
+      { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'pending', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'], format: '文档', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，评审已完成，待发布评审结果。', participants: 30, worksCount: 30, certTemplateId: 1 },
     ],
 
     /* 教师端「活动中心」当前教师（张慧）的报名/上传状态（活动 id → 参与状态，可持久化）
@@ -274,53 +274,53 @@ window.MDS = (function () {
       { id: 20, name: '何教授', account: 'JS007', org: '教育科学研究院', assign: '3 个活动', weight: '评委权重 70%' },
     ],
 
-    /* 评委打分留痕（评委端提交后写入；round 标注评分阶段：初评 / 复评） */
+    /* 评委打分留痕（评委端提交后写入） */
     reviewRecords: [
-      { id: 1, activity: '课件制作技能大赛', work: '赵敏的课件', judge: '王教授', round: '初评', scores: '85 / 90 / 88', comment: '课件结构完整，交互设计较好。', time: '2026-08-06 10:15' },
-      { id: 2, activity: '课件制作技能大赛', work: '陈晨的课件', judge: '王教授', round: '初评', scores: '92 / 88 / 90', comment: '动画流畅，课堂适用性强。', time: '2026-08-06 10:40' },
-      // 区域活动观察记录评比（归档阶段 · 初评 + 复评两轮打分）
-      { id: 3, activity: '区域活动观察记录评比', work: '张慧的作品', judge: '王教授', round: '初评', scores: '88 / 90 / 86', comment: '观察记录详实，分析与建议到位。', time: '2026-06-10 09:20' },
-      { id: 4, activity: '区域活动观察记录评比', work: '张慧的作品', judge: '陈园长', round: '复评', scores: '90 / 92 / 89', comment: '初评复评一致，一等奖候选。', time: '2026-06-12 10:05' },
-      { id: 5, activity: '区域活动观察记录评比', work: '李娜的作品', judge: '王教授', round: '初评', scores: '82 / 85 / 84', comment: '记录完整，可补充改进建议。', time: '2026-06-10 09:40' },
-      { id: 6, activity: '区域活动观察记录评比', work: '李娜的作品', judge: '陈园长', round: '复评', scores: '85 / 87 / 86', comment: '二等奖水平。', time: '2026-06-12 10:30' },
-      // 户外活动设计大赛（审核阶段 · 复评打分）
-      { id: 7, activity: '户外活动设计大赛', work: '周涛的作品', judge: '王教授', round: '复评', scores: '86 / 88 / 90', comment: '方案设计完整，可执行性强。', time: '2026-08-14 09:30' },
-      { id: 8, activity: '户外活动设计大赛', work: '吴倩的作品', judge: '王教授', round: '复评', scores: '90 / 92 / 88', comment: '观察记录详实，目标明确。', time: '2026-08-14 09:45' },
-      { id: 9, activity: '户外活动设计大赛', work: '郑爽的作品', judge: '王教授', round: '复评', scores: '84 / 86 / 85', comment: '设计新颖，需补充安全预案。', time: '2026-08-14 10:00' },
-      // 2025 秋季论文大赛（归档阶段 · 已归档 · 初评 + 复评）
-      { id: 10, activity: '2025 秋季论文大赛', work: '张慧的作品', judge: '李教授', round: '初评', scores: '90 / 88 / 92', comment: '选题贴合实际，论证充分。', time: '2025-10-20 09:10' },
-      { id: 11, activity: '2025 秋季论文大赛', work: '张慧的作品', judge: '周教授', round: '复评', scores: '91 / 90 / 93', comment: '初评复评一致，一等奖候选。', time: '2025-10-22 10:00' },
-      { id: 12, activity: '2025 秋季论文大赛', work: '李娜的作品', judge: '李教授', round: '初评', scores: '84 / 86 / 85', comment: '案例丰富，可再提炼策略。', time: '2025-10-20 09:30' },
-      { id: 13, activity: '2025 秋季论文大赛', work: '李娜的作品', judge: '周教授', round: '复评', scores: '86 / 87 / 85', comment: '二等奖水平。', time: '2025-10-22 10:20' },
-      { id: 14, activity: '2025 秋季论文大赛', work: '王强的作品', judge: '李教授', round: '初评', scores: '82 / 84 / 83', comment: '结构完整，可补数据支撑。', time: '2025-10-20 09:50' },
-      // 班级环创成果评比（归档阶段 · 已归档 · 初评）
-      { id: 15, activity: '班级环创成果评比', work: '赵敏的作品', judge: '陈园长', round: '初评', scores: '88 / 90 / 87', comment: '环创主题鲜明，幼儿参与度高。', time: '2026-01-22 09:20' },
-      { id: 16, activity: '班级环创成果评比', work: '陈晨的作品', judge: '陈园长', round: '初评', scores: '85 / 86 / 84', comment: '区域角布局合理。', time: '2026-01-22 09:45' },
+      { id: 1, activity: '课件制作技能大赛', work: '赵敏的课件', judge: '王教授', scores: '85 / 90 / 88', comment: '课件结构完整，交互设计较好。', time: '2026-08-06 10:15' },
+      { id: 2, activity: '课件制作技能大赛', work: '陈晨的课件', judge: '王教授', scores: '92 / 88 / 90', comment: '动画流畅，课堂适用性强。', time: '2026-08-06 10:40' },
+      // 区域活动观察记录评比（归档阶段）
+      { id: 3, activity: '区域活动观察记录评比', work: '张慧的作品', judge: '王教授', scores: '88 / 90 / 86', comment: '观察记录详实，分析与建议到位。', time: '2026-06-10 09:20' },
+      { id: 4, activity: '区域活动观察记录评比', work: '张慧的作品', judge: '陈园长', scores: '90 / 92 / 89', comment: '一等奖候选。', time: '2026-06-12 10:05' },
+      { id: 5, activity: '区域活动观察记录评比', work: '李娜的作品', judge: '王教授', scores: '82 / 85 / 84', comment: '记录完整，可补充改进建议。', time: '2026-06-10 09:40' },
+      { id: 6, activity: '区域活动观察记录评比', work: '李娜的作品', judge: '陈园长', scores: '85 / 87 / 86', comment: '二等奖水平。', time: '2026-06-12 10:30' },
+      // 户外活动设计大赛（审核阶段）
+      { id: 7, activity: '户外活动设计大赛', work: '周涛的作品', judge: '王教授', scores: '86 / 88 / 90', comment: '方案设计完整，可执行性强。', time: '2026-08-14 09:30' },
+      { id: 8, activity: '户外活动设计大赛', work: '吴倩的作品', judge: '王教授', scores: '90 / 92 / 88', comment: '观察记录详实，目标明确。', time: '2026-08-14 09:45' },
+      { id: 9, activity: '户外活动设计大赛', work: '郑爽的作品', judge: '王教授', scores: '84 / 86 / 85', comment: '设计新颖，需补充安全预案。', time: '2026-08-14 10:00' },
+      // 2025 秋季论文大赛（归档阶段 · 已归档）
+      { id: 10, activity: '2025 秋季论文大赛', work: '张慧的作品', judge: '李教授', scores: '90 / 88 / 92', comment: '选题贴合实际，论证充分。', time: '2025-10-20 09:10' },
+      { id: 11, activity: '2025 秋季论文大赛', work: '张慧的作品', judge: '周教授', scores: '91 / 90 / 93', comment: '一等奖候选。', time: '2025-10-22 10:00' },
+      { id: 12, activity: '2025 秋季论文大赛', work: '李娜的作品', judge: '李教授', scores: '84 / 86 / 85', comment: '案例丰富，可再提炼策略。', time: '2025-10-20 09:30' },
+      { id: 13, activity: '2025 秋季论文大赛', work: '李娜的作品', judge: '周教授', scores: '86 / 87 / 85', comment: '二等奖水平。', time: '2025-10-22 10:20' },
+      { id: 14, activity: '2025 秋季论文大赛', work: '王强的作品', judge: '李教授', scores: '82 / 84 / 83', comment: '结构完整，可补数据支撑。', time: '2025-10-20 09:50' },
+      // 班级环创成果评比（归档阶段 · 已归档）
+      { id: 15, activity: '班级环创成果评比', work: '赵敏的作品', judge: '陈园长', scores: '88 / 90 / 87', comment: '环创主题鲜明，幼儿参与度高。', time: '2026-01-22 09:20' },
+      { id: 16, activity: '班级环创成果评比', work: '陈晨的作品', judge: '陈园长', scores: '85 / 86 / 84', comment: '区域角布局合理。', time: '2026-01-22 09:45' },
     ],
 
-    /* 评奖分批（活动 id → 批次列表；每批次：评审轮次 round(初评/复评) + 作品 ids + 分配评委 + 已评数量 done） */
+    /* 评奖分批（活动 id → 批次列表；每批次：作品 ids + 分配评委 + 已评数量 done） */
     reviewBatches: {
-      // 初评中（进行中）
+      // 评审中（进行中）
       1: [
-        { batchNo: 1, round: '初评', workIds: [1, 2], judgeId: 1, judgeName: '王教授', done: 0 },
-        { batchNo: 2, round: '初评', workIds: [3], judgeId: 3, judgeName: '刘教研员', done: 0 },
+        { batchNo: 1, workIds: [1, 2], judgeId: 1, judgeName: '王教授', done: 0 },
+        { batchNo: 2, workIds: [3], judgeId: 3, judgeName: '刘教研员', done: 0 },
       ],
-      // 复评中（初评已完成，复评进行中）
+      // 评审进行中
       2: [
-        { batchNo: 1, round: '初评', workIds: [4, 5], judgeId: 1, judgeName: '王教授', done: 2 },
-        { batchNo: 2, round: '初评', workIds: [6], judgeId: 2, judgeName: '陈园长', done: 1 },
-        { batchNo: 1, round: '复评', workIds: [4, 5, 6], judgeId: 3, judgeName: '刘教研员', done: 1 },
+        { batchNo: 1, workIds: [4, 5], judgeId: 1, judgeName: '王教授', done: 2 },
+        { batchNo: 2, workIds: [6], judgeId: 2, judgeName: '陈园长', done: 1 },
+        { batchNo: 3, workIds: [4, 5, 6], judgeId: 3, judgeName: '刘教研员', done: 1 },
       ],
-      // 评审完成（初评 + 复评均已完成）
+      // 评审完成
       9: [
-        { batchNo: 1, round: '初评', workIds: [8, 9], judgeId: 2, judgeName: '陈园长', done: 2 },
-        { batchNo: 2, round: '初评', workIds: [10], judgeId: 3, judgeName: '刘教研员', done: 1 },
-        { batchNo: 1, round: '复评', workIds: [8, 9, 10], judgeId: 1, judgeName: '王教授', done: 3 },
+        { batchNo: 1, workIds: [8, 9], judgeId: 2, judgeName: '陈园长', done: 2 },
+        { batchNo: 2, workIds: [10], judgeId: 3, judgeName: '刘教研员', done: 1 },
+        { batchNo: 3, workIds: [8, 9, 10], judgeId: 1, judgeName: '王教授', done: 3 },
       ],
-      // 区域活动观察记录评比：初评 / 复评均已完成，待发布结果
+      // 区域活动观察记录评比：评审已完成，待发布结果
       10: [
-        { batchNo: 1, round: '初评', workIds: [11, 12], judgeId: 1, judgeName: '王教授', done: 2 },
-        { batchNo: 1, round: '复评', workIds: [11, 12], judgeId: 2, judgeName: '陈园长', done: 2 },
+        { batchNo: 1, workIds: [11, 12], judgeId: 1, judgeName: '王教授', done: 2 },
+        { batchNo: 2, workIds: [11, 12], judgeId: 2, judgeName: '陈园长', done: 2 },
       ],
     },
 

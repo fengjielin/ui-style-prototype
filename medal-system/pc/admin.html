@@ -652,16 +652,6 @@
               <label class="scope-check"><input type="radio" name="actExpertReview" value="0">否（管理员直接审核）</label>
             </div>
           </div>
-          <!-- 评审阶段多选：仅在「需要专家评审=是」时显示 -->
-          <div id="actReviewStageWrap">
-            <div class="pc-form-item full-width">
-              <label>评审阶段（多选）</label>
-              <div class="scope-checks">
-                <label class="scope-check"><input type="checkbox" value="初评" data-scope-group="reviewStages" checked>初评</label>
-                <label class="scope-check"><input type="checkbox" value="复评" data-scope-group="reviewStages" checked>复评</label>
-              </div>
-            </div>
-          </div>
           <div class="pc-form-item full-width">
             <label>奖状模板</label>
             <div style="display:flex;align-items:center;gap:10px;">
@@ -749,16 +739,6 @@
               <label class="scope-check"><input type="radio" name="eActExpertReview" value="0">否（管理员直接审核）</label>
             </div>
           </div>
-          <!-- 评审阶段多选：仅在「需要专家评审=是」时显示 -->
-          <div id="eActReviewStageWrap">
-            <div class="pc-form-item full-width">
-              <label>评审阶段（多选）</label>
-              <div class="scope-checks">
-                <label class="scope-check"><input type="checkbox" value="初评" data-scope-group="eReviewStages">初评</label>
-                <label class="scope-check"><input type="checkbox" value="复评" data-scope-group="eReviewStages">复评</label>
-              </div>
-            </div>
-          </div>
           <div class="pc-form-item full-width">
             <label>奖状模板</label>
             <div style="display:flex;align-items:center;gap:10px;">
@@ -823,7 +803,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════ 评委分配弹窗（评审阶段「评委分配」：分组数 / 手动勾选每组评委 / 确定分配） ══════════════════ -->
+  <!-- ══════════════════ 评委分配弹窗（评审阶段「评委分配」：分组数 / 按组选择评委 / 确定分配） ══════════════════ -->
   <div class="mask-layer" id="judgeAssignDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
       <div class="dialog-head" id="judgeAssignTitle">评委分配</div>
@@ -836,13 +816,32 @@
         </form>
         <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
           <button type="button" class="pc-btn pc-btn-add" data-action="judge-build-groups">生成分组</button>
-          <span style="font-size:12px;color:#909399;">手动勾选每组评委，每位评委仅可分配至一组</span>
+          <span style="font-size:12px;color:#909399;">为每组选择评委，每位评委仅可分配至一组</span>
         </div>
         <div id="judgeDrawPreview" style="margin-top:12px;font-size:13px;color:#606266;line-height:1.8;max-height:420px;overflow-y:auto;"></div>
       </div>
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="judgeAssignDialog">取 消</button>
         <button type="button" class="pc-btn pc-btn-add" data-action="judge-confirm">确定分配</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 选择评委弹窗（评委分配「选择评委」：全量评委勾选，确定后回填到对应组） ══════════════════ -->
+  <div class="mask-layer" id="judgeSelectDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="judgeSelectTitle">选择评委</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;">勾选本组评委（可多选），已在其他组选择的评委不可选。</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <span style="font-size:13px;color:#606266;">评委筛选</span>
+          <input class="pc-input" id="judgeSelectSearch" placeholder="输入评委姓名搜索" style="width:220px;">
+        </div>
+        <div id="judgeSelectList" style="max-height:360px;overflow-y:auto;border:1px solid var(--pc-border-card);border-radius:6px;"></div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="judgeSelectDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="judge-select-confirm">确 定</button>
       </div>
     </div>
   </div>
@@ -869,7 +868,7 @@
         <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="scoreDetailMeta"></div>
         <div style="max-height:320px;overflow-y:auto;border:1px solid var(--pc-border-card);border-radius:6px;">
           <table class="pc-table">
-            <thead><tr><th>评委</th><th>评分阶段</th><th>三项评分</th><th>评语</th><th>时间</th></tr></thead>
+            <thead><tr><th>评委</th><th>三项评分</th><th>评语</th><th>时间</th></tr></thead>
             <tbody id="scoreDetailTbody"></tbody>
           </table>
         </div>
