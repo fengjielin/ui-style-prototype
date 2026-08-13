@@ -2033,7 +2033,7 @@ window.MedalDemo = (function () {
     var groupId = 'rankGardenTabs';
     box.innerHTML =
       renderGardenKpi(garden) +
-      '<section class="pc-card">' +
+      '<section class="pc-card" style="margin-top:var(--pc-card-gap);">' +
       '<div class="card-head"><span class="card-title">全园 TOP10 综合榜</span>' +
       '<div style="margin-left:auto;display:flex;align-items:center;gap:12px;">' +
       '<span class="table-count">' + esc(garden) + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span>' +
@@ -2211,7 +2211,7 @@ window.MedalDemo = (function () {
     html += '</div>';
 
     // 跨园对比
-    html += '<section class="pc-card">';
+    html += '<section class="pc-card" style="margin-top:var(--pc-card-gap);">';
     html += '<div class="card-head"><span class="card-title">跨园对比</span><span class="table-count">平均总分 / 在职教师 / 家长转化</span></div>';
     html += '<div class="card-body">';
     html += '<div class="chart-echarts" id="gardenCompareChart" style="height:260px;"></div>';
