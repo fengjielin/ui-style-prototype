@@ -76,9 +76,8 @@ window.MDS = (function () {
   /* ────────────────────────── PC 端后台菜单（对齐方案文档 2.1 完整菜单树，按角色） ────────────────────────── */
   /* key 对应 medal.js 中按菜单渲染的内容块；未实现的 key 显示"建设中"占位 */
   var PC_MENUS = {
-    /* 平台管理员：全量 8 组 */
+    /* 平台管理员：全量 7 组 */
     admin: [
-      { title: '首页工作台', children: [{ key: 'overview', title: '数据概览' }] },
       {
         title: '活动组织',
         children: [
@@ -138,44 +137,14 @@ window.MDS = (function () {
         ],
       },
     ],
-    /* 园长：本园子集 */
+    /* 园长：仅排行榜（园内排行榜 + 家长进度看板）
+       活动组织 / 勋章体系 / 奖金管理 / 人员管理 仅平台管理员端可见 */
     principal: [
-      { title: '首页工作台', children: [{ key: 'overview', title: '数据概览' }] },
-      {
-        title: '活动管理',
-        children: [
-          { key: 'activity-launch', title: '活动发起' },
-          // 作品管理不做独立菜单，由活动发起「查看作品」入口进入（medal.js EXTRA_PAGES）
-          // 打分监控 / 结果管理 / 活动归档并入「活动管理」页的审核 / 归档阶段（步骤条）
-          // 活动查询：归档历史活动只读查询（统计 / 全量导出 / 报名与评审详情）
-          { key: 'activity-manage', title: '活动管理' },
-          { key: 'activity-query', title: '活动查询' },
-          { key: 'cert-template', title: '奖状模板' },
-        ],
-      },
       {
         title: '排行榜',
         children: [
           { key: 'rank-garden', title: '园内排行榜' },
           { key: 'rank-parent', title: '家长进度看板' },
-        ],
-      },
-      {
-        title: '勋章体系',
-        children: [{ key: 'medal-archive', title: '教师勋章档案' }],
-      },
-      {
-        title: '奖金管理',
-        children: [
-          { key: 'bonus-monthly', title: '月度发放清单' },
-          { key: 'bonus-semester', title: '期末汇总清单' },
-        ],
-      },
-      {
-        title: '人员管理',
-        children: [
-          { key: 'user-teacher', title: '教师管理' },
-          { key: 'user-class', title: '班级管理' },
         ],
       },
     ],
@@ -186,8 +155,13 @@ window.MDS = (function () {
         children: [{ key: 'judge-scoring', title: '评委打分' }],
       },
     ],
-    /* 教师 / 家长：无 PC 后台菜单（走移动端） */
-    teacher: [],
+    /* 教师：PC 个人工作台（教师视角：我的活动 / 园内排行 / 我的勋章 / 我的奖金） */
+    teacher: [
+      { title: '活动中心', children: [{ key: 'teacher-activity', title: '我的活动' }] },
+      { title: '排行榜', children: [{ key: 'teacher-rank', title: '园内排行榜' }] },
+      { title: '我的勋章', children: [{ key: 'teacher-medal', title: '勋章档案' }] },
+      { title: '我的奖金', children: [{ key: 'teacher-bonus', title: '奖金明细' }] },
+    ],
     parent: [],
   };
 

@@ -5,7 +5,7 @@
   童蹊社区-原型 · 移动端 · 我的二级页（独立全屏）
   入口：园长首页功能宫格「奖金清单」
   结构：顶部橙导航栏（返回首页）+ 橙色渐变头 + 上浮内容区（我的奖金 / 消息中心 / 切换管理端 / 关于，无 tabBar）
-  角色差异：园长显示「切换至管理端」入口与「我的奖金」；教师端隐藏「我的奖金」模块
+  角色差异：园长显示「我的奖金」；教师端隐藏「我的奖金」模块
   ============================================================
 -->
 <head>
@@ -46,12 +46,6 @@
           <span data-action="show-toast" data-toast="奖金明细">奖金明细</span>
           <span data-action="show-toast" data-toast="期末汇总">期末汇总</span>
         </div>
-      </div>
-
-      <!-- 园长：切换至管理端 -->
-      <div id="switchAdmin" class="subscription-card" style="text-align:center;cursor:pointer;" data-action="switch-admin">
-        <div style="font-size:16px;font-weight:700;color:#a855f7;">🏫 切换至管理端</div>
-        <div style="font-size:12px;color:#9ca3af;margin-top:4px;">进入园长管理视图（园内排行榜 / 家长进度 / 勋章档案 / 奖金清单）</div>
       </div>
 
       <!-- 消息中心 -->

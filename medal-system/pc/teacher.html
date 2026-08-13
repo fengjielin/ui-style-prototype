@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊社区-原型 · 教师 PC 个人工作台（完整 PC 后台外壳）
+  说明：教师 PC 端，定位为个人工作台（非管理端），展示教师个人视角数据
+  菜单：活动中心 > 我的活动 / 排行榜 > 园内排行榜 / 我的勋章 > 勋章档案 /
+        我的奖金 > 奖金明细（medal-data.js PC_MENUS.teacher）
+  交互：我的活动报名 / 上传作品（演示交互，写入 teacherSignups）；榜单切换；
+        勋章详情弹层
+  对应文档：2026-08-11-01 需求拆解 / 2026-08-11-02 菜单设计
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>教师工作台 · 童蹊社区-原型 · 童蹊</title>
+  <link rel="stylesheet" href="../../assets/css/tokens-pc.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/base-pc.css">
+  <link rel="stylesheet" href="../../assets/css/demo.css">
+  <link rel="stylesheet" href="../assets/css/medal.css">
+</head>
+<body class="pc-body">
+
+  <!-- ══════════════════ 左侧边栏（教师角色菜单，medal.js 按角色渲染） ══════════════════ -->
+  <aside class="pc-sidebar">
+    <div class="sidebar-decoration top"></div>
+    <nav class="pc-menu" id="pcMenuRoot"></nav>
+    <div class="sidebar-decoration bottom"></div>
+  </aside>
+
+  <!-- ══════════════════ 右侧主区域 ══════════════════ -->
+  <div class="pc-main">
+
+    <header class="pc-navbar">
+      <div class="nav-logo">童蹊社区-原型</div>
+      <span class="nav-hamburger" data-action="toggle-sidebar" title="折叠/展开菜单">☰</span>
+      <div class="nav-breadcrumb" id="pcBreadcrumb"></div>
+      <div class="nav-user">
+        <span class="user-avatar" id="pcAvatar">张</span>
+        <span class="user-name" id="pcUserName">张老师</span>
+      </div>
+    </header>
+
+    <div class="pc-tags-view">
+      <div class="pc-tags-scroll" id="pcTagsRoot"></div>
+      <div class="pc-tags-more" id="pcTagsMore" data-action="pc-tags-more" title="更多操作">▾</div>
+    </div>
+
+    <main class="pc-content">
+
+      <div id="pcPage" hidden>
+
+        <!-- ═════════ ② 我的活动（teacher-activity） ═════════ -->
+        <div class="pc-page-block" data-page-key="teacher-activity">
+          <div id="teacherActivityRoot"></div>
+        </div>
+
+        <!-- ═════════ ③ 园内排行榜（teacher-rank） ═════════ -->
+        <div class="pc-page-block" data-page-key="teacher-rank">
+          <section class="pc-card">
+            <div class="card-head">
+              <span class="card-title">榜单类型</span>
+              <span class="table-count">数据更新于 2026-08-11 09:32（精确到分钟）</span>
+            </div>
+            <div class="card-body">
+              <div class="pc-filter-tabs">
+                <span class="pc-filter-tab is-active" data-action="switch-tab" data-tab-group="teacherRank" data-tab-value="total">综合榜</span>
+                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="teacherRank" data-tab-value="usage">平台使用榜</span>
+                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="teacherRank" data-tab-value="interaction">家园互动榜</span>
+                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="teacherRank" data-tab-value="promotion">外部推广榜</span>
+                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="teacherRank" data-tab-value="conversion">会员转化榜</span>
+              </div>
+            </div>
+          </section>
+          <section class="pc-card">
+            <div class="card-head"><span class="card-title">园内 TOP10</span></div>
+            <div class="card-body" data-tab-panel="teacherRank" id="teacherRankPanel"></div>
+          </section>
+        </div>
+
+        <!-- ═════════ ④ 我的勋章档案（teacher-medal） ═════════ -->
+        <div class="pc-page-block" data-page-key="teacher-medal">
+          <section class="pc-card">
+            <div class="card-head">
+              <span class="card-title">我的勋章档案</span>
+              <span class="table-count">永久留存</span>
+            </div>
+            <div class="card-body">
+              <div class="medal-grid" id="teacherMedalGrid"></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ═════════ ⑤ 我的奖金明细（teacher-bonus） ═════════ -->
+        <div class="pc-page-block" data-page-key="teacher-bonus">
+          <div id="teacherBonusRoot"></div>
+        </div>
+
+      </div><!-- /#pcPage -->
+
+      <div id="pagePlaceholder" hidden></div>
+
+    </main>
+  </div>
+
+  <!-- ══════════════════ 勋章详情弹窗 ══════════════════ -->
+  <div class="mask-layer" id="medalDetailDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="medalDetailTitle">勋章详情</div>
+      <div class="dialog-body" id="medalDetailBody"></div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="medalDetailDialog">关 闭</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/prototype.js"></script>
+  <script src="../assets/js/medal-data.js"></script>
+  <script src="../assets/js/medal.js"></script>
+</body>
+</html>
