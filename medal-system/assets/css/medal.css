@@ -1070,6 +1070,31 @@ tr.row-excluded td {
   transform: scale(0.99);
 }
 
+/* ── 教师「童蹊社区」专区：合并勋章激励卡 + 勋章功能宫格 ── */
+.community-card {
+  padding: 12px;
+}
+
+/* 社区内激励卡（今日积分 + 指标 + 进度 + 快捷按钮） */
+.community-hero {
+  background: linear-gradient(135deg, #fff9f2, #fff4e6);
+  border: 1px solid var(--mb-primary-border, #ffe8cc);
+  border-radius: var(--mb-radius-card);
+  padding: 16px;
+}
+
+/* 激励卡与功能宫格之间的分隔线 */
+.community-divider {
+  height: 1px;
+  background: var(--mb-border-divider, #f5f5f5);
+  margin: 14px 2px 10px;
+}
+
+/* 社区内勋章功能宫格（去掉卡片自身的外边距，贴合外层容器） */
+.community-grid {
+  margin-top: 6px;
+}
+
 /* 勋章卡快捷按钮行（排行榜 / 上传作品） */
 .medal-quick-row {
   display: flex;
@@ -1352,6 +1377,152 @@ tr.row-excluded td {
   border-top: 1px solid var(--mb-border-divider);
   font-size: var(--mb-font-tiny);
   color: var(--mb-text-secondary);
+}
+
+/* 活动卡：我的参与信息行（已报名 / 已提交作品） */
+.mb-activity-card .ac-my {
+  margin-top: 8px;
+  font-size: var(--mb-font-mini);
+  color: var(--mb-primary);
+}
+
+/* 活动卡状态标签（移动端配色，教师视角：报名中 / 评审中 / 已出结果） */
+.mb-activity-card .act-status.st-PUBLISHED {
+  background: rgba(255, 138, 0, 0.12);
+  border-color: rgba(255, 138, 0, 0.4);
+  color: var(--mb-primary);
+}
+
+.mb-activity-card .act-status.st-signup {
+  background: rgba(255, 138, 0, 0.12);
+  border-color: rgba(255, 138, 0, 0.4);
+  color: var(--mb-primary);
+}
+
+.mb-activity-card .act-status.st-review {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+}
+
+.mb-activity-card .act-status.st-done {
+  background: rgba(102, 204, 153, 0.14);
+  border-color: rgba(102, 204, 153, 0.5);
+  color: #33c28a;
+}
+
+/* 活动流程提示条（教师端活动中心顶部：①查看 → ②报名 → ③上传 → ④结果） */
+.act-flow-bar {
+  display: flex;
+  align-items: center;
+  padding: 12px var(--mb-content-pad);
+  background: var(--mb-bg-card);
+  border-bottom: 1px solid var(--mb-border-divider);
+}
+
+.act-flow-step {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+
+.act-flow-step .act-flow-no {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 138, 0, 0.12);
+  color: var(--mb-primary);
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.act-flow-step .act-flow-name {
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-secondary);
+}
+
+.act-flow-arrow {
+  flex: 1;
+  text-align: center;
+  color: var(--mb-text-disabled);
+  font-size: 14px;
+}
+
+/* 移动端弹层内容容器（活动详情 / 我的结果） */
+.mb-sheet .sheet-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 0 2px;
+}
+
+/* 弹层内信息卡（复用 sub-row 行结构） */
+.mb-sheet .sheet-card {
+  background: var(--mb-bg-page);
+  border-radius: 10px;
+  padding: 2px 14px;
+  margin-bottom: 12px;
+}
+
+.mb-sheet .sheet-card .sub-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 11px 0;
+  font-size: var(--mb-font-sub);
+  border-bottom: 1px solid var(--mb-border-divider);
+}
+
+.mb-sheet .sheet-card .sub-row:last-child {
+  border-bottom: none;
+}
+
+.mb-sheet .sheet-card .sub-row .label {
+  color: var(--mb-text-secondary);
+  flex: 0 0 auto;
+  margin-right: 12px;
+}
+
+.mb-sheet .sheet-card .sub-row .value {
+  color: var(--mb-text-primary);
+  text-align: right;
+}
+
+/* 弹层内活动说明 */
+.mb-sheet .sheet-desc-label {
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-secondary);
+  padding-top: 12px;
+}
+
+.mb-sheet .sheet-desc {
+  font-size: var(--mb-font-body);
+  color: var(--mb-text-primary);
+  line-height: 1.6;
+  padding: 6px 0 12px;
+}
+
+/* 结果弹层头部：奖项 + 名次 */
+.result-hero {
+  background: linear-gradient(135deg, #fff9f2, #fff4e6);
+  border: 1px solid var(--mb-primary-border, #ffe8cc);
+  border-radius: var(--mb-radius-card);
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.result-hero .result-award {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--mb-primary);
+}
+
+.result-hero .result-rank {
+  font-size: var(--mb-font-sub);
+  color: var(--mb-text-secondary);
+  margin-top: 6px;
 }
 
 /* 电子奖状卡 */

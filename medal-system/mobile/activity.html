@@ -2,16 +2,17 @@
 <html lang="zh-CN">
 <!--
   ============================================================
-  童蹊社区-原型 · 移动端 · 活动二级页（独立全屏）
-  入口：角色首页勋章卡片（上传作品 / 活动中心）
-  结构：顶部橙导航栏（返回首页）+ 筛选胶囊 + 活动卡列表（无 tabBar）
-  交互：作品上传底部弹层（文件选择占位 + 提交确认）+ 电子奖状区
+  童蹊社区-原型 · 移动端 · 活动中心二级页（独立全屏）
+  入口：角色首页「童蹊社区」宫格（活动中心 / 上传作品）
+  结构：顶部橙导航栏（返回首页）+ 活动流程提示条 + 分段胶囊 + 活动卡列表（无 tabBar）
+  教师端完整流程：查看活动 → 报名活动 → 上传作品 → 查看管理端发布的结果
+  交互：活动详情弹层 / 报名确认弹层 / 作品上传底部弹层 / 我的结果弹层
   ============================================================
 -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>活动 · 积分勋章</title>
+  <title>活动中心 · 积分勋章</title>
   <link rel="stylesheet" href="../../assets/css/tokens-mobile.css">
   <link rel="stylesheet" href="../../assets/css/common.css">
   <link rel="stylesheet" href="../../assets/css/base-mobile.css">
@@ -24,35 +25,63 @@
 
     <header class="mb-navbar">
       <span class="nav-back" data-action="navigate" data-path="home.html">‹</span>
-      <span class="nav-title">活动</span>
+      <span class="nav-title">活动中心</span>
       <span class="nav-action" data-action="show-toast" data-toast="更多">⋯</span>
     </header>
 
-    <!-- 筛选胶囊 tab（medal.js 监听切换；活动生命周期仅两态：未发布/已发布） -->
+    <!-- 活动流程提示条（medal.js 渲染：①查看 → ②报名 → ③上传 → ④结果） -->
+    <div id="actFlowBar"></div>
+
+    <!-- 分段胶囊 tab（medal.js 监听切换：全部 / 待报名 / 进行中 / 已出结果） -->
     <div class="filter-bar">
-      <span class="filter-tab is-active" data-action="switch-tab" data-tab-group="actFilter" data-tab-value="all">全部</span>
-      <span class="filter-tab" data-action="switch-tab" data-tab-group="actFilter" data-tab-value="published">已发布</span>
-      <span class="filter-tab" data-action="switch-tab" data-tab-group="actFilter" data-tab-value="draft">未发布</span>
+      <span class="filter-tab is-active" data-action="switch-tab" data-tab-group="actTab" data-tab-value="all">全部</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="actTab" data-tab-value="signup">待报名</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="actTab" data-tab-value="doing">进行中</span>
+      <span class="filter-tab" data-action="switch-tab" data-tab-group="actTab" data-tab-value="done">已出结果</span>
     </div>
 
     <main class="mb-content no-tabbar" style="padding-top:0;">
       <!-- 活动卡列表（medal.js 渲染） -->
       <div class="mb-list" id="activityList"></div>
-
-      <!-- 电子奖状区（演示） -->
-      <div class="mb-section-title"><span class="title">我的电子奖状</span></div>
-      <div class="mb-card">
-        <div class="cert-card" style="margin-top:0;">
-          <div class="cert-title">🏅 铜牌 · 课件制作技能大赛</div>
-          <div class="cert-sub">陈晨 · 中一班 · 2026 年 7 月获得</div>
-          <div class="cert-level">恭喜获奖</div>
-          <div style="margin-top:12px;">
-            <button type="button" class="mb-btn mb-btn-ghost" style="height:36px;padding:0 20px;font-size:13px;" data-action="show-toast" data-toast="演示功能：保存/分享奖状">保存 / 分享</button>
-          </div>
-        </div>
-      </div>
     </main>
 
+  </div>
+
+  <!-- 活动详情弹层 -->
+  <div class="mask-layer sheet-mask" id="activitySheet" hidden data-close-on-mask="true">
+    <div class="mb-sheet">
+      <div class="sheet-title" id="activityDetailTitle">活动详情</div>
+      <div class="sheet-body" id="activityDetailBody"></div>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-confirm" data-action="close-dialog" data-target="activitySheet">知道了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 报名确认弹层 -->
+  <div class="mask-layer sheet-mask" id="signupSheet" hidden data-close-on-mask="true">
+    <div class="mb-sheet">
+      <div class="sheet-title">报名确认</div>
+      <div class="sheet-field">
+        <label>确认报名参加 <span id="signupActTitle" style="color:#1f2937;font-weight:600;"></span> 吗？</label>
+        <div style="font-size:12px;color:#9ca3af;margin-top:6px;">报名后请在作品提交截止前上传参赛作品。</div>
+      </div>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-cancel" data-action="close-dialog" data-target="signupSheet">取消</button>
+        <button type="button" class="sheet-confirm" data-action="activity-signup-confirm">确认报名</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 我的结果弹层 -->
+  <div class="mask-layer sheet-mask" id="resultSheet" hidden data-close-on-mask="true">
+    <div class="mb-sheet">
+      <div class="sheet-title" id="resultTitle">我的结果</div>
+      <div class="sheet-body" id="resultBody"></div>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-confirm" data-action="close-dialog" data-target="resultSheet">关闭</button>
+      </div>
+    </div>
   </div>
 
   <!-- 作品上传底部弹层 -->

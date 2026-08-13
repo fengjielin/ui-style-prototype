@@ -65,6 +65,9 @@ window.MedalDemo = (function () {
     return window.__medalRole || 'admin';
   }
 
+  /* 教师端「活动中心」当前教师（对应 teachers 数据 id:1 张慧 · 中一班班主任，即 profile「张老师」） */
+  var TEACHER_NAME = '张慧';
+
   /* ═══════════════════════ 电子奖状：变量 / 背景预设 / 渲染工具 ═══════════════════════ */
 
   /* 奖状模板可用变量（占位符用中文标签，便于用户理解） */
@@ -3003,12 +3006,14 @@ window.MedalDemo = (function () {
       });
     }
 
-    // ── 底部：激励体系内容（勋章激励卡 + 勋章功能宫格） ──
-    if (role === 'teacher' || role === 'principal') {
-      // 勋章激励专区卡：勋章模块作为角色首页的卡片
-      html += renderMedalHomeCard(role);
-      // 勋章功能宫格（入口进入二级页）
-      html += renderMedalGrid(role);
+    // ── 底部：激励体系内容 ──
+    if (role === 'teacher') {
+      // 教师：童蹊社区专区（合并原「积分勋章激励」卡 + 「积分勋章」宫格为单一区域）
+      html += renderTeacherCommunity();
+    } else if (role === 'principal') {
+      // 园长：勋章激励专区卡 + 勋章功能宫格
+      html += renderMedalHomeCard();
+      html += renderMedalGrid();
     } else {
       // 家长简版首页（无勋章卡片）
       html += renderParentHome();
@@ -3017,22 +3022,24 @@ window.MedalDemo = (function () {
     root.innerHTML = html;
   }
 
-  /* 勋章激励专区卡：勋章模块作为角色首页的卡片（教师/园长差异化） */
-  function renderMedalHomeCard(role) {
-    if (role === 'teacher') return renderTeacherMedalCard();
+  /* 勋章激励专区卡：园长首页卡片（教师端已并入「童蹊社区」专区） */
+  function renderMedalHomeCard() {
     return renderPrincipalMedalCard();
   }
 
-  /* 教师勋章卡：今日积分 + 排名/勋章/差距 + 距金牌进度 + 快捷按钮 */
-  function renderTeacherMedalCard() {
+  /* 教师「童蹊社区」专区：合并原「积分勋章激励」卡 + 「积分勋章」功能宫格为单一社区区域
+     今日积分 + 排名/勋章/差距 + 距金牌进度 + 快捷按钮 + 勋章功能宫格 */
+  function renderTeacherCommunity() {
     var s = MDS.get('teacherScores') || {};
     var total = s.usage.total + s.interaction.total + s.promotion.total + s.conversion.total;
     var today = s.usage.today + s.interaction.today + s.promotion.today + s.conversion.today;
     var next = 2000; // 金牌目标
     var pct = Math.min(100, Math.round((total / next) * 100));
     var html = '';
-    html += '<div class="mb-section-title"><span class="title">积分勋章激励</span><span class="subtitle">点击卡片查看勋章档案</span></div>';
-    html += '<div class="mb-card medal-home-hero" data-action="navigate" data-path="medal.html" style="padding:16px;">';
+    html += '<div class="mb-section-title"><span class="title">童蹊社区</span><span class="subtitle">积分 · 勋章 · 激励</span></div>';
+    html += '<div class="mb-card community-card">';
+    // 激励卡：今日积分 + 排名/勋章/差距 + 距金牌进度 + 快捷按钮
+    html += '<div class="community-hero">';
     html += '<div class="flex-between">';
     html += '<div><div style="font-size:13px;color:#6b7280;">今日新增积分</div>' +
       '<div class="mb-point-today"><span class="num">+' + today + '</span><span class="unit">分</span></div></div>';
@@ -3046,9 +3053,18 @@ window.MedalDemo = (function () {
     html += '<div style="margin-top:14px;"><div class="mb-medal-progress"><div class="bar" style="width:' + pct + '%;"></div></div>' +
       '<div class="flex-between" style="font-size:11px;color:#9ca3af;margin-top:6px;">' +
       '<span>当前 ' + total + ' 分</span><span>距金牌 ' + Math.max(0, next - total) + ' 分</span></div></div>';
-    html += '<div class="medal-quick-row">';
-    html += '<span class="medal-quick-btn" data-action="navigate" data-path="rank.html">🏆 查看排行榜</span>';
-    html += '<span class="medal-quick-btn" data-action="navigate" data-path="activity.html">✎ 上传作品</span>';
+    html += '</div>';
+    // 分隔线 + 勋章功能宫格（入口进入二级页）
+    html += '<div class="community-divider"></div>';
+    html += '<div class="mb-grid community-grid">';
+    var items = [
+      { name: '活动中心', icon: '📋', color: '#4facfe', bg: '#e6f4ff', path: 'activity.html' },
+      { name: '排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'rank.html' },
+      { name: '我的勋章', icon: '★', color: '#f5a623', bg: '#fff7e6', path: 'medal.html' },
+    ];
+    items.forEach(function (it) {
+      html += mbGridCell(it.name, it.icon, it.color, it.bg, it.path);
+    });
     html += '</div>';
     html += '</div>';
     return html;
@@ -3090,26 +3106,15 @@ window.MedalDemo = (function () {
     return html;
   }
 
-  /* 勋章功能宫格：勋章模块入口（点击进入二级页） */
-  function renderMedalGrid(role) {
-    var items = [];
-    if (role === 'teacher') {
-      items = [
-        { name: '我的勋章', icon: '★', color: '#f5a623', bg: '#fff7e6', path: 'medal.html' },
-        { name: '排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'rank.html' },
-        { name: '上传作品', icon: '✎', color: '#ff8a00', bg: '#fff5eb', path: 'activity.html' },
-        { name: '我的奖金', icon: '💰', color: '#f59e0b', bg: '#fffbe6', path: 'mine.html' },
-        { name: '活动中心', icon: '📋', color: '#4facfe', bg: '#e6f4ff', path: 'activity.html' },
-      ];
-    } else {
-      items = [
-        { name: '园内排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'rank.html' },
-        { name: '家长进度', icon: '👪', color: '#66cc99', bg: '#e6f9f0', path: 'rank.html' },
-        { name: '勋章档案', icon: '★', color: '#f5a623', bg: '#fff7e6', path: 'medal.html' },
-        { name: '奖金清单', icon: '💰', color: '#f59e0b', bg: '#fffbe6', path: 'mine.html' },
-        { name: '活动管理', icon: '📋', color: '#4facfe', bg: '#e6f4ff', path: 'activity.html' },
-      ];
-    }
+  /* 园长勋章功能宫格：勋章模块入口（点击进入二级页；教师端已并入「童蹊社区」专区） */
+  function renderMedalGrid() {
+    var items = [
+      { name: '园内排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'rank.html' },
+      { name: '家长进度', icon: '👪', color: '#66cc99', bg: '#e6f9f0', path: 'rank.html' },
+      { name: '勋章档案', icon: '★', color: '#f5a623', bg: '#fff7e6', path: 'medal.html' },
+      { name: '奖金清单', icon: '💰', color: '#f59e0b', bg: '#fffbe6', path: 'mine.html' },
+      { name: '活动管理', icon: '📋', color: '#4facfe', bg: '#e6f4ff', path: 'activity.html' },
+    ];
     var html = '<div class="mb-section-title"><span class="title">积分勋章</span><span class="subtitle">激励体系</span></div>';
     html += '<div class="mb-grid-wrap" style="margin-top:0;"><div class="mb-grid">';
     items.forEach(function (it) {
@@ -3159,50 +3164,176 @@ window.MedalDemo = (function () {
     );
   }
 
-  /* ═══════════════════════ 移动端：活动页 ═══════════════════════ */
+  /* ═══════════════════════ 移动端：活动中心（教师端完整流程：查看 → 报名 → 上传 → 结果） ═══════════════════════ */
 
-  var mobileActFilter = 'all';
+  var mobileActTab = 'all';      // 分段：all 全部 / signup 待报名 / doing 进行中 / done 已出结果
+  var uploadActivityId = null;   // 当前上传作品对应的活动 id（upload-sheet 时写入）
+  var signupActivityId = null;   // 当前报名对应的活动 id（activity-signup 时写入）
 
+  /* 当前教师（张慧）在某活动的参与状态（teacherSignups 按活动 id 键控；无则 null） */
+  function teacherSignupFor(act) {
+    return (MDS.get('teacherSignups') || {})[act.id] || null;
+  }
+
+  /* 某活动张慧是否参与：已报名 或 提交过作品 */
+  function isMyActivity(act) {
+    if (teacherSignupFor(act)) return true;
+    return worksForActivityId(act.id).some(function (w) { return w.teacher === TEACHER_NAME; });
+  }
+
+  /* 活动流程提示条：①查看 → ②报名 → ③上传 → ④结果 */
+  function renderActivityFlowBar() {
+    var steps = ['查看活动', '报名', '上传作品', '查看结果'];
+    var html = '<div class="act-flow-bar">';
+    steps.forEach(function (s, i) {
+      html +=
+        '<div class="act-flow-step"><span class="act-flow-no">' + (i + 1) + '</span><span class="act-flow-name">' + s + '</span></div>';
+      if (i < steps.length - 1) html += '<span class="act-flow-arrow">›</span>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  /* 活动卡片状态标签（教师视角：报名中 / 评审中 / 已出结果 / 已发布） */
+  function activityStatusTag(a) {
+    if (a.resultStatus === 'published' || a.resultStatus === 'archived') return '<span class="act-status st-done">已出结果</span>';
+    if (a.stage === 'signup') return '<span class="act-status st-signup">报名中</span>';
+    if (a.stage === 'review') return '<span class="act-status st-review">评审中</span>';
+    return '<span class="act-status st-PUBLISHED">已发布</span>';
+  }
+
+  /* 活动卡片（教师视角）：整体点击看详情，底部按状态给操作按钮 */
+  function activityCardHtml(a, isTeacher) {
+    var mine = isTeacher ? teacherSignupFor(a) : null;
+    var done = a.resultStatus === 'published' || a.resultStatus === 'archived';
+
+    var ops = '';
+    var myLine = '';
+    if (isTeacher) {
+      if (done && isMyActivity(a)) {
+        // 已出结果且本人参与：查看结果
+        ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="activity-result" data-id="' + a.id + '">查看结果</button>';
+      } else if (a.stage === 'signup' && !mine) {
+        // 报名中且未报名：报名
+        ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="activity-signup" data-id="' + a.id + '">报名</button>';
+      } else if (mine && !mine.workSubmitted) {
+        // 已报名未上传：上传作品
+        ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="upload-sheet" data-id="' + a.id + '">上传作品</button>';
+      }
+      // 我的参与信息行
+      if (mine) {
+        myLine = mine.workSubmitted
+          ? '<div class="ac-my">我的作品：' + esc(mine.workTitle || '已提交') + '</div>'
+          : '<div class="ac-my">已报名 · 待上传作品</div>';
+      }
+    }
+
+    return (
+      '<div class="mb-activity-card" data-action="activity-detail" data-id="' + a.id + '">' +
+      '<div class="ac-title">' + esc(a.title) + activityStatusTag(a) + '</div>' +
+      '<div class="ac-desc">活动对象：' + esc(actScopeText(a.targetKindergartens)) + ' · 作品格式：' + esc(a.format) + '</div>' +
+      myLine +
+      '<div class="ac-meta">' +
+      '<span>报名：' + esc(a.signupStart || '—') + ' ~ ' + esc(a.signupEnd || '—') + '</span>' +
+      ops +
+      '</div>' +
+      '</div>'
+    );
+  }
+
+  /* 活动列表主渲染：按教师视角分段（全部 / 待报名 / 进行中 / 已出结果） */
   function renderMobileActivity() {
     var list = document.getElementById('activityList');
     if (!list) return;
-    var activities = MDS.get('activities') || [];
+    var flowBar = document.getElementById('actFlowBar');
+    if (flowBar) flowBar.innerHTML = renderActivityFlowBar();
+    var isTeacher = currentRole() === 'teacher';
+    var activities = (MDS.get('activities') || []).filter(function (a) { return a.status === 'PUBLISHED'; });
+
     var filtered = activities.filter(function (a) {
-      switch (mobileActFilter) {
-        case 'published':
-          return a.status === 'PUBLISHED';
-        case 'draft':
-          return a.status === 'DRAFT';
+      var mine = teacherSignupFor(a);
+      switch (mobileActTab) {
+        case 'signup':
+          return isTeacher && a.stage === 'signup' && !mine;
+        case 'doing':
+          if (!isTeacher) return false;
+          if (mine) return !(a.resultStatus === 'published' || a.resultStatus === 'archived');
+          return a.stage === 'review' && isMyActivity(a);
+        case 'done':
+          return isTeacher && (a.resultStatus === 'published' || a.resultStatus === 'archived') && isMyActivity(a);
         default:
           return true;
       }
     });
+
     if (!filtered.length) {
       list.innerHTML = '<div class="mb-empty-tip">暂无活动</div>';
       return;
     }
-    var isTeacher = currentRole() === 'teacher';
-    list.innerHTML = filtered
-      .map(function (a) {
-        var statusText = MDS.ACTIVITY_STATUS[a.status] || a.status;
-        var statusCls = 'st-' + a.status;
-        var ops = '';
-        // 活动发布后教师即可上传作品
-        if (isTeacher && a.status === 'PUBLISHED') {
-          ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="upload-sheet" data-id="' + a.id + '">上传作品</button>';
+    list.innerHTML = filtered.map(function (a) { return activityCardHtml(a, isTeacher); }).join('');
+  }
+
+  /* 活动详情弹层：说明 + 时间 + 格式 + 对象 + 奖项 */
+  function openActivityDetail(act) {
+    var title = document.getElementById('activityDetailTitle');
+    if (title) title.textContent = act.title;
+    var body = document.getElementById('activityDetailBody');
+    if (body) {
+      var awards = (act.awards || []).map(function (aw) { return aw.name + '×' + aw.count; }).join(' / ');
+      body.innerHTML =
+        '<div class="sheet-card">' +
+        '<div class="sheet-desc-label">活动说明</div>' +
+        '<div class="sheet-desc">' + esc(act.desc || '—') + '</div>' +
+        '<div class="sub-row"><span class="label">报名时间</span><span class="value">' + esc(act.signupStart || '—') + ' ~ ' + esc(act.signupEnd || '—') + '</span></div>' +
+        '<div class="sub-row"><span class="label">作品格式</span><span class="value">' + esc(act.format || '—') + '</span></div>' +
+        '<div class="sub-row"><span class="label">活动对象</span><span class="value">' + esc(actScopeText(act.targetKindergartens)) + '</span></div>' +
+        '<div class="sub-row"><span class="label">奖项设置</span><span class="value">' + esc(awards || '—') + '</span></div>' +
+        '</div>';
+    }
+    Proto.openDialog('activitySheet');
+  }
+
+  /* 结果弹层：展示当前教师（张慧）的名次/奖项/评分 + 电子奖状（管理端生成后） */
+  function openMyResult(act) {
+    var title = document.getElementById('resultTitle');
+    if (title) title.textContent = '「' + act.title + '」结果';
+    var body = document.getElementById('resultBody');
+    if (body) {
+      var item = buildArchiveItems(act).filter(function (it) { return it.s.name === TEACHER_NAME; })[0];
+      var html = '';
+      if (!item) {
+        html = '<div class="mb-empty-tip">未参与该活动</div>';
+      } else if (!item.w) {
+        html = '<div class="mb-empty-tip">未提交作品</div>';
+      } else {
+        html += '<div class="result-hero">' +
+          '<div class="result-award">' + esc(item.awardName || '参与奖') + '</div>' +
+          '<div class="result-rank">' + (item.rank != null ? '第 ' + item.rank + ' 名' : '未获奖') + '</div>' +
+          '</div>';
+        html += '<div class="sheet-card" style="margin-top:12px;">';
+        html += '<div class="sub-row"><span class="label">作品</span><span class="value">' + esc(item.w.title) + '</span></div>';
+        if (item.score != null) {
+          html += '<div class="sub-row"><span class="label">综合评分</span><span class="value">' + item.score + '</span></div>';
         }
-        return (
-          '<div class="mb-activity-card">' +
-          '<div class="ac-title">' + esc(a.title) + '<span class="act-status ' + statusCls + '" style="font-size:11px;">' + esc(statusText) + '</span></div>' +
-          '<div class="ac-desc">活动对象：' + esc(actScopeText(a.targetKindergartens)) + ' · 作品格式：' + esc(a.format) + '</div>' +
-          '<div class="ac-meta">' +
-          '<span>报名：' + esc(a.signupStart || '—') + ' ~ ' + esc(a.signupEnd || '—') + '</span>' +
-          ops +
-          '</div>' +
-          '</div>'
-        );
-      })
-      .join('');
+        html += '<div class="sub-row"><span class="label">奖项等级</span><span class="value">' + esc(item.awardName || '—') + '</span></div>';
+        html += '</div>';
+        var certStatus = ((MDS.get('certStatus') || {})[act.id]) || {};
+        if (certStatus[TEACHER_NAME]) {
+          var tpl = certTemplateById(act.certTemplateId);
+          html += '<div class="cert-card" style="margin-top:12px;">' + buildCertPreviewHtml(tpl, certVarMap(act, {
+            name: item.s.name,
+            className: item.s.className,
+            kindergarten: item.s.kindergarten,
+            rank: item.rank,
+            awardName: item.awardName,
+          })) + '</div>';
+        } else {
+          html += '<div style="margin-top:12px;font-size:12px;color:#9ca3af;text-align:center;">电子奖状由管理端发布后生成</div>';
+        }
+      }
+      body.innerHTML = html;
+    }
+    Proto.openDialog('resultSheet');
   }
 
   /* ═══════════════════════ 移动端：排行榜 ═══════════════════════ */
@@ -3370,6 +3501,10 @@ window.MedalDemo = (function () {
     if (avatar) avatar.textContent = p.avatar;
     if (name) name.textContent = p.name;
     if (roleLine) roleLine.textContent = p.roleLine;
+
+    // 教师端不展示「我的奖金」模块（奖金为园长/管理端管理项）
+    var bonusCard = document.getElementById('bonusCard');
+    if (bonusCard) bonusCard.hidden = role === 'teacher';
 
     var bonus = document.getElementById('mineBonus');
     if (bonus) {
@@ -4131,20 +4266,68 @@ window.MedalDemo = (function () {
       Proto.showToast('已新增教师');
     });
 
-    // ── 移动端：活动上传弹层 ──
-    Proto.registerAction('upload-sheet', function () {
+    // ── 移动端：活动中心（教师端完整流程：查看 → 报名 → 上传 → 结果）──
+
+    // 打开活动详情弹层
+    Proto.registerAction('activity-detail', function (el) {
+      var act = activityById(Number(el.getAttribute('data-id')));
+      if (act) openActivityDetail(act);
+    });
+
+    // 打开报名确认弹层
+    Proto.registerAction('activity-signup', function (el) {
+      signupActivityId = Number(el.getAttribute('data-id')) || null;
+      var act = activityById(signupActivityId);
+      var title = document.getElementById('signupActTitle');
+      if (title) title.textContent = act ? '「' + act.title + '」' : '';
+      Proto.openDialog('signupSheet');
+    });
+
+    // 确认报名：写入当前教师 teacherSignups
+    Proto.registerAction('activity-signup-confirm', function () {
+      if (!signupActivityId) return;
+      MDS.update('teacherSignups', function (map) {
+        var next = Object.assign({}, map || {});
+        next[signupActivityId] = { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false, workTitle: '' };
+        return next;
+      });
+      Proto.closeDialog('signupSheet');
+      renderMobileActivity();
+      Proto.showToast('报名成功，请上传参赛作品');
+    });
+
+    // 打开上传作品弹层（记录当前活动 id）
+    Proto.registerAction('upload-sheet', function (el) {
+      uploadActivityId = Number(el.getAttribute('data-id')) || null;
       var mask = document.getElementById('uploadSheet');
       if (mask) mask.hidden = false;
     });
 
+    // 提交作品：更新当前教师的 teacherSignups（workSubmitted + workTitle）
     Proto.registerAction('upload-confirm', function () {
       var file = document.getElementById('uploadFileName');
       if (file && !file.value.trim()) {
         Proto.showToast('请先选择要上传的文件');
         return;
       }
+      var workTitle = (document.getElementById('uploadFileName') || {}).value.trim();
+      if (uploadActivityId) {
+        MDS.update('teacherSignups', function (map) {
+          var next = Object.assign({}, map || {});
+          var cur = next[uploadActivityId] || { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false };
+          next[uploadActivityId] = Object.assign({}, cur, { workSubmitted: true, workTitle: workTitle });
+          return next;
+        });
+      }
       Proto.closeDialog('uploadSheet');
+      renderMobileActivity();
       Proto.showToast('作品提交成功');
+    });
+
+    // 打开我的结果弹层
+    Proto.registerAction('activity-result', function (el) {
+      var act = activityById(Number(el.getAttribute('data-id')));
+      if (act) openMyResult(act);
     });
 
     // ── 移动端：消息已读 ──
@@ -5077,9 +5260,9 @@ window.MedalDemo = (function () {
     }
     if (document.getElementById('activityList')) {
       renderMobileActivity();
-      document.querySelectorAll('[data-tab-group="actFilter"]').forEach(function (tab) {
+      document.querySelectorAll('[data-tab-group="actTab"]').forEach(function (tab) {
         tab.addEventListener('click', function () {
-          mobileActFilter = tab.getAttribute('data-tab-value') || 'all';
+          mobileActTab = tab.getAttribute('data-tab-value') || 'all';
           renderMobileActivity();
         });
       });

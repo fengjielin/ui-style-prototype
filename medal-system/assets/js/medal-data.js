@@ -236,6 +236,14 @@ window.MDS = (function () {
       { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'pending', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'], format: '文档', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，初评复评均已完成，待发布评审结果。', participants: 30, worksCount: 30, certTemplateId: 1 },
     ],
 
+    /* 教师端「活动中心」当前教师（张慧）的报名/上传状态（活动 id → 参与状态，可持久化）
+       signedUp 是否已报名 / workSubmitted 是否已上传作品 / workTitle 上传的作品名称 */
+    teacherSignups: {
+      1:  { signedUp: true, signupTime: '2026-07-02 09:00', workSubmitted: true,  workTitle: '浅谈幼儿园一日活动中的生活教育' },
+      6:  { signedUp: true, signupTime: '2025-09-05 10:00', workSubmitted: true,  workTitle: '幼儿园户外自主游戏的教师支持策略' },
+      10: { signedUp: true, signupTime: '2026-05-15 09:30', workSubmitted: true,  workTitle: '建构区幼儿合作行为观察记录' },
+    },
+
     /* 活动类型字典（可配置，多层级） */
     activityTypes: [
       { id: 1, name: '论文比赛', parent: '教学教研', sort: 1, enabled: true },
@@ -724,7 +732,7 @@ window.MDS = (function () {
     ],
   };
 
-  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activityNotices', 'activitySchemes', 'bonusGradients', 'certTemplates'];
+  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activityNotices', 'activitySchemes', 'bonusGradients', 'certTemplates', 'teacherSignups'];
 
   /* ────────────────────────── PC 端界面状态（可持久化，重置时恢复默认） ────────────────────────── */
   var UI_DEFAULTS = {
