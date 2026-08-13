@@ -219,9 +219,19 @@
           <div id="rankGardenRoot"></div>
         </div>
 
+        <!-- ═════════ ⑦½ 园内教师榜（全部）（rank-garden-all，园长/管理员）：园内排行榜「查看全部」二级页 → 点击教师查看积分获取明细 ═════════ -->
+        <div class="pc-page-block" data-page-key="rank-garden-all">
+          <div id="rankGardenAllRoot"></div>
+        </div>
+
         <!-- ═════════ ⑧ 全平台排行榜（rank-platform，管理员端）：KPI + 跨园对比 + 全平台教师榜 ═════════ -->
         <div class="pc-page-block" data-page-key="rank-platform">
           <div id="rankPlatformRoot"></div>
+        </div>
+
+        <!-- ═════════ ⑧½ 全平台教师榜（全部）（rank-platform-all，管理员端）：全平台榜「查看全部」二级页 → 点击教师查看积分获取明细 ═════════ -->
+        <div class="pc-page-block" data-page-key="rank-platform-all">
+          <div id="rankPlatformAllRoot"></div>
         </div>
 
         <!-- ═════════ ⑤ 家长进度看板（rank-parent） ═════════ -->
@@ -1141,6 +1151,26 @@
       <div class="dialog-body" id="medalDetailBody"></div>
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="medalDetailDialog">关 闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 积分获取明细弹窗（全平台教师榜「查看明细」：获得方式 / 积分 / 时间） ══════════════════ -->
+  <div class="mask-layer" id="pointDetailDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog" style="width:640px;max-width:92vw;">
+      <div class="dialog-head" id="pointDetailTitle">积分获取明细</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="pointDetailMeta"></div>
+        <div class="point-dim-chips" id="pointDetailSummary" style="margin-bottom:14px;"></div>
+        <div style="max-height:320px;overflow-y:auto;border:1px solid var(--pc-border-card);border-radius:6px;">
+          <table class="pc-table">
+            <thead><tr><th style="width:150px;">时间</th><th>获得方式</th><th style="width:90px;">积分</th></tr></thead>
+            <tbody id="pointDetailTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="pointDetailDialog">关 闭</button>
       </div>
     </div>
   </div>

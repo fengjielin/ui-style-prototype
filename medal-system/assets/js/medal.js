@@ -225,6 +225,8 @@ window.MedalDemo = (function () {
   var EXTRA_PAGES = {
     'activity-works': { groupTitle: '活动管理', title: '作品管理' },
     'activity-notify': { groupTitle: '活动组织', title: '通知管理' },
+    'rank-platform-all': { groupTitle: '排行榜', title: '全平台教师榜' },
+    'rank-garden-all': { groupTitle: '排行榜', title: '园内教师榜' },
   };
 
   function findMenuByKey(key) {
@@ -432,7 +434,9 @@ window.MedalDemo = (function () {
     'activity-manage': renderActivityManage,
     'activity-query': renderActivityQuery,
     'rank-garden': renderRankGarden,
+    'rank-garden-all': renderRankGardenAll,
     'rank-platform': renderRankPlatform,
+    'rank-platform-all': renderRankPlatformAll,
     'rank-parent': renderRankParent,
     'score-scheme': renderScoreScheme,
     'medal-threshold': renderMedalThreshold,
@@ -1961,7 +1965,7 @@ window.MedalDemo = (function () {
     return merged;
   }
 
-  /* 排位分综合榜表格（园长/管理员视角，无「本人」高亮）：data = buildRankScoreTable 返回 */
+  /* 排位分综合榜表格（园长/管理员视角，无「本人」高亮；每行「查看明细」查看该教师积分获取明细）：data = buildRankScoreTable 返回 */
   function rankScoreTableHtml(data) {
     var tableRows = data.rows.map(function (r) {
       var dimCells = data.dims.map(function (d) {
@@ -1974,6 +1978,7 @@ window.MedalDemo = (function () {
         dimCells +
         '<td><span class="total-cell">' + r.totalPoints + '</span><span class="sub">分</span></td>' +
         '<td><span class="rank-cell' + (r.totalRank <= 3 ? ' rank-top' : '') + '">第 ' + r.totalRank + '</span></td>' +
+        '<td><span class="action-btn action-primary" data-action="rank-point-detail" data-teacher="' + esc(r.name) + '">查看明细</span></td>' +
         '</tr>'
       );
     }).join('');
@@ -1983,7 +1988,7 @@ window.MedalDemo = (function () {
       data.dims.map(function (d) {
         return '<th>' + esc(d.name) + '<br><span style="font-weight:400;font-size:11px;color:#909399;">得分 / 排名</span></th>';
       }).join('') +
-      '<th>总得分</th><th>总排名</th>' +
+      '<th>总得分</th><th>总排名</th><th>操作</th>' +
       '</tr></thead><tbody>' + tableRows + '</tbody></table>'
     );
   }
@@ -2027,12 +2032,60 @@ window.MedalDemo = (function () {
     box.innerHTML =
       renderGardenKpi(garden) +
       '<section class="pc-card">' +
-      '<div class="card-head"><span class="card-title">全园 TOP10 综合榜</span><span class="table-count">' + esc(garden) + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span></div>' +
+      '<div class="card-head"><span class="card-title">全园 TOP10 综合榜</span>' +
+      '<div style="margin-left:auto;display:flex;align-items:center;gap:12px;">' +
+      '<span class="table-count">' + esc(garden) + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span>' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="pc-menu-select" data-menu-key="rank-garden-all">查看全部</button>' +
+      '</div></div>' +
       '<div class="card-body no-padding">' + rankScoreTableHtml(buildRankScoreTable(rankData, N)) + '</div>' +
       '</section>' +
       '<div class="rank-rule-note">' +
       '排位分规则：全园在职参与活动老师共 <b>' + N + '</b> 名，单维度按数值从高到低倒序排名，第 1 名得 ' + N + ' 分、第 2 名得 ' + (N - 1) + ' 分……第 ' + N + ' 名得 1 分；并列名次得相同排位分、后续名次顺延。总积分 = 平台使用 + 家园互动 + 外部推广 + 会员转化 四项排位分之和。' +
       '</div>';
+  }
+
+  /* 园内教师榜（全部）：园长/管理员「园内排行榜」二级页，列出当前园全部教师并支持查看积分获取明细 */
+  function renderRankGardenAll(root) {
+    var box = document.getElementById('rankGardenAllRoot');
+    if (!box) return;
+    var garden = currentRole() === 'admin' ? gardenFilter : '童蹊幼儿园';
+    var gardenRanks = MDS.get('gardenRanks') || {};
+    var rankData = gardenRanks[garden] || {};
+    var N = (rankData.total || []).length || 1;
+    var data = buildRankScoreTable(rankData, N);
+
+    var rows = data.rows.map(function (r) {
+      var dimCells = data.dims.map(function (d) {
+        var cell = r[d.key];
+        return '<td><span class="score-cell">' + cell.score + '</span><span class="sub">分</span> / <span class="rank-cell' + (cell.rank <= 3 ? ' rank-top' : '') + '">第 ' + cell.rank + '</span></td>';
+      }).join('');
+      return (
+        '<tr>' +
+        '<td><span class="rank-cell' + (r.totalRank <= 3 ? ' rank-top' : '') + '">第 ' + r.totalRank + '</span></td>' +
+        '<td>' + esc(r.name) + '<div style="font-size:11px;color:#909399;">' + esc(r.className) + '</div></td>' +
+        dimCells +
+        '<td><span class="total-cell">' + r.totalPoints + '</span><span class="sub">分</span></td>' +
+        '<td><span class="action-btn action-primary" data-action="rank-point-detail" data-teacher="' + esc(r.name) + '">查看明细</span></td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="pc-menu-select" data-menu-key="rank-garden">← 返回园内排行榜</button>' +
+      '<span style="font-size:12px;color:#909399;">当前园：' + esc(garden) + ' · 点击任一教师「查看明细」可查看其积分获取明细（获得方式 / 积分 / 时间）</span>' +
+      '</div>' +
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">园内教师排位分榜（全部）</span><span class="table-count">' + esc(garden) + ' · 共 ' + N + ' 名 · 数据更新于 ' + RANK_UPDATE_TIME + '</span></div>' +
+      '<div class="card-body no-padding">' +
+      '<table class="pc-table rank-score-table"><thead><tr>' +
+      '<th>总排名</th><th>姓名</th>' +
+      data.dims.map(function (d) {
+        return '<th>' + esc(d.name) + '<br><span style="font-weight:400;font-size:11px;color:#909399;">得分 / 排名</span></th>';
+      }).join('') +
+      '<th>总得分</th><th>操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></section>';
   }
 
   /* ═══════════════════════ PC：家长进度看板（三色进度） ═══════════════════════ */
@@ -2164,12 +2217,131 @@ window.MedalDemo = (function () {
     var merged = mergeGardenRanks();
     var N = (merged.total || []).length || 1;
     html += '<section class="pc-card">';
-    html += '<div class="card-head"><span class="card-title">全平台教师排位分榜</span><span class="table-count">TOP ' + N + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span></div>';
+    html += '<div class="card-head"><span class="card-title">全平台教师排位分榜</span>' +
+      '<div style="margin-left:auto;display:flex;align-items:center;gap:12px;">' +
+      '<span class="table-count">TOP ' + N + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span>' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="pc-menu-select" data-menu-key="rank-platform-all">查看全部</button>' +
+      '</div></div>';
     html += '<div class="card-body no-padding">' + rankScoreTableHtml(buildRankScoreTable(merged, N)) + '</div>';
     html += '</section>';
 
     box.innerHTML = html;
     initGardenCompareChart(summary);
+  }
+
+  /* ═══════════════════════ PC：全平台教师榜（全部）——「查看全部」二级页 + 积分获取明细 ═══════════════════════ */
+
+  /* 教师名 → 教师信息（teachers 数据映射，供全平台教师榜 / 积分明细弹窗展示园所、班级、岗位） */
+  function teacherInfoMap() {
+    var map = {};
+    (MDS.get('teachers') || []).forEach(function (t) { map[t.name] = t; });
+    return map;
+  }
+
+  /* 积分获取明细维度 → 颜色（与全平台教师榜 / 积分明细弹窗共用） */
+  function pointDims() {
+    return [
+      { key: '平台使用', color: '#2563eb', bg: 'rgba(37,99,235,0.12)' },
+      { key: '家园互动', color: '#16a34a', bg: 'rgba(102,204,153,0.18)' },
+      { key: '外部推广', color: '#ff8a00', bg: 'rgba(255,138,0,0.14)' },
+      { key: '会员转化', color: '#d97706', bg: 'rgba(245,158,11,0.14)' },
+    ];
+  }
+
+  /* 全平台教师榜（全部）：列出全部参与教师，点击「查看明细」进入积分获取明细 */
+  function renderRankPlatformAll(root) {
+    var box = document.getElementById('rankPlatformAllRoot');
+    if (!box) return;
+    var merged = mergeGardenRanks();
+    var N = (merged.total || []).length || 1;
+    var data = buildRankScoreTable(merged, N);
+    var infoMap = teacherInfoMap();
+
+    var rows = data.rows.map(function (r) {
+      var dimCells = data.dims.map(function (d) {
+        var cell = r[d.key];
+        return '<td><span class="score-cell">' + cell.score + '</span><span class="sub">分</span> / <span class="rank-cell' + (cell.rank <= 3 ? ' rank-top' : '') + '">第 ' + cell.rank + '</span></td>';
+      }).join('');
+      return (
+        '<tr>' +
+        '<td><span class="rank-cell' + (r.totalRank <= 3 ? ' rank-top' : '') + '">第 ' + r.totalRank + '</span></td>' +
+        '<td>' + esc(r.name) + '<div style="font-size:11px;color:#909399;">' + esc(r.className) + '</div></td>' +
+        '<td>' + esc((infoMap[r.name] || {}).kindergarten || '—') + '</td>' +
+        dimCells +
+        '<td><span class="total-cell">' + r.totalPoints + '</span><span class="sub">分</span></td>' +
+        '<td><span class="action-btn action-primary" data-action="rank-point-detail" data-teacher="' + esc(r.name) + '">查看明细</span></td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="pc-menu-select" data-menu-key="rank-platform">← 返回全平台排行榜</button>' +
+      '<span style="font-size:12px;color:#909399;">点击任一教师「查看明细」可查看其积分获取明细（获得方式 / 积分 / 时间）</span>' +
+      '</div>' +
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">全平台教师排位分榜（全部）</span><span class="table-count">共 ' + N + ' 名 · 数据更新于 ' + RANK_UPDATE_TIME + '</span></div>' +
+      '<div class="card-body no-padding">' +
+      '<table class="pc-table rank-score-table"><thead><tr>' +
+      '<th>总排名</th><th>姓名</th><th>幼儿园</th>' +
+      data.dims.map(function (d) {
+        return '<th>' + esc(d.name) + '<br><span style="font-weight:400;font-size:11px;color:#909399;">得分 / 排名</span></th>';
+      }).join('') +
+      '<th>总得分</th><th>操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></section>';
+  }
+
+  /* 某教师积分获取明细（按维度汇总 + 逐条记录） */
+  function pointDetailRecords(name) {
+    return (MDS.get('pointRecords') || []).filter(function (r) { return r.teacher === name; });
+  }
+
+  function renderPointDetailDialog(name) {
+    var dialog = document.getElementById('pointDetailDialog');
+    if (!dialog) return;
+    var records = pointDetailRecords(name);
+    var info = teacherInfoMap()[name] || {};
+    var dims = pointDims();
+
+    // 按维度汇总积分
+    var sum = {}, total = 0;
+    dims.forEach(function (d) { sum[d.key] = 0; });
+    records.forEach(function (r) { sum[r.dimension] = (sum[r.dimension] || 0) + r.points; total += r.points; });
+
+    var title = document.getElementById('pointDetailTitle');
+    if (title) title.textContent = '积分获取明细 · ' + name;
+    var meta = document.getElementById('pointDetailMeta');
+    if (meta) meta.textContent = (info.className || '—') + ' · ' + (info.kindergarten || '—') + (info.role ? ' · ' + info.role : '') + ' · 本月累计 ' + total + ' 分';
+
+    var summary = document.getElementById('pointDetailSummary');
+    if (summary) {
+      summary.innerHTML =
+        dims.map(function (d) {
+          return '<div class="point-dim-chip" style="border-color:' + d.color + ';background:' + d.bg + ';">' +
+            '<span class="pd-name">' + d.key + '</span><span class="pd-val" style="color:' + d.color + ';">' + sum[d.key] + ' 分</span></div>';
+        }).join('') +
+        '<div class="point-dim-chip point-dim-total"><span class="pd-name">合计</span><span class="pd-val">' + total + ' 分</span></div>';
+    }
+
+    var tbody = document.getElementById('pointDetailTbody');
+    if (tbody) {
+      if (!records.length) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#909399;padding:32px 0;">暂无积分获取记录</td></tr>';
+      } else {
+        // 按获取时间倒序展示
+        var sorted = records.slice().sort(function (a, b) { return a.time < b.time ? 1 : -1; });
+        tbody.innerHTML = sorted.map(function (r) {
+          var d = dims.filter(function (x) { return x.key === r.dimension; })[0] || {};
+          return '<tr>' +
+            '<td style="color:#909399;white-space:nowrap;">' + esc(r.time) + '</td>' +
+            '<td><span class="point-dim-tag" style="color:' + (d.color || '#606266') + ';background:' + (d.bg || '#f4f5f7') + ';">' + esc(r.dimension) + '</span> ' + esc(r.method) + '</td>' +
+            '<td style="text-align:right;"><span class="score-cell">+' + r.points + '</span><span class="sub">分</span></td>' +
+            '</tr>';
+        }).join('');
+      }
+    }
+    Proto.openDialog('pointDetailDialog');
   }
 
   /* ═══════════════════════ PC：积分方案管理（月度权重配置 + 活动方案 CRUD） ═══════════════════════ */
@@ -5070,6 +5242,12 @@ window.MedalDemo = (function () {
       } else {
         showMedalDetailSheet(id);
       }
+    });
+
+    // ── 全平台教师榜：查看教师积分获取明细 ──
+    Proto.registerAction('rank-point-detail', function (el) {
+      var name = el.getAttribute('data-teacher');
+      if (name) renderPointDetailDialog(name);
     });
 
     // ── 月度清单 ──

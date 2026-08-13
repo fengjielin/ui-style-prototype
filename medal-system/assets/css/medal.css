@@ -2155,6 +2155,52 @@ tr.row-excluded td {
   font-size: 16px;
 }
 
+/* ═══════════════════════ PC：积分获取明细（全平台教师榜「查看明细」弹窗） ═══════════════════════ */
+
+/* 维度汇总条（4 维度 + 合计） */
+.point-dim-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.point-dim-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--pc-border-input);
+  border-radius: 6px;
+  font-size: var(--pc-font-tag);
+}
+
+.point-dim-chip .pd-name {
+  color: var(--pc-text-secondary);
+}
+
+.point-dim-chip .pd-val {
+  font-weight: 700;
+}
+
+.point-dim-chip.point-dim-total {
+  border-color: var(--pc-primary);
+  background: var(--pc-primary-active-bg);
+}
+
+.point-dim-chip.point-dim-total .pd-val {
+  color: var(--pc-primary);
+}
+
+/* 明细表内维度小标签 */
+.point-dim-tag {
+  display: inline-block;
+  padding: 1px 8px;
+  margin-right: 6px;
+  border-radius: 4px;
+  font-size: var(--pc-font-tag);
+  white-space: nowrap;
+}
+
 /* ═══════════════════════ 移动端：统计排行（rank.html） ═══════════════════════ */
 
 /* 数据总览 KPI 卡（2 列网格） */

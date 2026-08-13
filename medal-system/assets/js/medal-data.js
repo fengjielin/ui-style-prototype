@@ -630,6 +630,70 @@ window.MDS = (function () {
       { name: '蓝天幼儿园', teachers: 2, avgTotal: 1695, parents: 66, registered: 56, members: 42 },
     ],
 
+    /* 积分获取明细（全平台教师排位分榜「查看全部」→ 点击教师查看）：
+       dimension 计分维度（平台使用/家园互动/外部推广/会员转化）/ method 获得方式 / points 单条得分 / time 获取时间 */
+    pointRecords: [
+      /* 张慧 · 童蹊幼儿园 中一班 班主任 */
+      { id: 1, teacher: '张慧', dimension: '平台使用', method: '发布观察记录', points: 5, time: '2026-08-13 09:20' },
+      { id: 2, teacher: '张慧', dimension: '家园互动', method: '通知分享（家长已读）', points: 8, time: '2026-08-13 08:05' },
+      { id: 3, teacher: '张慧', dimension: '平台使用', method: '完成发展评估', points: 5, time: '2026-08-12 15:40' },
+      { id: 4, teacher: '张慧', dimension: '家园互动', method: '发布在园生活', points: 8, time: '2026-08-12 11:30' },
+      { id: 5, teacher: '张慧', dimension: '外部推广', method: '朋友圈分享活动', points: 15, time: '2026-08-11 16:40' },
+      { id: 6, teacher: '张慧', dimension: '会员转化', method: '家长开通会员', points: 20, time: '2026-08-10 11:30' },
+      { id: 7, teacher: '张慧', dimension: '平台使用', method: '填写幼儿评语', points: 5, time: '2026-08-10 10:10' },
+      /* 李娜 · 童蹊幼儿园 小一班 班主任 */
+      { id: 8, teacher: '李娜', dimension: '平台使用', method: '发布观察记录', points: 5, time: '2026-08-13 09:05' },
+      { id: 9, teacher: '李娜', dimension: '家园互动', method: '习惯养成打卡', points: 8, time: '2026-08-12 10:20' },
+      { id: 10, teacher: '李娜', dimension: '外部推广', method: '邀请家长注册', points: 15, time: '2026-08-12 09:40' },
+      { id: 11, teacher: '李娜', dimension: '家园互动', method: '通知分享（家长已读）', points: 8, time: '2026-08-11 14:10' },
+      { id: 12, teacher: '李娜', dimension: '会员转化', method: '家长开通会员', points: 20, time: '2026-08-11 10:00' },
+      { id: 13, teacher: '李娜', dimension: '平台使用', method: '完成发展评估', points: 5, time: '2026-08-10 16:30' },
+      /* 王强 · 童蹊幼儿园 大一班 班主任 */
+      { id: 14, teacher: '王强', dimension: '平台使用', method: '教研纪要', points: 5, time: '2026-08-13 08:50' },
+      { id: 15, teacher: '王强', dimension: '家园互动', method: '发布在园生活', points: 8, time: '2026-08-12 15:00' },
+      { id: 16, teacher: '王强', dimension: '平台使用', method: '更新健康档案', points: 5, time: '2026-08-11 11:20' },
+      { id: 17, teacher: '王强', dimension: '会员转化', method: '新家长激活会员', points: 20, time: '2026-08-11 09:15' },
+      { id: 18, teacher: '王强', dimension: '外部推广', method: '转发活动链接', points: 15, time: '2026-08-10 17:30' },
+      { id: 19, teacher: '王强', dimension: '家园互动', method: '亲子任务完成', points: 8, time: '2026-08-10 12:00' },
+      /* 赵敏 · 童蹊幼儿园 小一班 配班 */
+      { id: 20, teacher: '赵敏', dimension: '平台使用', method: '发布观察记录', points: 5, time: '2026-08-13 10:30' },
+      { id: 21, teacher: '赵敏', dimension: '家园互动', method: '家庭时光分享', points: 8, time: '2026-08-12 13:40' },
+      { id: 22, teacher: '赵敏', dimension: '外部推广', method: '朋友圈分享活动', points: 15, time: '2026-08-11 15:10' },
+      { id: 23, teacher: '赵敏', dimension: '会员转化', method: '家长开通会员', points: 20, time: '2026-08-10 14:20' },
+      { id: 24, teacher: '赵敏', dimension: '平台使用', method: '填写幼儿评语', points: 5, time: '2026-08-09 10:00' },
+      /* 陈晨 · 童蹊幼儿园 中一班 配班 */
+      { id: 25, teacher: '陈晨', dimension: '平台使用', method: '完成发展评估', points: 5, time: '2026-08-13 09:40' },
+      { id: 26, teacher: '陈晨', dimension: '家园互动', method: '通知分享（家长已读）', points: 8, time: '2026-08-12 08:50' },
+      { id: 27, teacher: '陈晨', dimension: '平台使用', method: '更新健康档案', points: 5, time: '2026-08-11 14:00' },
+      { id: 28, teacher: '陈晨', dimension: '外部推广', method: '邀请家长注册', points: 15, time: '2026-08-11 10:30' },
+      { id: 29, teacher: '陈晨', dimension: '会员转化', method: '会员续费', points: 20, time: '2026-08-09 11:00' },
+      /* 刘洋 · 童蹊幼儿园 大一班 配班 */
+      { id: 30, teacher: '刘洋', dimension: '平台使用', method: '教研纪要', points: 5, time: '2026-08-13 11:00' },
+      { id: 31, teacher: '刘洋', dimension: '家园互动', method: '发布在园生活', points: 8, time: '2026-08-12 16:10' },
+      { id: 32, teacher: '刘洋', dimension: '平台使用', method: '发布观察记录', points: 5, time: '2026-08-11 09:30' },
+      { id: 33, teacher: '刘洋', dimension: '会员转化', method: '家长开通会员', points: 20, time: '2026-08-10 15:40' },
+      { id: 34, teacher: '刘洋', dimension: '外部推广', method: '转发活动链接', points: 15, time: '2026-08-09 14:20' },
+      /* 周涛 · 阳光幼儿园 大一班 班主任 */
+      { id: 35, teacher: '周涛', dimension: '平台使用', method: '发布观察记录', points: 5, time: '2026-08-13 08:30' },
+      { id: 36, teacher: '周涛', dimension: '家园互动', method: '通知分享（家长已读）', points: 8, time: '2026-08-12 09:50' },
+      { id: 37, teacher: '周涛', dimension: '外部推广', method: '朋友圈分享活动', points: 15, time: '2026-08-11 11:40' },
+      { id: 38, teacher: '周涛', dimension: '会员转化', method: '家长开通会员', points: 20, time: '2026-08-10 10:50' },
+      { id: 39, teacher: '周涛', dimension: '平台使用', method: '填写幼儿评语', points: 5, time: '2026-08-09 15:30' },
+      /* 吴倩 · 蓝天幼儿园 小一班 配班 */
+      { id: 40, teacher: '吴倩', dimension: '平台使用', method: '完成发展评估', points: 5, time: '2026-08-13 10:10' },
+      { id: 41, teacher: '吴倩', dimension: '家园互动', method: '发布在园生活', points: 8, time: '2026-08-12 14:30' },
+      { id: 42, teacher: '吴倩', dimension: '平台使用', method: '更新健康档案', points: 5, time: '2026-08-11 13:20' },
+      { id: 43, teacher: '吴倩', dimension: '外部推广', method: '邀请家长注册', points: 15, time: '2026-08-10 09:40' },
+      { id: 44, teacher: '吴倩', dimension: '会员转化', method: '家长开通会员', points: 20, time: '2026-08-09 16:00' },
+      /* 郑爽 · 蓝天幼儿园 中一班 班主任 */
+      { id: 45, teacher: '郑爽', dimension: '平台使用', method: '教研纪要', points: 5, time: '2026-08-13 09:00' },
+      { id: 46, teacher: '郑爽', dimension: '家园互动', method: '通知分享（家长已读）', points: 8, time: '2026-08-12 10:00' },
+      { id: 47, teacher: '郑爽', dimension: '外部推广', method: '朋友圈分享活动', points: 15, time: '2026-08-11 12:20' },
+      { id: 48, teacher: '郑爽', dimension: '会员转化', method: '新家长激活会员', points: 20, time: '2026-08-11 09:50' },
+      { id: 49, teacher: '郑爽', dimension: '平台使用', method: '发布观察记录', points: 5, time: '2026-08-10 11:10' },
+      { id: 50, teacher: '郑爽', dimension: '家园互动', method: '亲子任务完成', points: 8, time: '2026-08-09 13:30' },
+    ],
+
     /* 家长进度（班级维度：注册/未注册/会员激活 三色；kindergarten 所属园，供园长按本园 / 管理员按全园分组） */
     parentProgress: [
       { className: '小一班', kindergarten: '童蹊幼儿园', total: 32, registered: 30, active: 24 },
@@ -986,7 +1050,7 @@ window.MDS = (function () {
       }
       // 只读 mock（不入库）：幼儿园/活动类型/作品/门槛/榜单/首页原始内容等演示数据
       // （activitySchemes / bonusGradients 已移入 MUTABLE_KEYS 持久化，奖金梯度与活动奖金规则可编辑保留）
-      ['kindergartens', 'activityTypes', 'works', 'judges', 'monthlyScheme', 'scoreLogs', 'medalThresholds', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'homeAttendance', 'homeGrid'].forEach(function (key) {
+      ['kindergartens', 'activityTypes', 'works', 'judges', 'monthlyScheme', 'scoreLogs', 'medalThresholds', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'pointRecords', 'homeAttendance', 'homeGrid'].forEach(function (key) {
         cache[key] = JSON.parse(JSON.stringify(MOCK[key]));
       });
       var role = lsGet('role');
