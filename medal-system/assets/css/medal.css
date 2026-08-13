@@ -2,7 +2,7 @@
  * ============================================================
  * 童蹊社区-原型 · 原型演示系统 专属样式
  * 用途：承载勋章体系专属组件类（榜单 / 勋章 / 进度 / 统计卡等）
- * 说明：不动 base-*.css，色值统一引用现有 --pc-*/--mb-* 令牌
+ * 说明：不动 base-*.css，色值统一引用现有 --pc-*--mb-* 令牌
  * ============================================================
  */
 
@@ -400,15 +400,23 @@
 
 .progress-tri .seg {
   height: 100%;
+  box-sizing: border-box;
   transition: width 0.4s ease;
 }
 
+/* 相邻色段之间留 2px 白色分隔，避免橙/绿相邻色块视觉粘连 */
+.progress-tri .seg + .seg {
+  border-left: 2px solid #fff;
+}
+
+/* 该进度条为 PC / 移动端共享样式：两端令牌命名空间不同，故各色段补兜底色，
+   避免 PC 端缺 --mb-secondary（绿）或移动端缺 --pc-primary（橙）导致色段透明。 */
 .progress-tri .seg.seg-registered {
-  background: var(--mb-secondary);
+  background: var(--mb-secondary, #66cc99);
 }
 
 .progress-tri .seg.seg-active {
-  background: var(--pc-primary);
+  background: var(--pc-primary, #ff8a00);
 }
 
 .progress-tri .seg.seg-unregistered {
@@ -465,9 +473,9 @@
 }
 
 .parent-progress-row .row-nums {
-  width: 150px;
   font-size: var(--pc-font-tag);
   color: var(--pc-text-secondary);
+  white-space: nowrap;
   flex: 0 0 auto;
 }
 

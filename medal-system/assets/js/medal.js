@@ -2100,14 +2100,17 @@ window.MedalDemo = (function () {
   function parentProgressRow(p) {
     var regPct = Math.round((p.registered / p.total) * 100);
     var actPct = Math.round((p.active / p.total) * 100);
-    var unregPct = 100 - regPct;
+    // 已激活是「已注册」的子集：注册段只展示「已注册未激活」部分，
+    // 否则两段叠加会使总宽超过 100%，进度条溢出、未注册段被裁剪。
+    var regOnlyPct = regPct - actPct; // 已注册未激活
+    var unregPct = 100 - regPct;      // 未注册
     return (
       '<div class="parent-progress-row">' +
       '<span class="row-class">' + esc(p.className) + '</span>' +
       '<div style="flex:1;">' +
       '<div class="progress-tri">' +
-      '<span class="seg seg-registered" style="width:' + regPct + '%"></span>' +
       '<span class="seg seg-active" style="width:' + actPct + '%"></span>' +
+      '<span class="seg seg-registered" style="width:' + regOnlyPct + '%"></span>' +
       '<span class="seg seg-unregistered" style="width:' + unregPct + '%"></span>' +
       '</div>' +
       '</div>' +
@@ -2142,8 +2145,8 @@ window.MedalDemo = (function () {
 
     // 图例
     html += '<div class="progress-legend" style="margin:16px 0 4px;">';
-    html += '<span class="lg-item"><span class="lg-dot" style="background:#66cc99;"></span>家长已注册</span>';
     html += '<span class="lg-item"><span class="lg-dot" style="background:#ff8a00;"></span>会员已激活</span>';
+    html += '<span class="lg-item"><span class="lg-dot" style="background:#66cc99;"></span>已注册未激活</span>';
     html += '<span class="lg-item"><span class="lg-dot" style="background:#d1d5db;"></span>未注册</span>';
     html += '</div>';
 
@@ -4756,17 +4759,47 @@ window.MedalDemo = (function () {
   function renderPrincipalParentView() {
     var garden = '童蹊幼儿园';
     var progress = (MDS.get('parentProgress') || []).filter(function (pr) { return pr.kindergarten === garden; });
+
+    // 汇总数据（与 PC 端「家长进度看板」统计卡对齐，补齐移动端缺失的汇总信息）
+    var totalAll = 0, regAll = 0, actAll = 0;
+    progress.forEach(function (pr) { totalAll += pr.total; regAll += pr.registered; actAll += pr.active; });
+    var regRate = totalAll ? Math.round((regAll / totalAll) * 100) : 0;
+
     var html = '';
     html += '<div class="mb-section-title"><span class="title">家长注册进度</span><span class="subtitle">' + esc(garden) + '</span></div>';
+
+    // 汇总 KPI 卡（2 列，对应 PC 端「幼儿/注册/激活/注册率」四张统计卡）
+    html += '<div class="mb-stat-kpi-grid">';
+    html += mbKpiCard('👶', '在册幼儿总数', totalAll + ' 人');
+    html += mbKpiCard('📱', '家长已注册', regAll + ' 人');
+    html += mbKpiCard('⭐', '会员已激活', actAll + ' 人');
+    html += mbKpiCard('📊', '平均注册率', regRate + '%');
+    html += '</div>';
+
+    // 三色图例（复用 PC 图例结构，字号/颜色用内联兜底，规避移动端缺少 --pc-* 令牌）
+    html += '<div class="progress-legend" style="margin:16px 0 6px;font-size:11px;color:#6b7280;">';
+    html += '<span class="lg-item"><span class="lg-dot" style="background:#ff8a00;"></span>会员已激活</span>';
+    html += '<span class="lg-item"><span class="lg-dot" style="background:#66cc99;"></span>已注册未激活</span>';
+    html += '<span class="lg-item"><span class="lg-dot" style="background:#d1d5db;"></span>未注册</span>';
+    html += '</div>';
+
+    // 班级进度明细
     html += '<div class="mb-card" style="padding:12px 14px;margin-bottom:16px;">';
     progress.forEach(function (pr) {
       var regPct = Math.round((pr.registered / pr.total) * 100);
       var actPct = Math.round((pr.active / pr.total) * 100);
-      html += '<div style="margin-bottom:12px;"><div class="flex-between"><span style="font-size:12px;">' + esc(pr.className) + '</span>' +
+      var regOnlyPct = regPct - actPct; // 已注册未激活（已激活是已注册的子集，避免叠加溢出）
+      html +=
+        '<div style="margin-bottom:14px;">' +
+        '<div class="flex-between"><span style="font-size:13px;font-weight:600;">' + esc(pr.className) + '</span>' +
         '<span style="font-size:11px;color:#9ca3af;">注册率 ' + regPct + '%</span></div>' +
-        '<div class="progress-tri" style="margin-top:4px;"><span class="seg seg-registered" style="width:' + regPct + '%"></span>' +
+        '<div class="progress-tri" style="margin:6px 0 4px;">' +
         '<span class="seg seg-active" style="width:' + actPct + '%"></span>' +
-        '<span class="seg seg-unregistered" style="width:' + (100 - regPct) + '%"></span></div></div>';
+        '<span class="seg seg-registered" style="width:' + regOnlyPct + '%"></span>' +
+        '<span class="seg seg-unregistered" style="width:' + (100 - regPct) + '%"></span>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#6b7280;">已注册 ' + pr.registered + ' · 激活 ' + pr.active + ' · 未注册 ' + (pr.total - pr.registered) + '</div>' +
+        '</div>';
     });
     html += '</div>';
     return html;
