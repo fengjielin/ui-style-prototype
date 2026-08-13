@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>童蹊积分勋章激励体系 · 数据流向图</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14212b;
+      --muted: #5a6b78;
+      --line: #d5dde5;
+      --paper: #f3f6f8;
+      --card: #ffffff;
+      --activity: #2563a8;
+      --activity-soft: #e8f0fa;
+      --judge: #6b5b95;
+      --judge-soft: #f0edf7;
+      --result: #1a7a6d;
+      --result-soft: #e4f4f1;
+      --collect: #b45309;
+      --collect-soft: #fff7ed;
+      --engine: #c45c2b;
+      --engine-soft: #fbf0e8;
+      --rank: #2563a8;
+      --rank-soft: #e8f0fa;
+      --bonus: #1a7a6d;
+      --bonus-soft: #e4f4f1;
+      --data: #4a5560;
+      --data-soft: #eceff2;
+      --teacher: #b45309;
+      --principal: #1a7a6d;
+      --admin: #2563a8;
+      --judge-role: #6b5b95;
+      --system: #4a5560;
+      --parent: #c45c2b;
+      --shadow: 0 10px 28px rgba(20, 33, 43, 0.07);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #f5e6d9 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #dce6f2 0%, transparent 50%),
+        linear-gradient(180deg, #eef3f6 0%, var(--paper) 40%, #e9eef2 100%);
+      min-height: 100vh;
+      line-height: 1.55;
+    }
+
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 24px 32px;
+    }
+
+    header.hero {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: var(--engine);
+      font-weight: 500;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 18px;
+      height: 2px;
+      background: var(--engine);
+    }
+
+    h1 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 28px;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 72px;
+      z-index: 40;
+      backdrop-filter: blur(10px);
+    }
+
+    .tab-btn {
+      appearance: none;
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 12px;
+      padding: 14px 16px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .tab-btn:hover { background: rgba(255, 255, 255, 0.9); }
+
+    .tab-btn .kicker {
+      display: block;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .tab-btn .label {
+      display: block;
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .tab-btn .desc {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tab-btn[data-tab="activity"].active {
+      background: var(--activity-soft);
+      border-color: rgba(37, 99, 168, 0.35);
+    }
+
+    .tab-btn[data-tab="activity"].active .kicker,
+    .tab-btn[data-tab="activity"].active .label { color: var(--activity); }
+
+    .tab-btn[data-tab="incentive"].active {
+      background: var(--engine-soft);
+      border-color: rgba(196, 92, 43, 0.35);
+    }
+
+    .tab-btn[data-tab="incentive"].active .kicker,
+    .tab-btn[data-tab="incentive"].active .label { color: var(--engine); }
+
+    .panel { display: none; animation: rise 0.45s ease both; }
+    .panel.active { display: block; }
+
+    .panel-intro {
+      margin-bottom: 28px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      border: 1px dashed var(--line);
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .panel[data-panel="activity"] .panel-intro {
+      border-color: rgba(37, 99, 168, 0.35);
+      background: linear-gradient(90deg, var(--activity-soft), rgba(255,255,255,0.7));
+    }
+
+    .panel[data-panel="incentive"] .panel-intro {
+      border-color: rgba(196, 92, 43, 0.35);
+      background: linear-gradient(90deg, var(--engine-soft), rgba(255,255,255,0.7));
+    }
+
+    .panel-intro h2 {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .panel-intro p {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 32px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 27px;
+      top: 12px;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 3px;
+      opacity: 0.35;
+    }
+
+    .panel[data-panel="activity"] .timeline::before {
+      background: linear-gradient(180deg, var(--activity), var(--judge), var(--result), var(--data));
+    }
+
+    .panel[data-panel="incentive"] .timeline::before {
+      background: linear-gradient(180deg, var(--collect), var(--engine), var(--rank), var(--bonus), var(--data));
+    }
+
+    .stage {
+      position: relative;
+      padding-left: 72px;
+    }
+
+    .stage-dot {
+      position: absolute;
+      left: 16px;
+      top: 18px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      box-shadow: 0 0 0 3px currentColor, var(--shadow);
+      z-index: 2;
+    }
+
+    .stage[data-tone="activity"] .stage-dot,
+    .stage[data-tone="rank"] .stage-dot { background: var(--activity); color: var(--activity); }
+    .stage[data-tone="judge"] .stage-dot { background: var(--judge); color: var(--judge); }
+    .stage[data-tone="result"] .stage-dot,
+    .stage[data-tone="bonus"] .stage-dot { background: var(--result); color: var(--result); }
+    .stage[data-tone="collect"] .stage-dot { background: var(--collect); color: var(--collect); }
+    .stage[data-tone="engine"] .stage-dot { background: var(--engine); color: var(--engine); }
+    .stage[data-tone="data"] .stage-dot { background: var(--data); color: var(--data); }
+
+    .stage-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 10px 16px;
+      margin-bottom: 14px;
+    }
+
+    .stage-tag {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 500;
+    }
+
+    .stage[data-tone="activity"] .stage-tag,
+    .stage[data-tone="rank"] .stage-tag { background: var(--activity-soft); color: var(--activity); }
+    .stage[data-tone="judge"] .stage-tag { background: var(--judge-soft); color: var(--judge); }
+    .stage[data-tone="result"] .stage-tag,
+    .stage[data-tone="bonus"] .stage-tag { background: var(--result-soft); color: var(--result); }
+    .stage[data-tone="collect"] .stage-tag { background: var(--collect-soft); color: var(--collect); }
+    .stage[data-tone="engine"] .stage-tag { background: var(--engine-soft); color: var(--engine); }
+    .stage[data-tone="data"] .stage-tag { background: var(--data-soft); color: var(--data); }
+
+    .stage-title {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .stage-desc {
+      width: 100%;
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: -4px;
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .node {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      min-width: 150px;
+      max-width: 230px;
+      flex: 1 1 150px;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .node:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 36px rgba(20, 33, 43, 0.1);
+    }
+
+    .node .idx {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .node h3 {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .node p {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .arrow {
+      align-self: center;
+      color: var(--muted);
+      font-size: 18px;
+      flex: 0 0 auto;
+      opacity: 0.55;
+      user-select: none;
+    }
+
+    .stage[data-tone="activity"] .node,
+    .stage[data-tone="rank"] .node { border-top: 3px solid var(--activity); }
+    .stage[data-tone="judge"] .node { border-top: 3px solid var(--judge); }
+    .stage[data-tone="result"] .node,
+    .stage[data-tone="bonus"] .node { border-top: 3px solid var(--result); }
+    .stage[data-tone="collect"] .node { border-top: 3px solid var(--collect); }
+    .stage[data-tone="engine"] .node { border-top: 3px solid var(--engine); }
+    .stage[data-tone="data"] .node { border-top: 3px solid var(--data); }
+
+    .lanes {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .lanes.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .lanes.cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+    .lane {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      backdrop-filter: blur(6px);
+    }
+
+    .lane-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed var(--line);
+    }
+
+    .lane-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .lane.admin .lane-badge { background: var(--admin); }
+    .lane.principal .lane-badge { background: var(--principal); }
+    .lane.teacher .lane-badge { background: var(--teacher); }
+    .lane.judge .lane-badge { background: var(--judge-role); }
+    .lane.system .lane-badge { background: var(--system); }
+    .lane.parent .lane-badge { background: var(--parent); }
+
+    .lane-head h3 { font-size: 15px; font-weight: 700; }
+    .lane-head small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 400;
+      margin-top: 2px;
+    }
+
+    .lane-steps { display: grid; gap: 10px; }
+    .lane .node { max-width: none; flex: none; min-width: 0; }
+
+    .lane.admin .node { border-top: 3px solid var(--admin); }
+    .lane.principal .node { border-top: 3px solid var(--principal); }
+    .lane.teacher .node { border-top: 3px solid var(--teacher); }
+    .lane.judge .node { border-top: 3px solid var(--judge-role); }
+    .lane.system .node { border-top: 3px solid var(--system); }
+    .lane.parent .node { border-top: 3px solid var(--parent); }
+
+    .connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 14px 0 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .connector::before,
+    .connector::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: linear-gradient(90deg, transparent, var(--line), transparent);
+    }
+
+    .state-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .state-pill {
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--engine-soft);
+      color: var(--engine);
+      font-weight: 500;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .panel[data-panel="activity"] .state-pill { background: var(--activity-soft); color: var(--activity); }
+
+    .sink-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border-top: 3px solid var(--data);
+    }
+
+    .sink-card h3 { font-size: 16px; margin-bottom: 10px; }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      font-size: 12px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: var(--data-soft);
+      color: var(--data);
+      font-weight: 500;
+    }
+
+    .chip.warn {
+      background: var(--engine-soft);
+      color: var(--engine);
+    }
+
+    .panel[data-panel="activity"] .chip.warn {
+      background: var(--activity-soft);
+      color: var(--activity);
+    }
+
+    .note {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    .table-mini {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .table-mini th,
+    .table-mini td {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .table-mini th {
+      color: var(--muted);
+      font-weight: 500;
+      width: 32%;
+    }
+
+    .calc-box {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--collect-soft);
+      border: 1px solid rgba(180, 83, 9, 0.2);
+      font-size: 13px;
+      color: #7c2d12;
+    }
+
+    .calc-box strong { font-weight: 700; }
+
+    footer {
+      margin-top: 28px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (max-width: 1000px) {
+      .lanes, .lanes.cols-3 { grid-template-columns: 1fr 1fr; }
+      .tabs { top: 64px; }
+    }
+
+    @media (max-width: 700px) {
+      .lanes, .lanes.cols-3, .lanes.cols-2, .tabs { grid-template-columns: 1fr; }
+      .arrow { display: none; }
+      .timeline::before { left: 19px; }
+      .stage { padding-left: 56px; }
+      .stage-dot { left: 8px; width: 24px; height: 24px; }
+      .tabs { position: static; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+
+    html.exporting *,
+    html.exporting *::before,
+    html.exporting *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    html.exporting .panel.active { display: block !important; opacity: 1 !important; }
+
+    .export-bar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: -12px -8px 20px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(20, 33, 43, 0.06);
+    }
+
+    .export-bar .hint { font-size: 13px; color: var(--muted); }
+    .export-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: var(--engine); border-color: var(--engine); color: #fff; }
+    .btn-secondary { background: var(--activity); border-color: var(--activity); color: #fff; }
+    .btn:disabled { opacity: 0.6; cursor: wait; }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 100;
+      background: var(--ink);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      opacity: 0;
+      transform: translateY(8px);
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .toast.show { opacity: 1; transform: none; }
+
+    @media print {
+      @page { size: A3 portrait; margin: 12mm; }
+      body { background: #fff !important; }
+      .export-bar, .toast, .tabs { display: none !important; }
+      .panel { display: block !important; page-break-before: always; }
+      .panel:first-of-type { page-break-before: auto; }
+      .page { max-width: none; padding: 0; }
+      .node, .lane, .sink-card, .stage { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page" id="export-root">
+    <div class="export-bar no-export">
+      <div class="hint">当前 Tab 可单独导出；打印时两条流程都会输出。</div>
+      <div class="export-actions">
+        <button type="button" class="btn btn-secondary" id="btn-png">导出当前 Tab PNG</button>
+        <button type="button" class="btn btn-primary" id="btn-pdf">导出 PDF</button>
+      </div>
+    </div>
+
+    <header class="hero">
+      <div class="eyebrow">童蹊社区 · 数据流向</div>
+      <h1>童蹊积分勋章激励体系数据流向</h1>
+      <p class="subtitle">
+        两条主线分页签查看：活动组织与评审（发起 → 报名上传 → 评委打分 → 公示 / 奖状 / 归档）、
+        积分激励闭环（行为数据 → 积分 → 排行 → 月度结算 / 勋章 → 奖金 / 发放）。
+        两者在「专项活动积分」处交汇：活动获奖结果作为专项积分方案输入，注入激励闭环的专项勋章与奖金核算。
+      </p>
+    </header>
+
+    <div class="tabs no-export" role="tablist">
+      <button type="button" class="tab-btn active" data-tab="activity" role="tab" aria-selected="true">
+        <span class="kicker">流程一</span>
+        <span class="label">活动组织与评审</span>
+        <span class="desc">发起 → 报名上传 → 评委打分 → 公示 / 奖状 / 归档</span>
+      </button>
+      <button type="button" class="tab-btn" data-tab="incentive" role="tab" aria-selected="false">
+        <span class="kicker">流程二</span>
+        <span class="label">积分激励闭环</span>
+        <span class="desc">行为数据 → 积分 → 排行 → 勋章 → 奖金 → 发放清单</span>
+      </button>
+    </div>
+
+    <!-- ===================== TAB A: 活动组织与评审 ===================== -->
+    <div class="panel active" data-panel="activity" id="panel-activity">
+      <div class="panel-intro">
+        <h2>活动组织与评审</h2>
+        <p>平台管理员 / 园长发起活动，教师报名并上传作品，评委初评复评打分，最终公示获奖、生成电子奖状并归档。评审结果同时作为专项活动积分的输入，汇入激励闭环。</p>
+      </div>
+
+      <div class="timeline">
+        <section class="stage" data-tone="activity">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">一 · 发起</span>
+            <h2 class="stage-title">活动从发起到发布</h2>
+            <p class="stage-desc">活动全生命周期仅保留两态：未发布 / 已发布。草稿可反复编辑，发布后教师即可报名上传作品。</p>
+          </div>
+
+          <div class="flow">
+            <article class="node">
+              <span class="idx">01</span>
+              <h3>新建活动</h3>
+              <p>选择活动类型：论文 / 课件 / 朋友圈点赞，可自定义多层级分类</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">02</span>
+              <h3>配置表单</h3>
+              <p>报名时间、活动对象、作品格式、奖项设置；选择是否专家评审 + 绑定奖状模板</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">03</span>
+              <h3>草稿保存</h3>
+              <p>未发布态，可随时编辑、暂存</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">04</span>
+              <h3>发布上线</h3>
+              <p>进入已发布，等待报名开始时间生效</p>
+            </article>
+          </div>
+
+          <div class="connector">活动状态（按业务叫法）</div>
+          <div class="state-row">
+            <span class="state-pill">未发布</span>
+            <span class="state-pill">已发布</span>
+          </div>
+        </section>
+
+        <section class="stage" data-tone="judge">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">一 · 收评</span>
+            <h2 class="stage-title">报名 · 上传 · 评审</h2>
+            <p class="stage-desc">活动管理按步骤条流转：报名 → 评审 → 结果。评审分两种模式：专家评审（评委分配 + 初评 / 复评）或管理员直接审核（可退回标注原因）。</p>
+          </div>
+
+          <div class="lanes cols-3">
+            <div class="lane admin">
+              <div class="lane-head">
+                <div class="lane-badge">管</div>
+                <div>
+                  <h3>平台管理员 / 园长</h3>
+                  <small>通知 · 分配 · 结果</small>
+                </div>
+              </div>
+              <div class="lane-steps">
+                <article class="node">
+                  <span class="idx">01</span>
+                  <h3>发送报名通知</h3>
+                  <p>站内消息按对象定向推送，统计已读回执</p>
+                </article>
+                <article class="node">
+                  <span class="idx">02</span>
+                  <h3>评委分配 / 打分权重</h3>
+                  <p>手动勾选每组评委并派发作品；打分指标项权重合计 100%；非专家评审由管理员直接审核</p>
+                </article>
+                <article class="node">
+                  <span class="idx">03</span>
+                  <h3>结果管理</h3>
+                  <p>综合评分汇总 → 名次，设置奖项等级名次范围，名次可手动调整</p>
+                </article>
+              </div>
+            </div>
+
+            <div class="lane teacher">
+              <div class="lane-head">
+                <div class="lane-badge">教</div>
+                <div>
+                  <h3>教师</h3>
+                  <small>报名 · 上传 · 留痕</small>
+                </div>
+              </div>
+              <div class="lane-steps">
+                <article class="node">
+                  <span class="idx">01</span>
+                  <h3>报名参加</h3>
+                  <p>报名阶段报名参加本园 / 全平台活动</p>
+                </article>
+                <article class="node">
+                  <span class="idx">02</span>
+                  <h3>上传作品</h3>
+                  <p>文档 / 课件 / 图片 / 压缩包；作品管理支持查重与导出</p>
+                </article>
+                <article class="node">
+                  <span class="idx">03</span>
+                  <h3>提交留痕</h3>
+                  <p>作品提交截止 + 补交开关，提交记录留痕</p>
+                </article>
+              </div>
+            </div>
+
+            <div class="lane judge">
+              <div class="lane-head">
+                <div class="lane-badge">评</div>
+                <div>
+                  <h3>评委</h3>
+                  <small>只看到被分配的单</small>
+                </div>
+              </div>
+              <div class="lane-steps">
+                <article class="node">
+                  <span class="idx">01</span>
+                  <h3>接收打分任务</h3>
+                  <p>任务卡显示「已评 x / 共 y 份」，进入打分任务列表</p>
+                </article>
+                <article class="node">
+                  <span class="idx">02</span>
+                  <h3>三维度打分</h3>
+                  <p>内容质量 / 创新创意 / 呈现效果，各 0-100 分</p>
+                </article>
+                <article class="node">
+                  <span class="idx">03</span>
+                  <h3>评语留痕</h3>
+                  <p>初评 / 复评多轮，谁在何时打多少分记录留痕</p>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <div class="connector">评审模式与阶段（按业务叫法）</div>
+          <div class="state-row">
+            <span class="state-pill">专家评审</span>
+            <span class="state-pill">管理员直接审核</span>
+            <span class="state-pill">初评</span>
+            <span class="state-pill">复评</span>
+          </div>
+        </section>
+
+        <section class="stage" data-tone="result">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">一 · 结果</span>
+            <h2 class="stage-title">结果 · 奖状 · 归档</h2>
+            <p class="stage-desc">评审完成 → 综合评分定名次 → 设置奖项等级 → 发布结果并生成电子奖状 → 归档。归档历史活动可查询、导出。</p>
+          </div>
+          <div class="flow">
+            <article class="node">
+              <span class="idx">01</span>
+              <h3>评审完成</h3>
+              <p>评委三维度打分加权汇总 → 综合评分 → 名次</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">02</span>
+              <h3>设置奖项等级</h3>
+              <p>奖项名称 + 名次范围（如 1-3 名一等奖）；名次可手动调整</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">03</span>
+              <h3>发布结果 + 电子奖状</h3>
+              <p>结果 未发布 → 已发布 → 归档；奖状模板（背景 / 内容 / 变量）绑定后生成</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">04</span>
+              <h3>活动归档</h3>
+              <p>历史活动查询：统计 + 全量 Excel 导出 + 报名 / 评审详情</p>
+            </article>
+          </div>
+
+          <div class="connector">结果状态（按业务叫法）</div>
+          <div class="state-row">
+            <span class="state-pill">未发布</span>
+            <span class="state-pill">已发布</span>
+            <span class="state-pill">已归档</span>
+          </div>
+          <p class="note">获奖结果同时作为「专项活动积分方案」的输入（奖项 → 积分、活动金 / 银 / 铜 → 奖金），注入流程二的专项勋章与奖金核算。</p>
+        </section>
+
+        <section class="stage" data-tone="data">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">一 · 提醒</span>
+            <h2 class="stage-title">通知回执与工作台角标</h2>
+          </div>
+          <div class="sink-card">
+            <table class="table-mini">
+              <tr><th>待评审作品角标</th><td>待评审 / 待打分的作品数量（管理员、园长）</td></tr>
+              <tr><th>评委待办角标</th><td>分配给当前评委的待打分数量</td></tr>
+              <tr><th>教师活动角标</th><td>我报名的活动、作品提交状态</td></tr>
+              <tr><th>结果待发布角标</th><td>评审已完成、待发布结果的活动数</td></tr>
+            </table>
+            <div class="chips" style="margin-top:12px;">
+              <span class="chip warn">报名启动 → 通知教师</span>
+              <span class="chip warn">作品截止 → 提醒教师</span>
+              <span class="chip warn">打分任务 → 通知评委</span>
+              <span class="chip warn">获奖公示 → 通知获奖教师</span>
+            </div>
+            <p class="note">通知支持按角色 / 班级 / 个体定向推送，并统计已读回执；通知推送失败不影响主流程。</p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- ===================== TAB B: 积分激励闭环 ===================== -->
+    <div class="panel" data-panel="incentive" id="panel-incentive">
+      <div class="panel-intro">
+        <h2>积分激励闭环</h2>
+        <p>
+          教师四大维度行为数据经积分引擎计算，形成五榜排行；月度结算定级金银铜勋章，再按梯度核算奖金并生成发放清单，中途离职自动剔除。
+          专项活动获奖作为专项积分 / 奖金独立核算，与月度常规勋章奖金分开。
+        </p>
+      </div>
+
+      <div class="timeline">
+        <section class="stage" data-tone="collect">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">二 · 采集</span>
+            <h2 class="stage-title">行为数据从哪来（四大维度）</h2>
+            <p class="stage-desc">四大计分维度，四者可独立开关计分；会员转化依赖家长注册 / 激活数据。</p>
+          </div>
+          <div class="flow">
+            <article class="node">
+              <span class="idx">维度一</span>
+              <h3>平台使用</h3>
+              <p>登录频次 / 使用时长 / 功能使用</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">维度二</span>
+              <h3>家园互动</h3>
+              <p>消息数 / 作业批改 / 通知阅读率</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">维度三</span>
+              <h3>外部推广</h3>
+              <p>分享次数 / 邀请注册数</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">维度四</span>
+              <h3>会员转化</h3>
+              <p>家长注册数 / 会员激活数</p>
+            </article>
+          </div>
+          <p class="note">教师端另设「本班家长会员转化」独立口径（注册量 + 会员人数），区别于计分维度 conversion 的分值。</p>
+        </section>
+
+        <section class="stage" data-tone="engine">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">二 · 计算</span>
+            <h2 class="stage-title">积分与排位分 · 怎么算</h2>
+            <p class="stage-desc">积分方案决定维度数值如何累计；排位分把各维度数值在全园倒序排名换算，综合榜 = 四项排位分之和。</p>
+          </div>
+          <div class="flow">
+            <article class="node">
+              <span class="idx">01</span>
+              <h3>行为数据</h3>
+              <p>四大维度累计量 + 今日新增</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">02</span>
+              <h3>积分方案</h3>
+              <p>单条得分 × 权重占比 × 角色系数 + 计分开关（月度常规固定唯一 / 专项活动多套可复制）</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">03</span>
+              <h3>维度排名 → 排位分</h3>
+              <p>各维度数值倒序排名，第 1 名得 N 分 … 第 N 名得 1 分，并列同分后续顺延</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">04</span>
+              <h3>综合榜</h3>
+              <p>总积分 = 平台使用 + 家园互动 + 外部推广 + 会员转化 四项排位分之和</p>
+            </article>
+          </div>
+          <table class="table-mini">
+            <tr><th>维度</th><td>平台使用</td><td>家园互动</td><td>外部推广</td><td>会员转化</td></tr>
+            <tr><th>单条得分</th><td>5</td><td>8</td><td>15</td><td>20</td></tr>
+            <tr><th>权重占比</th><td>30%</td><td>35%</td><td>20%</td><td>15%</td></tr>
+            <tr><th>班主任系数</th><td>1.0</td><td>1.0</td><td>1.0</td><td>1.0</td></tr>
+            <tr><th>配班系数</th><td>0.8</td><td>1.0</td><td>1.2</td><td>1.0</td></tr>
+          </table>
+          <div class="calc-box">
+            <strong>排位分规则：</strong>
+            全园在职参与活动教师共 N 名，单维度按数值从高到低倒序排名，第 1 名得 N 分、第 2 名得 N-1 分……第 N 名得 1 分；
+            并列名次得相同排位分、后续名次顺延。总积分 = 四项排位分之和（综合榜按此排序）。
+          </div>
+        </section>
+
+        <section class="stage" data-tone="rank">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">二 · 排行</span>
+            <h2 class="stage-title">排行与月度结算</h2>
+            <p class="stage-desc">KPI 卡 + 排位分综合榜实时排行，TOP10 高亮 + 本人定位；月度结算按总积分定级金银铜勋章。</p>
+          </div>
+
+          <div class="lanes cols-3">
+            <div class="lane teacher">
+              <div class="lane-head">
+                <div class="lane-badge">教</div>
+                <div>
+                  <h3>教师</h3>
+                  <small>个人统计排行</small>
+                </div>
+              </div>
+              <div class="lane-steps">
+                <article class="node">
+                  <span class="idx">01</span>
+                  <h3>KPI 数据总览</h3>
+                  <p>使用次数 / 使用时长 / 互动频次 / 会员转化 四项关键指标</p>
+                </article>
+                <article class="node">
+                  <span class="idx">02</span>
+                  <h3>四维度图表</h3>
+                  <p>折线（本人 / 园内均值 / 当日第一）+ 堆叠柱 + 折线组合</p>
+                </article>
+                <article class="node">
+                  <span class="idx">03</span>
+                  <h3>我的排位分 + 综合榜</h3>
+                  <p>四项排位分 + 全园 TOP10 综合榜，本人行高亮</p>
+                </article>
+              </div>
+            </div>
+
+            <div class="lane principal">
+              <div class="lane-head">
+                <div class="lane-badge">园</div>
+                <div>
+                  <h3>园长</h3>
+                  <small>园内排行榜</small>
+                </div>
+              </div>
+              <div class="lane-steps">
+                <article class="node">
+                  <span class="idx">01</span>
+                  <h3>园内排位分综合榜</h3>
+                  <p>KPI 总览 + 园内教师排位分综合榜（四项排位分合计）</p>
+                </article>
+                <article class="node">
+                  <span class="idx">02</span>
+                  <h3>家长进度看板</h3>
+                  <p>班级维度：注册 / 未注册 / 会员激活 三色对比</p>
+                </article>
+                <article class="node">
+                  <span class="idx">03</span>
+                  <h3>本园奖金清单</h3>
+                  <p>月度发放清单 + 期末汇总（本园范围）</p>
+                </article>
+              </div>
+            </div>
+
+            <div class="lane admin">
+              <div class="lane-head">
+                <div class="lane-badge">管</div>
+                <div>
+                  <h3>平台管理员</h3>
+                  <small>全平台排行</small>
+                </div>
+              </div>
+              <div class="lane-steps">
+                <article class="node">
+                  <span class="idx">01</span>
+                  <h3>全平台教师排位分榜</h3>
+                  <p>TOP 榜 + 跨园对比（平均总分 / 在职教师 / 家长转化）</p>
+                </article>
+                <article class="node">
+                  <span class="idx">02</span>
+                  <h3>下钻明细</h3>
+                  <p>幼儿园 → 教师 → 个人多维看板，逐级下钻</p>
+                </article>
+                <article class="node">
+                  <span class="idx">03</span>
+                  <h3>全园家长进度</h3>
+                  <p>各园注册 / 会员转化横向对比</p>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <div class="connector">勋章门槛（双套，金银铜）</div>
+          <div class="state-row">
+            <span class="state-pill">月度常规：金 ≥ 500 · 银 ≥ 300 · 铜 ≥ 150</span>
+            <span class="state-pill">活动专项：金 ≥ 400 · 银 ≥ 240 · 铜 ≥ 120</span>
+          </div>
+          <p class="note">活动期榜单为动态实时榜；活动结束后固化为公示榜（停止更新，仅保留历史）。门槛修改自动联动月度发放清单与奖金梯度。</p>
+        </section>
+
+        <section class="stage" data-tone="bonus">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">二 · 奖金</span>
+            <h2 class="stage-title">奖金核算与发放</h2>
+            <p class="stage-desc">勋章等级对应梯度奖金；月度常规与专项活动双轨核算，离职教师自动剔除。</p>
+          </div>
+          <div class="flow">
+            <article class="node">
+              <span class="idx">01</span>
+              <h3>勋章定级</h3>
+              <p>月度结算：金银铜（月度常规 / 活动专项双套门槛）</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">02</span>
+              <h3>奖金梯度</h3>
+              <p>月度勋章奖金 金 800 · 银 500 · 铜 300；专项活动奖金（活动金 / 银 / 铜）按活动独立配置</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">03</span>
+              <h3>月度发放清单</h3>
+              <p>月度自动绑定流程 + 一键自动生成当月清单；导出四大维度 + 总积分 + 奖金明细</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">04</span>
+              <h3>期末汇总清单</h3>
+              <p>月度常规奖金 + 专项活动奖金 合并统计，期末统一发放</p>
+            </article>
+          </div>
+          <div class="calc-box">
+            <strong>离职剔除：</strong>
+            以教师信息表的离职状态字段为准（is_active = false）；
+            中途离职自动放弃评比资格，发放清单标注「已剔除」及原因，不影响历史数据。
+            期末总奖金 = 月度常规奖金累计 + 专项活动奖金累计。
+          </div>
+          <p class="note">教师端在「我的勋章 / 我的奖金」查看个人勋章档案与奖金明细；园长端查看本园清单；清单支持导出对账。</p>
+        </section>
+
+        <section class="stage" data-tone="data">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
+            <span class="stage-tag">二 · 提醒</span>
+            <h2 class="stage-title">工作台角标与微信提醒</h2>
+          </div>
+          <div class="sink-card">
+            <table class="table-mini">
+              <tr><th>排行榜角标</th><td>榜单更新、本人排名变动提示</td></tr>
+              <tr><th>勋章角标</th><td>本月勋章已发放</td></tr>
+              <tr><th>奖金角标</th><td>月度奖金清单已生成</td></tr>
+              <tr><th>离职剔除角标</th><td>离职教师被剔除的提醒（园长、管理员）</td></tr>
+            </table>
+            <div class="chips" style="margin-top:12px;">
+              <span class="chip warn">月度结算 → 通知教师勋章 / 奖金</span>
+              <span class="chip warn">排名变动 → 推送本人</span>
+              <span class="chip warn">离职剔除 → 通知园长</span>
+            </div>
+            <p class="note">
+              结算日可配置（缺省「每月最后一日」），奖金发放日「次月 5 日」；排行榜实时刷新（精确到分钟）。
+              教师行为数据每增加一条，积分即重新计算并刷新榜单。
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <footer>
+      <span>童蹊积分勋章激励体系 · 分流程查看（活动组织与评审 / 积分激励闭环）</span>
+      <span>面向业务说明，不展示系统字段名</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script>
+    (function () {
+      const root = document.getElementById("export-root");
+      const btnPng = document.getElementById("btn-png");
+      const btnPdf = document.getElementById("btn-pdf");
+      const toastEl = document.getElementById("toast");
+      const tabBtns = Array.from(document.querySelectorAll(".tab-btn"));
+      const panels = Array.from(document.querySelectorAll(".panel"));
+      let toastTimer;
+      let activeTab = "activity";
+
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2600);
+      }
+
+      function switchTab(name) {
+        activeTab = name;
+        tabBtns.forEach((btn) => {
+          const on = btn.dataset.tab === name;
+          btn.classList.toggle("active", on);
+          btn.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        panels.forEach((panel) => {
+          panel.classList.toggle("active", panel.dataset.panel === name);
+        });
+        document.documentElement.style.setProperty(
+          "--active-accent",
+          name === "activity" ? "#2563a8" : "#c45c2b"
+        );
+      }
+
+      tabBtns.forEach((btn) => {
+        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+      });
+
+      // hash deep link: #activity / #incentive
+      const hash = (location.hash || "").replace("#", "");
+      if (hash === "activity" || hash === "incentive") switchTab(hash);
+
+      function setBusy(busy) {
+        btnPng.disabled = busy;
+        btnPdf.disabled = busy;
+      }
+
+      function activePanel() {
+        return document.querySelector('.panel.active');
+      }
+
+      async function captureNode(node) {
+        document.documentElement.classList.add("exporting");
+        try {
+          return await html2canvas(node, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#eef3f6",
+            logging: false,
+          });
+        } finally {
+          document.documentElement.classList.remove("exporting");
+        }
+      }
+
+      function downloadDataUrl(dataUrl, filename) {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+
+      btnPng.addEventListener("click", async () => {
+        if (!window.html2canvas) {
+          toast("图片库加载失败，请检查网络后重试");
+          return;
+        }
+        setBusy(true);
+        toast("正在生成 PNG…");
+        try {
+          const canvas = await captureNode(activePanel());
+          const name = activeTab === "activity" ? "童蹊-活动组织与评审流向图.png" : "童蹊-积分激励闭环流向图.png";
+          downloadDataUrl(canvas.toDataURL("image/png"), name);
+          toast("PNG 已开始下载");
+        } catch (err) {
+          console.error(err);
+          toast("导出 PNG 失败，请重试");
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      btnPdf.addEventListener("click", async () => {
+        const preferPrint = !window.event?.altKey;
+        if (preferPrint) {
+          toast("请在打印对话框中选择「另存为 PDF」（含两条流程）");
+          setTimeout(() => window.print(), 200);
+          return;
+        }
+        if (!window.html2canvas || !window.jspdf) {
+          toast("PDF 库加载失败，请用 Ctrl+P 另存为 PDF");
+          return;
+        }
+        setBusy(true);
+        toast("正在生成当前 Tab PDF…");
+        try {
+          const canvas = await captureNode(activePanel());
+          const img = canvas.toDataURL("image/jpeg", 0.92);
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({
+            orientation: canvas.width > canvas.height ? "landscape" : "portrait",
+            unit: "pt",
+            format: "a3",
+          });
+          const pageW = pdf.internal.pageSize.getWidth();
+          const pageH = pdf.internal.pageSize.getHeight();
+          const margin = 24;
+          const maxW = pageW - margin * 2;
+          const maxH = pageH - margin * 2;
+          const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
+          const w = canvas.width * ratio;
+          const h = canvas.height * ratio;
+          pdf.addImage(img, "JPEG", (pageW - w) / 2, margin, w, Math.min(h, maxH));
+          const name = activeTab === "activity" ? "童蹊-活动组织与评审流向图.pdf" : "童蹊-积分激励闭环流向图.pdf";
+          pdf.save(name);
+          toast("PDF 已开始下载");
+        } catch (err) {
+          console.error(err);
+          toast("导出 PDF 失败，请用 Ctrl+P 另存为 PDF");
+        } finally {
+          setBusy(false);
+        }
+      });
+
+      btnPdf.title = "点击：打印两条流程；按住 Alt 再点：仅导出当前 Tab 图片 PDF";
+    })();
+  </script>
+</body>
+</html>

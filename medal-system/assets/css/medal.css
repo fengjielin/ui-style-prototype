@@ -1771,6 +1771,12 @@ tr.row-excluded td {
   font-size: 12px;
 }
 
+/* 手动分配评委：已被其他分组选中的勾选项置灰不可选 */
+.judge-check-item.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ═══════════════════════ PC：活动管理 · 活动步骤条（针对单个活动） ═══════════════════════ */
 
 .pc-stepper {
@@ -2356,14 +2362,42 @@ tr.row-excluded td {
   color: var(--mb-text-secondary);
 }
 
-.mb-rank-score-card .rsc-dims .rsc-dim b {
-  color: var(--mb-text-primary);
+.mb-rank-score-card .rsc-dims .rsc-dim {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
 }
 
-.mb-rank-score-card .rsc-dims .rsc-dim i {
-  font-style: normal;
+.mb-rank-score-card .rsc-dims .rsc-dim-name {
+  color: var(--mb-text-secondary);
+}
+
+.mb-rank-score-card .rsc-dims .rsc-dim-score {
   color: var(--mb-text-muted);
-  margin-left: 2px;
+}
+
+.mb-rank-score-card .rsc-dims .rsc-dim-rank {
+  color: var(--mb-text-secondary);
+}
+
+.mb-rank-score-card .rsc-dims .rsc-dim-points {
+  color: var(--mb-primary);
+  font-weight: 700;
+}
+
+/* 排位分规则说明（移动端综合榜 / 园内综合榜下方） */
+.mb-rank-rule-note {
+  margin: 12px var(--mb-content-pad) 16px;
+  padding: 10px 12px;
+  background: var(--mb-bg-tertiary);
+  border-radius: var(--mb-radius-md);
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-secondary);
+  line-height: 1.7;
+}
+
+.mb-rank-rule-note b {
+  color: var(--mb-text-primary);
 }
 
 /* ═══════════════════════ PC 教师工作台：我的活动 ═══════════════════════ */
