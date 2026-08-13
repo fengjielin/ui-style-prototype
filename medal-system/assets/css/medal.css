@@ -382,6 +382,11 @@
   color: #fff;
 }
 
+/* 排行榜 tab 页签容器（PC 卡片内，无内边距卡片下自建留白） */
+.rank-tabs-bar {
+  padding: 14px 16px 0;
+}
+
 /* ═══════════════════════ PC：三色家长进度条 ═══════════════════════ */
 
 .progress-tri {
@@ -1286,6 +1291,12 @@ tr.row-excluded td {
 .mb-filter-tab.is-active {
   color: var(--mb-primary);
   background: rgba(255, 138, 0, 0.12);
+}
+
+/* 排行榜 tab 页签容器（移动端卡片内，下边框与榜单卡片分隔） */
+.mb-rank-tabs {
+  padding: 10px 0 12px;
+  border-bottom: 1px solid var(--mb-border-divider);
 }
 
 /* 移动端简易柱状图（个人排行趋势，占位演示） */

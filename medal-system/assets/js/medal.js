@@ -2029,6 +2029,8 @@ window.MedalDemo = (function () {
     var rankData = gardenRanks[garden] || {};
     var N = (rankData.total || []).length || 1;
 
+    var scoreData = buildRankScoreTable(rankData, N);
+    var groupId = 'rankGardenTabs';
     box.innerHTML =
       renderGardenKpi(garden) +
       '<section class="pc-card">' +
@@ -2037,8 +2039,13 @@ window.MedalDemo = (function () {
       '<span class="table-count">' + esc(garden) + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span>' +
       '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="pc-menu-select" data-menu-key="rank-garden-all">查看全部</button>' +
       '</div></div>' +
-      '<div class="card-body no-padding">' + rankScoreTableHtml(buildRankScoreTable(rankData, N)) + '</div>' +
-      '</section>' +
+      '<div class="card-body no-padding">' +
+      rankTabs(groupId, 'total') +
+      rankPanel(groupId, 'total', rankScoreTableHtml(scoreData), true) +
+      RANK_DIMS.map(function (d) {
+        return rankPanel(groupId, d.key, singleDimTableHtml(scoreData, d, { withAction: true }), false);
+      }).join('') +
+      '</div></section>' +
       '<div class="rank-rule-note">' +
       '排位分规则：全园在职参与活动老师共 <b>' + N + '</b> 名，单维度按数值从高到低倒序排名，第 1 名得 ' + N + ' 分、第 2 名得 ' + (N - 1) + ' 分……第 ' + N + ' 名得 1 分；并列名次得相同排位分、后续名次顺延。总积分 = 平台使用 + 家园互动 + 外部推广 + 会员转化 四项排位分之和。' +
       '</div>';
@@ -2216,13 +2223,21 @@ window.MedalDemo = (function () {
     // 全平台教师排位分榜
     var merged = mergeGardenRanks();
     var N = (merged.total || []).length || 1;
+    var scoreData = buildRankScoreTable(merged, N);
+    var groupId = 'rankPlatformTabs';
     html += '<section class="pc-card">';
     html += '<div class="card-head"><span class="card-title">全平台教师排位分榜</span>' +
       '<div style="margin-left:auto;display:flex;align-items:center;gap:12px;">' +
       '<span class="table-count">TOP ' + N + ' · 数据更新于 ' + RANK_UPDATE_TIME + '</span>' +
       '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="pc-menu-select" data-menu-key="rank-platform-all">查看全部</button>' +
       '</div></div>';
-    html += '<div class="card-body no-padding">' + rankScoreTableHtml(buildRankScoreTable(merged, N)) + '</div>';
+    html += '<div class="card-body no-padding">' +
+      rankTabs(groupId, 'total') +
+      rankPanel(groupId, 'total', rankScoreTableHtml(scoreData), true) +
+      RANK_DIMS.map(function (d) {
+        return rankPanel(groupId, d.key, singleDimTableHtml(scoreData, d, { withAction: true }), false);
+      }).join('') +
+      '</div>';
     html += '</section>';
 
     box.innerHTML = html;
@@ -3826,15 +3841,17 @@ window.MedalDemo = (function () {
       html += '</div>';
     }
 
-    // 综合榜卡片
-    html += '<div class="mb-section-title"><span class="title">全园 TOP10 综合榜</span><span class="subtitle">四项排位分合计</span></div>';
+    // 综合榜卡片（tab 切换：综合榜 + 4 单项榜）
+    html += '<div class="mb-section-title"><span class="title">全园 TOP10 综合榜</span><span class="subtitle">四项排位分合计 · 点击切换单项榜</span></div>';
     html += '<div class="mb-card" style="padding:4px 14px;">';
+    html += mobileRankTabs('mobileRankTabs', 'total');
+    var totalCardsHtml = '';
     data.rows.forEach(function (r) {
       var dimsHtml = data.dims.map(function (d) {
         var cell = r[d.key];
         return '<span class="rsc-dim"><span class="rsc-dim-name">' + esc(d.name) + '</span><span class="rsc-dim-score">' + cell.score + '</span><span class="rsc-dim-rank">第 ' + cell.rank + ' 名</span><span class="rsc-dim-points">' + cell.points + ' 分</span></span>';
       }).join('');
-      html +=
+      totalCardsHtml +=
         '<div class="mb-rank-score-card' + (r.isMe ? ' is-me' : '') + '">' +
         '<div class="rsc-top">' +
         '<span class="rsc-rank' + (r.totalRank <= 3 ? ' top' : '') + '">' + r.totalRank + '</span>' +
@@ -3845,6 +3862,10 @@ window.MedalDemo = (function () {
         '<div class="rsc-dims">' + dimsHtml + '</div>' +
         '</div>';
     });
+    html += rankPanel('mobileRankTabs', 'total', totalCardsHtml, true);
+    html += RANK_DIMS.map(function (d) {
+      return rankPanel('mobileRankTabs', d.key, singleDimCardsHtml(data, d), false);
+    }).join('');
     html += '</div>';
 
     // 排位分规则说明
@@ -4367,15 +4388,93 @@ window.MedalDemo = (function () {
   }
 
   /* ── C. 园内排名情况：我的排位分 + 综合榜（由 rankData 4 榜单推导排位分） ── */
+
+  /* 排位分 4 项计分维度（综合榜 / 单项排行榜 tab 共用） */
+  var RANK_DIMS = [
+    { key: 'usage', name: '平台使用' },
+    { key: 'interaction', name: '家园互动' },
+    { key: 'promotion', name: '外部推广' },
+    { key: 'conversion', name: '会员转化' },
+  ];
+
+  /* 排行榜 tab 页签（PC）：综合榜 + 4 单项榜 */
+  function rankTabs(groupId, activeKey) {
+    var tabs = [{ key: 'total', name: '综合榜' }].concat(RANK_DIMS);
+    return (
+      '<div class="rank-tabs-bar"><div class="pc-filter-tabs">' +
+      tabs.map(function (t) {
+        return '<span class="pc-filter-tab' + (t.key === activeKey ? ' is-active' : '') + '" data-action="rank-tab-switch" data-tab-group="' + groupId + '" data-tab-value="' + t.key + '">' + t.name + '</span>';
+      }).join('') +
+      '</div></div>'
+    );
+  }
+
+  /* 排行榜 tab 页签（移动端）：综合榜 + 4 单项榜 */
+  function mobileRankTabs(groupId, activeKey) {
+    var tabs = [{ key: 'total', name: '综合榜' }].concat(RANK_DIMS);
+    return (
+      '<div class="mb-filter-tabs mb-rank-tabs">' +
+      tabs.map(function (t) {
+        return '<span class="mb-filter-tab' + (t.key === activeKey ? ' is-active' : '') + '" data-action="rank-tab-switch" data-tab-group="' + groupId + '" data-tab-value="' + t.key + '">' + t.name + '</span>';
+      }).join('') +
+      '</div>'
+    );
+  }
+
+  /* 排行榜 tab 面板包装：data-rank-panel-group 关联 tab 组，data-rank-panel 标识当前单项（非激活隐藏） */
+  function rankPanel(groupId, key, html, active) {
+    return '<div data-rank-panel-group="' + groupId + '" data-rank-panel="' + key + '"' + (active ? '' : ' hidden') + '>' + html + '</div>';
+  }
+
+  /* 单项排行榜表格（PC）：某维度按单项排名升序；data = buildRankScoreTable 返回 */
+  function singleDimTableHtml(data, dim, opts) {
+    opts = opts || {};
+    var rows = data.rows.slice().sort(function (a, b) { return a[dim.key].rank - b[dim.key].rank; });
+    var rowsHtml = rows.map(function (r) {
+      var cell = r[dim.key];
+      return (
+        '<tr class="' + (r.isMe ? 'is-me' : '') + '">' +
+        '<td><span class="rank-cell' + (cell.rank <= 3 ? ' rank-top' : '') + '">第 ' + cell.rank + '</span></td>' +
+        '<td>' + esc(r.name) + (r.isMe ? '<span class="me-tag">我</span>' : '') + '<div style="font-size:11px;color:#909399;">' + esc(r.className) + '</div></td>' +
+        '<td><span class="score-cell">' + cell.score + '</span><span class="sub">分</span></td>' +
+        '<td><span class="total-cell">' + cell.points + '</span><span class="sub">分</span></td>' +
+        (opts.withAction ? '<td><span class="action-btn action-primary" data-action="rank-point-detail" data-teacher="' + esc(r.name) + '">查看明细</span></td>' : '') +
+        '</tr>'
+      );
+    }).join('');
+    return (
+      '<table class="pc-table rank-score-table"><thead><tr>' +
+      '<th>排名</th><th>姓名</th><th>' + esc(dim.name) + '得分</th><th>排位分</th>' +
+      (opts.withAction ? '<th>操作</th>' : '') +
+      '</tr></thead><tbody>' + rowsHtml + '</tbody></table>'
+    );
+  }
+
+  /* 单项排行榜卡片（移动端）：某维度按单项排名升序 */
+  function singleDimCardsHtml(data, dim) {
+    var rows = data.rows.slice().sort(function (a, b) { return a[dim.key].rank - b[dim.key].rank; });
+    return rows.map(function (r) {
+      var cell = r[dim.key];
+      return (
+        '<div class="mb-rank-score-card' + (r.isMe ? ' is-me' : '') + '">' +
+        '<div class="rsc-top">' +
+        '<span class="rsc-rank' + (cell.rank <= 3 ? ' top' : '') + '">' + cell.rank + '</span>' +
+        '<span class="rsc-name">' + esc(r.name) + (r.isMe ? '<span class="me-tag">我</span>' : '') + '</span>' +
+        '<span class="rsc-class">' + esc(r.className) + '</span>' +
+        '<span class="rsc-total">' + cell.score + ' 分</span>' +
+        '</div>' +
+        '<div class="rsc-dims">' +
+        '<span class="rsc-dim"><span class="rsc-dim-name">' + esc(dim.name) + '</span><span class="rsc-dim-rank">单项第 ' + cell.rank + ' 名</span><span class="rsc-dim-points">排位分 ' + cell.points + ' 分</span></span>' +
+        '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
   function buildRankScoreTable(rankData, N) {
     rankData = rankData || MDS.get('rankData') || {};
     N = N || rankScoreN();
-    var dims = [
-      { key: 'usage', name: '平台使用' },
-      { key: 'interaction', name: '家园互动' },
-      { key: 'promotion', name: '外部推广' },
-      { key: 'conversion', name: '会员转化' },
-    ];
+    var dims = RANK_DIMS;
     // 各维度：教师名 → { score, rank }
     var dimMap = {};
     dims.forEach(function (d) {
@@ -4467,7 +4566,13 @@ window.MedalDemo = (function () {
       '</section>' +
       '<section class="pc-card">' +
       '<div class="card-head"><span class="card-title">全园 TOP10 综合榜</span><span class="table-count">四项排位分合计 · 本人行高亮</span></div>' +
-      '<div class="card-body no-padding">' + tableHtml + '</div>' +
+      '<div class="card-body no-padding">' +
+      rankTabs('teacherRankTabs', 'total') +
+      rankPanel('teacherRankTabs', 'total', tableHtml, true) +
+      RANK_DIMS.map(function (d) {
+        return rankPanel('teacherRankTabs', d.key, singleDimTableHtml(data, d), false);
+      }).join('') +
+      '</div>' +
       '</section>' +
       ruleNote
     );
@@ -4514,6 +4619,18 @@ window.MedalDemo = (function () {
       var reg = group === 'mobileStatDim' ? mobileStatECharts : statECharts;
       if (reg[value]) reg[value].resize();
     }, 0);
+  });
+
+  /* 排行榜 tab 切换：综合榜 / 单项榜（PC 与移动端共用），高亮当前页签 + 面板显隐 */
+  Proto.registerAction('rank-tab-switch', function (el) {
+    var value = el.getAttribute('data-tab-value');
+    var group = el.getAttribute('data-tab-group');
+    document.querySelectorAll('[data-tab-group="' + group + '"]').forEach(function (s) {
+      s.classList.toggle('is-active', s.getAttribute('data-tab-value') === value);
+    });
+    document.querySelectorAll('[data-rank-panel-group="' + group + '"]').forEach(function (p) {
+      p.hidden = p.getAttribute('data-rank-panel') !== value;
+    });
   });
 
   /* 下拉 change 事件委托（data-action 为 click 委托，不适用于下拉）：
@@ -4603,15 +4720,17 @@ window.MedalDemo = (function () {
     html += mbKpiCard('⭐', '会员转化率', memberRate + '%');
     html += '</div>';
 
-    // 园内教师排位分综合榜（卡片列表）
+    // 园内教师排位分综合榜（tab 切换：综合榜 + 4 单项榜）
     html += '<div class="mb-section-title"><span class="title">园内教师排位分综合榜</span><span class="subtitle">四项排位分合计</span></div>';
     html += '<div class="mb-card" style="padding:4px 14px;">';
+    html += mobileRankTabs('principalRankTabs', 'total');
+    var totalCardsHtml = '';
     scoreData.rows.forEach(function (r) {
       var dimsHtml = scoreData.dims.map(function (d) {
         var cell = r[d.key];
         return '<span class="rsc-dim"><span class="rsc-dim-name">' + esc(d.name) + '</span><span class="rsc-dim-score">' + cell.score + '</span><span class="rsc-dim-rank">第 ' + cell.rank + ' 名</span><span class="rsc-dim-points">' + cell.points + ' 分</span></span>';
       }).join('');
-      html +=
+      totalCardsHtml +=
         '<div class="mb-rank-score-card">' +
         '<div class="rsc-top">' +
         '<span class="rsc-rank' + (r.totalRank <= 3 ? ' top' : '') + '">' + r.totalRank + '</span>' +
@@ -4622,6 +4741,10 @@ window.MedalDemo = (function () {
         '<div class="rsc-dims">' + dimsHtml + '</div>' +
         '</div>';
     });
+    html += rankPanel('principalRankTabs', 'total', totalCardsHtml, true);
+    html += RANK_DIMS.map(function (d) {
+      return rankPanel('principalRankTabs', d.key, singleDimCardsHtml(scoreData, d), false);
+    }).join('');
     html += '</div>';
 
     // 排位分规则说明
