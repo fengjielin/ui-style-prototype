@@ -416,6 +416,7 @@ window.MedalDemo = (function () {
     'activity-launch': renderActivityLaunch,
     'activity-works': renderActivityWorks,
     'activity-manage': renderActivityManage,
+    'activity-query': renderActivityQuery,
     'rank-garden': renderRankGarden,
     'rank-parent': renderRankParent,
     'score-scheme': renderScoreScheme,
@@ -1500,6 +1501,172 @@ window.MedalDemo = (function () {
   }
 
   /* ── 报名/评审/归档三阶段内容由 renderActivityManage 承载（见 amRenderSignup / amRenderReview / amRenderArchive） ── */
+
+  /* ═══════════════════════ PC：活动查询（归档历史活动：统计 + 表格 + 全量导出 + 报名/评审详情） ═══════════════════════ */
+
+  // 查询页状态：当前查看的活动（null=列表态）；名称/类型筛选条件
+  var aqActivityId = null;
+  var aqNameFilter = '';
+  var aqTypeFilter = '';
+
+  /* 归档历史活动：仅已归档的活动（stage=archive 且 resultStatus=archived） */
+  function queryActivities() {
+    return (MDS.get('activities') || []).filter(function (a) {
+      return a.stage === 'archive' && a.resultStatus === 'archived';
+    });
+  }
+
+  /* 按名称/类型筛选归档活动 */
+  function filteredQueryActivities() {
+    return queryActivities().filter(function (a) {
+      if (aqNameFilter && (a.title || '').indexOf(aqNameFilter) < 0) return false;
+      if (aqTypeFilter && a.type !== aqTypeFilter) return false;
+      return true;
+    });
+  }
+
+  /* 结果状态中文 + 标签类 */
+  function resultStatusMeta(status) {
+    return status === 'archived'
+      ? { text: '已归档', cls: 'status-success' }
+      : status === 'published'
+        ? { text: '已发布', cls: 'status-primary' }
+        : { text: '未发布', cls: 'status-warning' };
+  }
+
+  /* 主渲染：列表态（统计 + 筛选 + 归档活动表格）或 详情态（报名数据 + 评审数据） */
+  function renderActivityQuery(root) {
+    var box = document.getElementById('activityQueryRoot');
+    if (!box) return;
+    if (aqActivityId) {
+      var act = activityById(aqActivityId);
+      // 活动被移出「已归档」状态则回到列表态
+      if (!act || act.stage !== 'archive' || act.resultStatus !== 'archived') aqActivityId = null;
+      if (aqActivityId) {
+        box.innerHTML = aqRenderQueryDetail(act);
+        return;
+      }
+    }
+    box.innerHTML = aqRenderQueryList();
+  }
+
+  /* 列表态：统计卡片 + 筛选条件 + 归档历史活动表格 */
+  function aqRenderQueryList() {
+    var list = filteredQueryActivities();
+    var all = queryActivities();
+    // 统计：归档活动数 / 累计报名人次 / 累计作品数 / 累计奖项名额
+    var totalActs = all.length;
+    var totalSignups = all.reduce(function (s, a) { return s + (a.participants || 0); }, 0);
+    var totalWorks = all.reduce(function (s, a) { return s + (a.worksCount || 0); }, 0);
+    var totalAwards = all.reduce(function (s, a) {
+      return s + (a.awards || []).reduce(function (t, aw) { return t + (aw.count || 0); }, 0);
+    }, 0);
+
+    var html = '';
+    html += '<div class="stat-grid">';
+    html += statCard('归档活动', '历史归档活动数', String(totalActs) + ' 个', '📦', 'rgba(37,99,235,0.12)');
+    html += statCard('报名人次', '累计报名教师', String(totalSignups) + ' 人次', '👥', 'rgba(255,138,0,0.14)');
+    html += statCard('参赛作品', '累计提交作品', String(totalWorks) + ' 份', '📄', 'rgba(245,166,35,0.16)');
+    html += statCard('获奖名额', '累计奖项名额', String(totalAwards) + ' 名', '🏆', 'rgba(245,158,11,0.14)');
+    html += '</div>';
+
+    // 筛选条件
+    var typeOpts = ['<option value="">全部类型</option>'];
+    (MDS.get('activityTypes') || []).forEach(function (t) {
+      typeOpts.push('<option value="' + esc(t.name) + '"' + (aqTypeFilter === t.name ? ' selected' : '') + '>' + esc(t.name) + '</option>');
+    });
+    html += '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">筛选条件</span></div>' +
+      '<div class="card-body"><div class="search-form">' +
+      '<div class="search-item"><label>活动名称</label><input class="pc-input" id="aqSearchName" placeholder="请输入活动名称" value="' + esc(aqNameFilter) + '"></div>' +
+      '<div class="search-item"><label>活动类型</label><select class="pc-select" id="aqTypeFilter">' + typeOpts.join('') + '</select></div>' +
+      '<div class="search-item"><button type="button" class="pc-btn pc-btn-add" data-action="aq-search">搜 索</button>' +
+      '<button type="button" class="pc-btn pc-btn-default" data-action="aq-reset">重 置</button></div>' +
+      '</div></div></section>';
+
+    // 归档历史活动表格
+    var rows = list.length
+      ? list.map(function (a) {
+          var st = resultStatusMeta(a.resultStatus);
+          return (
+            '<tr>' +
+            '<td><strong>' + esc(a.title) + '</strong></td>' +
+            '<td>' + esc(a.type) + '</td>' +
+            '<td>' + esc(a.signupStart || '—') + ' ~ ' + esc(a.signupEnd || '—') + '</td>' +
+            '<td>' + actScopeHtml(a.targetKindergartens) + '</td>' +
+            '<td>' + (a.participants || 0) + ' 人</td>' +
+            '<td>' + (a.worksCount || 0) + ' 份</td>' +
+            '<td>' + esc(a.publishTime || '—') + '</td>' +
+            '<td><span class="status-tag ' + st.cls + '">' + st.text + '</span></td>' +
+            '<td class="op-col">' +
+            '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="aq-view" data-id="' + a.id + '">查看</button>' +
+            '<button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="aq-export" data-id="' + a.id + '">导出全量数据</button>' +
+            '</td>' +
+            '</tr>'
+          );
+        }).join('')
+      : '<tr><td colspan="9" style="text-align:center;color:#909399;padding:40px 0;">暂无归档历史活动</td></tr>';
+
+    html += '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">归档历史活动</span><span class="table-count">共 ' + list.length + ' 条记录</span></div>' +
+      '<div class="card-body no-padding">' +
+      '<table class="pc-table"><thead><tr>' +
+      '<th>活动名称</th><th>活动类型</th><th>报名时间</th><th>活动对象</th><th>报名人数</th><th>作品数</th><th>发布时间</th><th>结果状态</th><th>操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></section>';
+
+    return html;
+  }
+
+  /* 详情态：返回/导出工具条 + 报名/评审合并表格（报名信息 + 作品 + 综合评分 + 名次 + 奖项等级） */
+  function aqRenderQueryDetail(act) {
+    // 合并数据源：buildArchiveItems 同时含报名信息（s）、作品（w）、综合评分/名次/奖项等级
+    var items = buildArchiveItems(act);
+    var rows = items.length
+      ? items.map(function (it) {
+          var s = it.s, w = it.w;
+          // 作品列：已提交显示标题 + 提交时间，未提交灰显
+          var workCell = w
+            ? esc(w.title) + '<div style="font-size:12px;color:#909399;margin-top:2px;">' + esc(w.submitTime || '') + '</div>'
+            : '<span style="color:#c0c4cc;">未提交作品</span>';
+          var ops = '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-view-signup-detail" data-activity="' + act.id + '" data-teacher="' + esc(s.name) + '">查看详情</button>';
+          if (w) {
+            ops += '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="am-view-score-detail" data-work-id="' + w.id + '" data-activity="' + act.id + '">查看评分详情</button>';
+          }
+          return (
+            '<tr>' +
+            '<td><span class="cell-avatar">' + esc(s.name.charAt(0)) + '</span>' + esc(s.name) + '</td>' +
+            '<td>' + esc(s.className) + '</td>' +
+            '<td>' + esc(s.kindergarten) + '</td>' +
+            '<td>' + esc(s.signupTime) + '</td>' +
+            '<td>' + workCell + '</td>' +
+            '<td>' + (it.score === null ? '<span style="color:#c0c4cc;">—</span>' : '<span class="status-tag status-success">' + it.score + '</span>') + '</td>' +
+            '<td>' + (it.rank === null ? '<span style="color:#c0c4cc;">—</span>' : '<strong>' + it.rank + '</strong>') + '</td>' +
+            '<td>' + (it.rank !== null && it.awardName ? '<span class="status-tag status-primary">' + esc(it.awardName) + '</span>' : '<span style="color:#c0c4cc;">—</span>') + '</td>' +
+            '<td class="op-col">' + ops + '</td>' +
+            '</tr>'
+          );
+        }).join('')
+      : '<tr><td colspan="9" style="text-align:center;color:#909399;padding:40px 0;">暂无报名信息</td></tr>';
+
+    var st = resultStatusMeta(act.resultStatus);
+    return (
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">活动详情 · ' + esc(act.title) + '</span><span class="table-count"><span class="status-tag ' + st.cls + '">' + st.text + '</span></span></div>' +
+      '<div class="card-body" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="aq-back">← 返回列表</button>' +
+      '<button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="aq-export" data-id="' + act.id + '">⇩ 导出全量数据</button>' +
+      '<span style="font-size:12px;color:#909399;">活动类型：' + esc(act.type) + ' · 报名时间：' + esc(act.signupStart || '—') + ' ~ ' + esc(act.signupEnd || '—') + ' · 活动对象：' + esc(actScopeText(act.targetKindergartens)) + '</span>' +
+      '</div></section>' +
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">报名与评审数据</span><span class="table-count">共 ' + items.length + ' 人</span></div>' +
+      '<div class="card-body no-padding">' +
+      '<table class="pc-table"><thead><tr>' +
+      '<th>报名教师</th><th>班级</th><th>幼儿园</th><th>报名时间</th><th>作品名称</th><th>综合评分</th><th>名次</th><th>奖项等级</th><th>操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></section>'
+    );
+  }
 
   /* ═══════════════════════ PC：电子奖状模板管理 ═══════════════════════ */
 
@@ -3947,6 +4114,37 @@ window.MedalDemo = (function () {
       Proto.showToast('全量数据导出成功（共 ' + list.length + ' 条报名 · 含作品与综合评分）');
     });
 
+    // ── 活动查询：进入详情 / 返回列表 / 导出全量数据 / 筛选 ──
+    Proto.registerAction('aq-view', function (el) {
+      aqActivityId = Number(el.getAttribute('data-id'));
+      renderActivityQuery(qs('#pcPage'));
+    });
+
+    Proto.registerAction('aq-back', function () {
+      aqActivityId = null;
+      renderActivityQuery(qs('#pcPage'));
+    });
+
+    Proto.registerAction('aq-export', function (el) {
+      var a = activityById(Number(el.getAttribute('data-id')));
+      if (!a) return;
+      var list = signupListForActivity(a);
+      var items = buildArchiveItems(a);
+      Proto.showToast('「' + a.title + '」全量数据导出成功（报名 ' + list.length + ' 人 · 评审 ' + items.length + ' 人）');
+    });
+
+    Proto.registerAction('aq-search', function () {
+      aqNameFilter = ((document.getElementById('aqSearchName') || {}).value || '').trim();
+      aqTypeFilter = (document.getElementById('aqTypeFilter') || {}).value || '';
+      renderActivityQuery(qs('#pcPage'));
+    });
+
+    Proto.registerAction('aq-reset', function () {
+      aqNameFilter = '';
+      aqTypeFilter = '';
+      renderActivityQuery(qs('#pcPage'));
+    });
+
     // ── 归档阶段：设置奖项等级弹窗（自定义奖项名称及名次范围） ──
     Proto.registerAction('ac-open', function () {
       var a = activityById(amActivityId);
@@ -4795,6 +4993,9 @@ window.MedalDemo = (function () {
     if (document.getElementById('activityManageRoot')) {
       renderActivityManage(qs('#pcPage'));
       // 活动切换由 bindManageEvents 委托处理（change 事件）
+    }
+    if (document.getElementById('activityQueryRoot')) {
+      renderActivityQuery(qs('#pcPage'));
     }
     if (document.getElementById('rankBoardPanel')) {
       renderRankGarden(qs('#pcPage'));

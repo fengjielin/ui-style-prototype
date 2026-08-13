@@ -86,7 +86,9 @@ window.MDS = (function () {
           // 活动类型配置不做单独子菜单，由数据字典定义
           // 作品管理不做独立菜单，由活动发起「查看作品」入口进入（medal.js EXTRA_PAGES）
           // 打分监控 / 结果管理 / 活动归档并入「活动管理」页的审核 / 归档阶段（步骤条）
+          // 活动查询：归档历史活动只读查询（统计 / 全量导出 / 报名与评审详情）
           { key: 'activity-manage', title: '活动管理' },
+          { key: 'activity-query', title: '活动查询' },
           { key: 'cert-template', title: '奖状模板' },
         ],
       },
@@ -145,7 +147,9 @@ window.MDS = (function () {
           { key: 'activity-launch', title: '活动发起' },
           // 作品管理不做独立菜单，由活动发起「查看作品」入口进入（medal.js EXTRA_PAGES）
           // 打分监控 / 结果管理 / 活动归档并入「活动管理」页的审核 / 归档阶段（步骤条）
+          // 活动查询：归档历史活动只读查询（统计 / 全量导出 / 报名与评审详情）
           { key: 'activity-manage', title: '活动管理' },
+          { key: 'activity-query', title: '活动查询' },
           { key: 'cert-template', title: '奖状模板' },
         ],
       },
@@ -255,6 +259,13 @@ window.MDS = (function () {
       // 区域活动观察记录评比（归档阶段 · 待发布结果）
       { id: 11, activity: '区域活动观察记录评比', title: '建构区幼儿合作行为观察记录', teacher: '张慧', className: '中一班', type: '文档', size: '1.6MB', status: '已评审', check: '未检出重复', submitTime: '2026-05-18 09:00' },
       { id: 12, activity: '区域活动观察记录评比', title: '角色区语言发展观察记录', teacher: '李娜', className: '小一班', type: '文档', size: '1.4MB', status: '已评审', check: '未检出重复', submitTime: '2026-05-20 11:20' },
+      // 2025 秋季论文大赛（归档阶段 · 已归档）
+      { id: 13, activity: '2025 秋季论文大赛', title: '幼儿园户外自主游戏的教师支持策略', teacher: '张慧', className: '中一班', type: '文档', size: '1.9MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-12 09:30' },
+      { id: 14, activity: '2025 秋季论文大赛', title: '小班幼儿入园适应的家园协同路径', teacher: '李娜', className: '小一班', type: 'PDF', size: '2.4MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-15 14:05' },
+      { id: 15, activity: '2025 秋季论文大赛', title: '基于游戏观察的大班学习品质培养', teacher: '王强', className: '大一班', type: '文档', size: '2.0MB', status: '已评审', check: '相似度 6%', submitTime: '2025-10-18 10:20' },
+      // 班级环创成果评比（归档阶段 · 已归档）
+      { id: 16, activity: '班级环创成果评比', title: '小一班主题环创布置方案', teacher: '赵敏', className: '小一班', type: '压缩包', size: '28.5MB', status: '已评审', check: '未检出重复', submitTime: '2026-01-20 09:00' },
+      { id: 17, activity: '班级环创成果评比', title: '中一班区域角环境创设', teacher: '陈晨', className: '中一班', type: '图片', size: '12.3MB', status: '已评审', check: '未检出重复', submitTime: '2026-01-21 11:30' },
     ],
 
     /* 评委账号（20 位，供分组抽取演示） */
@@ -294,6 +305,15 @@ window.MDS = (function () {
       { id: 7, activity: '户外活动设计大赛', work: '周涛的作品', judge: '王教授', round: '复评', scores: '86 / 88 / 90', comment: '方案设计完整，可执行性强。', time: '2026-08-14 09:30' },
       { id: 8, activity: '户外活动设计大赛', work: '吴倩的作品', judge: '王教授', round: '复评', scores: '90 / 92 / 88', comment: '观察记录详实，目标明确。', time: '2026-08-14 09:45' },
       { id: 9, activity: '户外活动设计大赛', work: '郑爽的作品', judge: '王教授', round: '复评', scores: '84 / 86 / 85', comment: '设计新颖，需补充安全预案。', time: '2026-08-14 10:00' },
+      // 2025 秋季论文大赛（归档阶段 · 已归档 · 初评 + 复评）
+      { id: 10, activity: '2025 秋季论文大赛', work: '张慧的作品', judge: '李教授', round: '初评', scores: '90 / 88 / 92', comment: '选题贴合实际，论证充分。', time: '2025-10-20 09:10' },
+      { id: 11, activity: '2025 秋季论文大赛', work: '张慧的作品', judge: '周教授', round: '复评', scores: '91 / 90 / 93', comment: '初评复评一致，一等奖候选。', time: '2025-10-22 10:00' },
+      { id: 12, activity: '2025 秋季论文大赛', work: '李娜的作品', judge: '李教授', round: '初评', scores: '84 / 86 / 85', comment: '案例丰富，可再提炼策略。', time: '2025-10-20 09:30' },
+      { id: 13, activity: '2025 秋季论文大赛', work: '李娜的作品', judge: '周教授', round: '复评', scores: '86 / 87 / 85', comment: '二等奖水平。', time: '2025-10-22 10:20' },
+      { id: 14, activity: '2025 秋季论文大赛', work: '王强的作品', judge: '李教授', round: '初评', scores: '82 / 84 / 83', comment: '结构完整，可补数据支撑。', time: '2025-10-20 09:50' },
+      // 班级环创成果评比（归档阶段 · 已归档 · 初评）
+      { id: 15, activity: '班级环创成果评比', work: '赵敏的作品', judge: '陈园长', round: '初评', scores: '88 / 90 / 87', comment: '环创主题鲜明，幼儿参与度高。', time: '2026-01-22 09:20' },
+      { id: 16, activity: '班级环创成果评比', work: '陈晨的作品', judge: '陈园长', round: '初评', scores: '85 / 86 / 84', comment: '区域角布局合理。', time: '2026-01-22 09:45' },
     ],
 
     /* 评奖分批（活动 id → 批次列表；每批次：评审轮次 round(初评/复评) + 作品 ids + 分配评委 + 已评数量 done） */
