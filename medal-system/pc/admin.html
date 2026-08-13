@@ -803,22 +803,53 @@
     </div>
   </div>
 
-  <!-- ══════════════════ 评委分配弹窗（评审阶段「评委分配」：分组数 / 按组选择评委 / 确定分配） ══════════════════ -->
+  <!-- ══════════════════ 评委分配弹窗（评审阶段「评委分配」：自动分配 / 手动分配 两种方式可选） ══════════════════ -->
   <div class="mask-layer" id="judgeAssignDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
       <div class="dialog-head" id="judgeAssignTitle">评委分配</div>
       <div class="dialog-body">
-        <form class="pc-form" onsubmit="return false">
-          <div class="pc-form-item">
-            <label>分组数</label>
-            <input class="pc-input" id="judgeGroupCount" type="number" min="1" value="2" placeholder="请输入分组数">
+        <!-- 分配方式切换 -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <span style="font-size:13px;color:#606266;">分配方式</span>
+          <div class="pc-filter-tabs" id="judgeModeTabs">
+            <span class="pc-filter-tab is-active" data-action="judge-mode" data-mode="auto">自动分配</span>
+            <span class="pc-filter-tab" data-action="judge-mode" data-mode="manual">手动分配</span>
           </div>
-        </form>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
-          <button type="button" class="pc-btn pc-btn-add" data-action="judge-build-groups">生成分组</button>
-          <span style="font-size:12px;color:#909399;">为每组选择评委，每位评委仅可分配至一组</span>
         </div>
-        <div id="judgeDrawPreview" style="margin-top:12px;font-size:13px;color:#606266;line-height:1.8;max-height:420px;overflow-y:auto;"></div>
+
+        <!-- 自动分配面板：分组数 / 每组评委数 / 系统随机抽取 -->
+        <div id="judgeAutoPanel">
+          <form class="pc-form" onsubmit="return false">
+            <div class="pc-form-item">
+              <label>分组数</label>
+              <input class="pc-input" id="judgeAutoGroupCount" type="number" min="1" value="2" placeholder="请输入分组数">
+            </div>
+            <div class="pc-form-item">
+              <label>每组评委数</label>
+              <input class="pc-input" id="judgeAutoPerGroup" type="number" min="1" value="1" placeholder="请输入每组评委数">
+            </div>
+          </form>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+            <button type="button" class="pc-btn pc-btn-add" data-action="judge-draw">进行分组抽取</button>
+            <span style="font-size:12px;color:#909399;">系统自动抽取评委并分配需评作品</span>
+          </div>
+          <div id="judgeAutoDrawPreview" style="margin-top:12px;font-size:13px;color:#606266;line-height:1.8;max-height:420px;overflow-y:auto;"></div>
+        </div>
+
+        <!-- 手动分配面板：分组数 / 按组选择评委 -->
+        <div id="judgeManualPanel" hidden>
+          <form class="pc-form" onsubmit="return false">
+            <div class="pc-form-item">
+              <label>分组数</label>
+              <input class="pc-input" id="judgeGroupCount" type="number" min="1" value="2" placeholder="请输入分组数">
+            </div>
+          </form>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+            <button type="button" class="pc-btn pc-btn-add" data-action="judge-build-groups">生成分组</button>
+            <span style="font-size:12px;color:#909399;">为每组选择评委，每位评委仅可分配至一组</span>
+          </div>
+          <div id="judgeDrawPreview" style="margin-top:12px;font-size:13px;color:#606266;line-height:1.8;max-height:420px;overflow-y:auto;"></div>
+        </div>
       </div>
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="judgeAssignDialog">取 消</button>
