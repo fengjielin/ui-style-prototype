@@ -1868,3 +1868,493 @@ tr.row-excluded td {
   border-radius: var(--pc-radius-action);
 }
 
+/* ═══════════════════════ PC 教师工作台：统计排行 ═══════════════════════ */
+
+/* ── A. 数据总览 KPI 卡 ── */
+.rank-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.rank-kpi-card {
+  background: #fff;
+  border: 1px solid var(--pc-border-card);
+  border-radius: var(--pc-radius-card);
+  box-shadow: var(--pc-shadow-card);
+  padding: 16px 18px;
+  transition: var(--pc-transition-fast);
+}
+
+.rank-kpi-card:hover {
+  box-shadow: var(--pc-shadow-card-hover);
+  border-color: var(--pc-primary-border);
+}
+
+.rank-kpi-card .kpi-title {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rank-kpi-card .kpi-title .kpi-icon {
+  font-size: 15px;
+}
+
+.rank-kpi-card .kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--pc-text-primary);
+  line-height: 1.15;
+  margin-top: 8px;
+}
+
+.rank-kpi-card .kpi-value .kpi-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--pc-text-secondary);
+  margin-left: 3px;
+}
+
+.rank-kpi-card .kpi-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--pc-text-regular);
+}
+
+.rank-kpi-card .kpi-sub .up { color: #33c28a; }
+.rank-kpi-card .kpi-sub .down { color: #e03a2e; }
+.rank-kpi-card .kpi-sub .flat { color: var(--pc-text-secondary); }
+.rank-kpi-card .kpi-sub .rank-tag { color: var(--pc-primary); font-weight: 600; }
+.rank-kpi-card .kpi-sub .muted { color: var(--pc-text-secondary); }
+
+/* 数据更新时间标注 */
+.rank-update-note {
+  text-align: right;
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+  margin: 0 2px var(--pc-card-gap);
+}
+
+/* ── B. 维度详情：筛选条 / 摘要行 / 图表 ── */
+.stat-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--pc-bg-page);
+  border-radius: var(--pc-radius-card);
+}
+
+.stat-filter-bar .filter-label {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+}
+
+.filter-select {
+  padding: 6px 10px;
+  border: 1px solid var(--pc-border-input-default);
+  border-radius: var(--pc-radius-input);
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-regular);
+  background: #fff;
+  cursor: pointer;
+  transition: var(--pc-transition-fast);
+  min-width: 160px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--pc-primary);
+  box-shadow: var(--pc-shadow-focus);
+}
+
+.stat-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--pc-border-card);
+  border-radius: var(--pc-radius-card);
+  background: #fff;
+}
+
+.stat-summary-row .sum-item {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+}
+
+.stat-summary-row .sum-item b {
+  font-size: var(--pc-font-body);
+  color: var(--pc-text-primary);
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+.stat-summary-row .sum-item .up { color: #33c28a; }
+.stat-summary-row .sum-item .rank-tag { color: var(--pc-primary); font-weight: 600; }
+
+.chart-box {
+  background: #fff;
+  border: 1px solid var(--pc-border-card);
+  border-radius: var(--pc-radius-card);
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.chart-box .chart-title {
+  font-size: var(--pc-font-body);
+  font-weight: 600;
+  color: var(--pc-text-primary);
+  margin-bottom: 4px;
+}
+
+.chart-box .chart-desc {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+  margin-bottom: 12px;
+}
+
+/* ECharts 图表容器（需显式高度，ECharts 才能正确计算尺寸） */
+.chart-echarts {
+  width: 100%;
+  height: 260px;
+}
+
+/* ── C. 园内排名：我的排位分 + 综合榜表格 ── */
+.score-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.score-dim-card {
+  border: 1px solid var(--pc-border-card);
+  border-radius: var(--pc-radius-card);
+  padding: 14px 16px;
+  background: var(--pc-bg-page);
+}
+
+.score-dim-card .sd-name {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+}
+
+.score-dim-card .sd-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--pc-text-primary);
+  margin: 6px 0;
+}
+
+.score-dim-card .sd-meta {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-regular);
+  line-height: 1.7;
+}
+
+.score-dim-card .sd-meta .rank-tag { color: var(--pc-primary); font-weight: 600; }
+.score-dim-card .sd-meta .point { color: var(--pc-text-primary); font-weight: 700; }
+
+.score-total-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: var(--pc-radius-card);
+  background: linear-gradient(90deg, var(--pc-primary-active-bg), #fff);
+  border: 1px solid var(--pc-primary-border);
+}
+
+.score-total-bar .st-left .st-label { font-size: var(--pc-font-tag); color: var(--pc-text-secondary); }
+.score-total-bar .st-left .st-value { font-size: 26px; font-weight: 700; color: var(--pc-primary); line-height: 1.1; }
+.score-total-bar .st-left .st-value .unit { font-size: 13px; font-weight: 400; color: var(--pc-text-secondary); margin-left: 2px; }
+.score-total-bar .st-right { font-size: var(--pc-font-tag); color: var(--pc-text-regular); text-align: right; }
+.score-total-bar .st-right .trend-hint { color: #33c28a; font-weight: 600; }
+
+.rank-rule-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--pc-bg-table-head);
+  border-radius: var(--pc-radius-card);
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+  line-height: 1.7;
+}
+
+/* 综合榜表格：本人行高亮 */
+.pc-table.rank-score-table tbody tr.is-me {
+  background: var(--pc-primary-active-bg);
+}
+
+.pc-table.rank-score-table tbody tr.is-me:hover {
+  background: var(--pc-primary-active-bg);
+}
+
+.pc-table.rank-score-table .me-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--pc-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.pc-table.rank-score-table .score-cell {
+  font-weight: 700;
+  color: var(--pc-text-primary);
+}
+
+.pc-table.rank-score-table .score-cell .sub {
+  font-weight: 400;
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+  margin-left: 2px;
+}
+
+.pc-table.rank-score-table .rank-cell {
+  font-weight: 600;
+  color: var(--pc-text-regular);
+}
+
+.pc-table.rank-score-table .rank-cell.rank-top {
+  color: var(--pc-primary);
+}
+
+.pc-table.rank-score-table .total-cell {
+  font-weight: 700;
+  color: var(--pc-primary);
+  font-size: 16px;
+}
+
+/* ═══════════════════════ 移动端：统计排行（rank.html） ═══════════════════════ */
+
+/* 数据总览 KPI 卡（2 列网格） */
+.mb-stat-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px var(--mb-content-pad) 0;
+}
+
+.mb-stat-kpi-card {
+  background: var(--mb-bg-card);
+  border-radius: var(--mb-radius-card);
+  box-shadow: var(--mb-shadow-card);
+  padding: 12px 14px;
+}
+
+.mb-stat-kpi-card .kpi-title {
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mb-stat-kpi-card .kpi-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--mb-text-primary);
+  line-height: 1.15;
+  margin-top: 6px;
+}
+
+.mb-stat-kpi-card .kpi-value .kpi-unit {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--mb-text-muted);
+  margin-left: 2px;
+}
+
+.mb-stat-kpi-card .kpi-sub {
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-secondary);
+  margin-top: 6px;
+}
+
+.mb-stat-update {
+  text-align: right;
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-muted);
+  padding: 4px var(--mb-content-pad) 0;
+}
+
+/* 维度图表容器 */
+.mb-chart-box {
+  margin-top: 12px;
+}
+
+.mb-chart-box .mb-chart-title {
+  font-size: var(--mb-font-body);
+  font-weight: 600;
+  color: var(--mb-text-primary);
+  margin-bottom: 4px;
+}
+
+.mb-chart-box .mb-chart-desc {
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-muted);
+  margin-bottom: 8px;
+}
+
+.mb-chart-echarts {
+  width: 100%;
+  height: 220px;
+}
+
+/* 我的排位分 */
+.mb-score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mb-score-cell {
+  background: var(--mb-bg-page);
+  border-radius: var(--mb-radius-md);
+  padding: 10px 12px;
+}
+
+.mb-score-cell .sc-name {
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-muted);
+}
+
+.mb-score-cell .sc-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--mb-text-primary);
+  margin: 4px 0;
+}
+
+.mb-score-cell .sc-meta {
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-secondary);
+}
+
+.mb-score-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--mb-radius-md);
+  background: var(--mb-primary-lightest);
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-secondary);
+}
+
+.mb-score-total b {
+  color: var(--mb-primary);
+  font-size: var(--mb-font-body);
+}
+
+.mb-score-total .trend-hint {
+  color: var(--mb-secondary);
+  font-weight: 600;
+}
+
+/* 综合榜卡片列表 */
+.mb-rank-score-card {
+  padding: 12px 2px;
+}
+
+.mb-rank-score-card + .mb-rank-score-card {
+  border-top: 1px solid var(--mb-border-divider);
+}
+
+.mb-rank-score-card.is-me {
+  background: var(--mb-primary-lightest);
+  margin: 0 -14px;
+  padding-left: 16px;
+  padding-right: 16px;
+  border-radius: var(--mb-radius-md);
+}
+
+.mb-rank-score-card .rsc-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mb-rank-score-card .rsc-rank {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--mb-bg-tertiary);
+  color: var(--mb-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.mb-rank-score-card .rsc-rank.top {
+  background: var(--mb-grad-primary);
+  color: #fff;
+}
+
+.mb-rank-score-card .rsc-name {
+  font-weight: 600;
+  color: var(--mb-text-primary);
+  font-size: var(--mb-font-body);
+}
+
+.mb-rank-score-card .rsc-name .me-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--mb-primary);
+  color: #fff;
+  font-size: 10px;
+}
+
+.mb-rank-score-card .rsc-class {
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-muted);
+  flex: 1;
+}
+
+.mb-rank-score-card .rsc-total {
+  font-weight: 700;
+  color: var(--mb-primary);
+  font-size: var(--mb-font-body);
+}
+
+.mb-rank-score-card .rsc-dims {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-secondary);
+}
+
+.mb-rank-score-card .rsc-dims .rsc-dim b {
+  color: var(--mb-text-primary);
+}
+
+.mb-rank-score-card .rsc-dims .rsc-dim i {
+  font-style: normal;
+  color: var(--mb-text-muted);
+  margin-left: 2px;
+}
+

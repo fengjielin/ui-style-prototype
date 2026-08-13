@@ -554,7 +554,12 @@ window.MDS = (function () {
       { className: '大一班', total: 33, registered: 31, active: 25 },
     ],
 
-    /* 教师个人多维数据看板（移动端，需求文档 2.3） */
+    /* 教师个人多维数据看板（移动端 + PC 教师工作台统计排行，需求文档 2.3 / 统计排行描述）
+       usage/interaction/promotion/conversion：四项计分维度（total 累计 / today 今日新增 / gap 距上一名差距 / rank 园内排名）
+       trend：移动端通用趋势（本人/园内平均/当日第一，兼容旧渲染）
+       duration：使用时长（分钟，需求 2）；durationTrend：每日时长分项（家园互动/日常工作 堆叠柱 + 合计折线，组合图表）
+       conversionDetail：本班家长会员转化计数口径（注册量 + 会员人数，需求 4，区别于计分维度 conversion 的分值）
+       *Trend：各维度按日趋势（折线图数据；top 语义为「当日第一」，非累计第一） */
     teacherScores: {
       usage: { total: 520, today: 12, gap: 120, rank: 2 },
       interaction: { total: 610, today: 18, gap: 40, rank: 1 },
@@ -568,6 +573,50 @@ window.MDS = (function () {
         { date: '08-09', me: 145, avg: 110, top: 160 },
         { date: '08-10', me: 152, avg: 112, top: 163 },
         { date: '08-11', me: 160, avg: 115, top: 168 },
+      ],
+      /* 使用时长（需求 2）：total 累计 7716 分钟 = 128 小时 36 分；today 今日 135 分钟 */
+      duration: { total: 7716, today: 135 },
+      /* 本班家长会员转化（需求 4）：registered 注册账号数 / members 会员人数 / *Today 今日新增（+1/-1/持平） */
+      conversionDetail: { registered: 33, members: 27, registeredToday: 1, membersToday: 2 },
+      /* 使用平台功能总次数·按日趋势（需求 1）：本人 / 园内平均 / 当日第一 */
+      usageTrend: [
+        { date: '08-05', me: 46, avg: 40, top: 55 },
+        { date: '08-06', me: 52, avg: 42, top: 60 },
+        { date: '08-07', me: 48, avg: 41, top: 58 },
+        { date: '08-08', me: 58, avg: 44, top: 62 },
+        { date: '08-09', me: 55, avg: 45, top: 63 },
+        { date: '08-10', me: 62, avg: 46, top: 66 },
+        { date: '08-11', me: 68, avg: 48, top: 70 },
+      ],
+      /* 使用总时长·每日时长分项（需求 2）：home 家园互动 / work 日常工作 分钟数（合计 = 当日总时长） */
+      durationTrend: [
+        { date: '08-05', home: 35, work: 57 },
+        { date: '08-06', home: 42, work: 66 },
+        { date: '08-07', home: 30, work: 55 },
+        { date: '08-08', home: 48, work: 72 },
+        { date: '08-09', home: 45, work: 70 },
+        { date: '08-10', home: 38, work: 60 },
+        { date: '08-11', home: 52, work: 83 },
+      ],
+      /* 与家长互动频次·按日趋势（需求 3）：本人 / 园内平均 / 当日第一 */
+      interactionTrend: [
+        { date: '08-05', me: 58, avg: 46, top: 62 },
+        { date: '08-06', me: 66, avg: 48, top: 70 },
+        { date: '08-07', me: 60, avg: 47, top: 65 },
+        { date: '08-08', me: 72, avg: 50, top: 74 },
+        { date: '08-09', me: 78, avg: 52, top: 80 },
+        { date: '08-10', me: 84, avg: 54, top: 82 },
+        { date: '08-11', me: 90, avg: 55, top: 88 },
+      ],
+      /* 本班家长会员转化·按日趋势（需求 4）：registered 累计注册 / members 累计会员 */
+      conversionTrend: [
+        { date: '08-05', registered: 26, members: 20 },
+        { date: '08-06', registered: 27, members: 21 },
+        { date: '08-07', registered: 28, members: 22 },
+        { date: '08-08', registered: 29, members: 23 },
+        { date: '08-09', registered: 30, members: 24 },
+        { date: '08-10', registered: 32, members: 25 },
+        { date: '08-11', registered: 33, members: 27 },
       ],
     },
 
