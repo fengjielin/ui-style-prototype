@@ -935,6 +935,58 @@
   color: var(--pc-text-secondary);
 }
 
+/* 通知管理页：单条通知记录卡片（标题 + 已读进度 + 内容 + 回执表格） */
+.notify-record {
+  border: 1px solid var(--pc-border-card);
+  border-radius: var(--pc-radius-card);
+  background: #fff;
+  padding: 16px 18px;
+  transition: var(--pc-transition);
+}
+
+.notify-record:hover {
+  box-shadow: var(--pc-shadow-card-hover);
+}
+
+.notify-record .nr-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.notify-record .nr-title {
+  flex: 1;
+  font-size: var(--pc-font-title);
+  font-weight: 600;
+  color: var(--pc-text-primary);
+}
+
+.notify-record .nr-content {
+  font-size: var(--pc-font-body);
+  color: var(--pc-text-regular);
+  line-height: 1.7;
+  padding: 10px 14px;
+  background: var(--pc-bg-page);
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.notify-record .nr-meta {
+  font-size: var(--pc-font-tag);
+  color: var(--pc-text-secondary);
+  margin-bottom: 10px;
+}
+
+.notify-record .nr-table {
+  margin-top: 4px;
+}
+
+.notify-record .nr-table th,
+.notify-record .nr-table td {
+  padding: 8px 10px;
+}
+
 /* 移动端活动卡内的状态 tag：缩小适配 */
 .mb-activity-card .act-status {
   height: 20px;

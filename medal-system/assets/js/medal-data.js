@@ -652,6 +652,51 @@ window.MDS = (function () {
       { id: 'n5', title: '【活动】春季论文大赛截止提醒', desc: '2026 春季论文评选大赛将于 8 月 20 日截止提交……', time: '08-10 14:30', from: '管理员', read: false },
     ],
 
+    /* 活动通知记录（活动 id → 通知列表；每条通知含接收对象及已读回执状态，需求文档 2.4 通知/回执）
+       recipients 每位接收老师：read 是否已读 / readTime 阅读时间（未读为空串） */
+    activityNotices: {
+      '1': [
+        {
+          id: 'an1',
+          title: '报名启动通知',
+          content: '2026 春季论文评选大赛已正式启动，请在报名时间内登录平台上传作品，逾期不再受理。',
+          sender: '管理员',
+          sendTime: '2026-07-01 10:00',
+          recipients: [
+            { name: '张慧', kindergarten: '童蹊幼儿园', className: '中一班', read: true, readTime: '2026-07-01 10:23' },
+            { name: '李娜', kindergarten: '童蹊幼儿园', className: '小一班', read: true, readTime: '2026-07-01 11:05' },
+            { name: '王强', kindergarten: '童蹊幼儿园', className: '大一班', read: true, readTime: '2026-07-01 15:40' },
+            { name: '赵敏', kindergarten: '童蹊幼儿园', className: '小一班', read: false, readTime: '' },
+            { name: '陈晨', kindergarten: '童蹊幼儿园', className: '中一班', read: false, readTime: '' },
+            { name: '刘洋', kindergarten: '童蹊幼儿园', className: '大一班', read: false, readTime: '' },
+            { name: '周涛', kindergarten: '阳光幼儿园', className: '大一班', read: true, readTime: '2026-07-02 08:12' },
+            { name: '吴倩', kindergarten: '蓝天幼儿园', className: '小一班', read: false, readTime: '' },
+            { name: '郑爽', kindergarten: '蓝天幼儿园', className: '中一班', read: false, readTime: '' },
+          ],
+        },
+      ],
+      '3': [
+        {
+          id: 'an2',
+          title: '作品提交提醒',
+          content: '家园互动创意活动评选作品提交将于 9 月 15 日截止，请尽早准备并上传参赛作品。',
+          sender: '管理员',
+          sendTime: '2026-08-05 09:30',
+          recipients: [
+            { name: '张慧', kindergarten: '童蹊幼儿园', className: '中一班', read: true, readTime: '2026-08-05 10:02' },
+            { name: '李娜', kindergarten: '童蹊幼儿园', className: '小一班', read: false, readTime: '' },
+            { name: '王强', kindergarten: '童蹊幼儿园', className: '大一班', read: false, readTime: '' },
+            { name: '赵敏', kindergarten: '童蹊幼儿园', className: '小一班', read: true, readTime: '2026-08-05 09:58' },
+            { name: '陈晨', kindergarten: '童蹊幼儿园', className: '中一班', read: false, readTime: '' },
+            { name: '刘洋', kindergarten: '童蹊幼儿园', className: '大一班', read: false, readTime: '' },
+            { name: '周涛', kindergarten: '阳光幼儿园', className: '大一班', read: false, readTime: '' },
+            { name: '吴倩', kindergarten: '蓝天幼儿园', className: '小一班', read: false, readTime: '' },
+            { name: '郑爽', kindergarten: '蓝天幼儿园', className: '中一班', read: true, readTime: '2026-08-05 12:11' },
+          ],
+        },
+      ],
+    },
+
     /* 电子奖状模板：背景（预设/上传图）+ 模板内容（含 {{变量}} 占位）+ 绑定到活动 */
     /* backgroundType：preset 预设样式 / image 上传背景图（background 存 data URL） */
     certTemplates: [
@@ -679,7 +724,7 @@ window.MDS = (function () {
     ],
   };
 
-  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activitySchemes', 'bonusGradients', 'certTemplates'];
+  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activityNotices', 'activitySchemes', 'bonusGradients', 'certTemplates'];
 
   /* ────────────────────────── PC 端界面状态（可持久化，重置时恢复默认） ────────────────────────── */
   var UI_DEFAULTS = {

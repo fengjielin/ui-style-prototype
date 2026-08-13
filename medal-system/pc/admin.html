@@ -120,6 +120,7 @@
                     <th>活动对象</th>
                     <th>发布时间</th>
                     <th>状态</th>
+                    <th>通知状态</th>
                     <th>操作</th>
                   </tr>
                 </thead>
@@ -136,6 +137,11 @@
               </div>
             </div>
           </section>
+        </div>
+
+        <!-- ═════════ ②½ 通知管理（activity-notify）：活动发起「通知」入口 → 向参与对象发送通知 + 已读回执 ═════════ -->
+        <div class="pc-page-block" data-page-key="activity-notify">
+          <div id="activityNotifyRoot"></div>
         </div>
 
         <!-- ═════════ ③ 作品管理（activity-works） ═════════ -->
@@ -797,6 +803,11 @@
     <div class="pc-dialog">
       <div class="dialog-head" id="notifyActTitle">活动通知</div>
       <div class="dialog-body">
+        <!-- 通知标题 + 内容（发送后写入 activityNotices，作为通知记录展示） -->
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <input class="pc-input" id="notifyTitle" placeholder="通知标题（必填）" style="flex:1;">
+        </div>
+        <textarea class="pc-input" id="notifyContent" rows="3" placeholder="通知内容（必填）" style="height:auto;min-height:72px;resize:vertical;width:100%;margin-bottom:12px;box-sizing:border-box;"></textarea>
         <div style="font-size:13px;color:#909399;margin-bottom:12px;" id="notifyScopeText">发送对象：全部幼儿园</div>
         <!-- 筛选：按活动对象幼儿园 / 老师姓名（medal.js 按范围老师动态填充幼儿园选项） -->
         <div style="display:flex;gap:10px;margin-bottom:10px;">

@@ -41,6 +41,16 @@ window.MedalDemo = (function () {
     return d.getFullYear() + '-' + mm + '-' + dd;
   }
 
+  /* 当前日期时间（yyyy-MM-dd HH:mm，用于通知发送时间） */
+  function nowTimeStr() {
+    var d = new Date();
+    var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dd = ('0' + d.getDate()).slice(-2);
+    var hh = ('0' + d.getHours()).slice(-2);
+    var mi = ('0' + d.getMinutes()).slice(-2);
+    return d.getFullYear() + '-' + mm + '-' + dd + ' ' + hh + ':' + mi;
+  }
+
   /* 解析当前角色：URL ?role= 参数优先，其次 localStorage，缺省 admin */
   function resolveRole() {
     var fromUrl = getParam('role');
@@ -211,6 +221,7 @@ window.MedalDemo = (function () {
   /* 非侧边栏菜单的可打开页面（不挂在菜单树中，但可从活动管理各阶段入口进入，保留标签/面包屑） */
   var EXTRA_PAGES = {
     'activity-works': { groupTitle: '活动管理', title: '作品管理' },
+    'activity-notify': { groupTitle: '活动组织', title: '通知管理' },
   };
 
   function findMenuByKey(key) {
@@ -415,6 +426,7 @@ window.MedalDemo = (function () {
     overview: renderOverview,
     'activity-launch': renderActivityLaunch,
     'activity-works': renderActivityWorks,
+    'activity-notify': renderActivityNotify,
     'activity-manage': renderActivityManage,
     'activity-query': renderActivityQuery,
     'rank-garden': renderRankGarden,
@@ -641,6 +653,33 @@ window.MedalDemo = (function () {
     });
   }
 
+  /* ═══════════════════════ PC：活动通知（通知状态 + 已读回执） ═══════════════════════ */
+
+  /* 某活动的通知记录列表（activityNotices 按活动 id 键控） */
+  function activityNoticesFor(activity) {
+    var map = MDS.get('activityNotices') || {};
+    return (activity && map[activity.id]) || [];
+  }
+
+  /* 单条通知的已读人数 */
+  function noticeReadCount(n) {
+    return (n && n.recipients || []).filter(function (r) { return r.read; }).length;
+  }
+
+  /* 活动通知状态元信息（活动列表「通知状态」列）：仅已发布活动展示；
+     未发送 → 未通知；已发送 → 已通知 + 已读进度（跨多条通知汇总） */
+  function activityNoticeMeta(a) {
+    if (a.status !== 'PUBLISHED') return null;
+    var notices = activityNoticesFor(a);
+    if (!notices.length) return { text: '未通知', cls: 'status-warning', sub: '' };
+    var total = 0, read = 0;
+    notices.forEach(function (n) {
+      total += (n.recipients || []).length;
+      read += noticeReadCount(n);
+    });
+    return { text: '已通知', cls: 'status-primary', sub: '已读 ' + read + '/' + total };
+  }
+
   /* ═══════════════════════ PC：活动奖项设置（CRUD 表格：序号/奖项名称/数量） ═══════════════════════ */
 
   function awardRowHtml(a) {
@@ -700,6 +739,11 @@ window.MedalDemo = (function () {
     if (title) title.textContent = '「' + activity.title + '」通知';
     var scope = document.getElementById('notifyScopeText');
     if (scope) scope.textContent = '发送对象：' + (actScopeHtml(activity.targetKindergartens).replace(/<[^>]+>/g, ''));
+    // 清空标题/内容输入（每次发送重新填写）
+    var nt = document.getElementById('notifyTitle');
+    if (nt) nt.value = '';
+    var nc = document.getElementById('notifyContent');
+    if (nc) nc.value = '';
     notifyTeachers = scopeTeachers(activity);
 
     // 重置筛选并默认全选（发送给全体范围老师，可取消个别）
@@ -792,6 +836,70 @@ window.MedalDemo = (function () {
     });
   }
 
+  /* 单条通知记录卡片（通知标题/内容/发送信息 + 接收老师已读回执表格） */
+  function noticeRecordHtml(n) {
+    var recipients = n.recipients || [];
+    var total = recipients.length;
+    var read = noticeReadCount(n);
+    var rows = recipients.map(function (r) {
+      var statusTag = r.read
+        ? '<span class="status-tag status-success">已读</span>'
+        : '<span class="status-tag status-warning">未读</span>';
+      return (
+        '<tr>' +
+        '<td><span class="cell-avatar">' + esc((r.name || '').charAt(0)) + '</span>' + esc(r.name) + '</td>' +
+        '<td>' + esc(r.kindergarten || '—') + '</td>' +
+        '<td>' + esc(r.className || '—') + '</td>' +
+        '<td>' + statusTag + '</td>' +
+        '<td style="color:' + (r.read ? '#606266' : '#c0c4cc') + ';">' + (r.read ? esc(r.readTime || '—') : '—') + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+    return (
+      '<div class="notify-record">' +
+      '<div class="nr-head">' +
+      '<div class="nr-title">' + esc(n.title) + '</div>' +
+      '<span class="status-tag ' + (read >= total ? 'status-success' : 'status-primary') + '">已读 ' + read + ' / ' + total + '</span>' +
+      '</div>' +
+      '<div class="nr-content">' + esc(n.content) + '</div>' +
+      '<div class="nr-meta">发送人：' + esc(n.sender) + ' · 发送时间：' + esc(n.sendTime) + ' · 共 ' + total + ' 位接收老师</div>' +
+      '<table class="pc-table nr-table"><thead><tr>' +
+      '<th>接收老师</th><th>幼儿园</th><th>班级</th><th>回执状态</th><th>阅读时间</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div>'
+    );
+  }
+
+  /* 通知管理页：活动标题 + 返回/发送工具条 + 通知记录（含已读回执） */
+  function renderActivityNotify() {
+    var box = document.getElementById('activityNotifyRoot');
+    if (!box) return;
+    var act = activityById(notifyActivityId);
+    if (!act) {
+      box.innerHTML = '<section class="pc-card"><div class="card-body"><div class="pc-empty"><div class="empty-icon">📭</div><div>请从「活动发起」页点击「通知」进入</div></div></div></section>';
+      return;
+    }
+    var notices = activityNoticesFor(act);
+    var html = '';
+    // 顶部工具条：返回活动发起 + 发送通知
+    html += '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">通知管理 · ' + esc(act.title) + '</span><span class="table-count">活动对象：' + esc(actScopeText(act.targetKindergartens)) + '</span></div>' +
+      '<div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="notify-back">← 返回活动发起</button>' +
+      '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="notify-open-send">＋ 发送通知</button>' +
+      '<span style="font-size:12px;color:#909399;">向该活动参与对象（范围内老师）发送通知，并查看已读回执状态。</span>' +
+      '</div></section>';
+    // 通知记录列表
+    html += '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">通知记录</span><span class="table-count">共 ' + notices.length + ' 条通知</span></div>' +
+      '<div class="card-body" style="display:flex;flex-direction:column;gap:14px;">' +
+      (notices.length
+        ? notices.map(noticeRecordHtml).join('')
+        : '<div class="pc-empty"><div class="empty-icon">📭</div><div>暂无通知记录，点击「发送通知」向参与老师发送</div></div>') +
+      '</div></section>';
+    box.innerHTML = html;
+  }
+
   function filteredActivities() {
     var all = MDS.get('activities') || [];
     var kw = ((qs('#actSearch') || {}).value || '').trim();
@@ -825,7 +933,7 @@ window.MedalDemo = (function () {
     if (!tbody) return;
     var list = filteredActivities();
     if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#909399;padding:40px 0;">暂无匹配活动</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#909399;padding:40px 0;">暂无匹配活动</td></tr>';
       return;
     }
     tbody.innerHTML = list
@@ -839,13 +947,19 @@ window.MedalDemo = (function () {
         if (a.status === 'DRAFT' || a.status === 'PUBLISHED') {
           ops += '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="act-edit" data-id="' + a.id + '">编辑</button>';
         }
-        // 通知：仅已发布状态显示；点击打开通知弹窗，可过滤部分老师不发送
+        // 通知：仅已发布状态显示；点击打开通知管理页，可发送通知并查看已读回执
         if (a.status === 'PUBLISHED') {
           ops += '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="act-notify" data-id="' + a.id + '">通知</button>';
         }
         if (a.status === 'DRAFT') {
           ops += '<button type="button" class="pc-btn pc-btn-delete pc-btn-sm" data-action="act-delete" data-id="' + a.id + '">删除</button>';
         }
+        // 通知状态：仅已发布活动展示（未通知 / 已通知 + 已读进度）
+        var nMeta = activityNoticeMeta(a);
+        var noticeCell = !nMeta
+          ? '<span style="color:#c0c4cc;">—</span>'
+          : '<span class="status-tag ' + nMeta.cls + '">' + nMeta.text + '</span>' +
+            (nMeta.sub ? '<div style="font-size:12px;color:#909399;margin-top:2px;">' + nMeta.sub + '</div>' : '');
         return (
           '<tr>' +
           '<td><input type="checkbox" class="act-check" data-id="' + a.id + '"></td>' +
@@ -855,6 +969,7 @@ window.MedalDemo = (function () {
           '<td>' + actScopeHtml(a.targetKindergartens) + '</td>' +
           '<td>' + esc(a.publishTime || '—') + '</td>' +
           '<td>' + statusHtml + '</td>' +
+          '<td>' + noticeCell + '</td>' +
           '<td class="op-col">' + ops + '</td>' +
           '</tr>'
         );
@@ -3573,10 +3688,23 @@ window.MedalDemo = (function () {
       }
     });
 
-    // ── 活动：通知弹窗（过滤部分老师不发送） ──
+    // ── 活动：通知（点击打开通知管理页 → 发送通知 + 查看已读回执） ──
     Proto.registerAction('act-notify', function (el) {
       var id = Number(el.getAttribute('data-id'));
       var a = (MDS.get('activities') || []).filter(function (x) { return x.id === id; })[0];
+      if (!a) return;
+      notifyActivityId = a.id;
+      activateTag('activity-notify');
+    });
+
+    // 通知管理页：返回活动发起
+    Proto.registerAction('notify-back', function () {
+      activateTag('activity-launch');
+    });
+
+    // 通知管理页：打开发送通知弹窗（填标题/内容 + 选择接收老师）
+    Proto.registerAction('notify-open-send', function () {
+      var a = activityById(notifyActivityId);
       if (!a) return;
       fillNotifyDialog(a);
     });
@@ -3602,13 +3730,45 @@ window.MedalDemo = (function () {
     });
 
     Proto.registerAction('notify-send', function () {
+      var title = ((document.getElementById('notifyTitle') || {}).value || '').trim();
+      var content = ((document.getElementById('notifyContent') || {}).value || '').trim();
+      if (!title) {
+        Proto.showToast('请填写通知标题');
+        return;
+      }
+      if (!content) {
+        Proto.showToast('请填写通知内容');
+        return;
+      }
       // 已选集合跨筛选累计：以 notifySelected 为准，而非 DOM 中可见的勾选项
       var names = notifyTeachers.filter(function (t) { return notifySelected[t.name]; }).map(function (t) { return t.name; });
       if (!names.length) {
         Proto.showToast('请至少选择一位老师');
         return;
       }
+      // 组装接收对象（含回执状态，初始全部未读，回执由接收方阅读后回填）
+      var recipients = notifyTeachers.filter(function (t) { return notifySelected[t.name]; }).map(function (t) {
+        return { name: t.name, kindergarten: t.kindergarten, className: t.className, read: false, readTime: '' };
+      });
+      var record = {
+        id: 'an' + Date.now(),
+        title: title,
+        content: content,
+        sender: '管理员',
+        sendTime: nowTimeStr(),
+        recipients: recipients,
+      };
+      MDS.update('activityNotices', function (map) {
+        var next = Object.assign({}, map || {});
+        var key = String(notifyActivityId);
+        var arr = (next[key] || []).slice();
+        arr.unshift(record);
+        next[key] = arr;
+        return next;
+      });
       Proto.closeDialog('notifyDialog');
+      renderActivityNotify();
+      renderActivityTable();
       Proto.showToast('已向 ' + names.length + ' 位老师发送通知');
     });
 
