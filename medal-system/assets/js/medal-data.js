@@ -5,7 +5,7 @@
  * 约束：纯静态、无后端、无依赖，file:// 下 localStorage 按目录生效
  * 说明：
  *   - 与通用平台原型（data-store.js）互相独立，localStorage 键前缀 demo.medal.
- *   - 可持久化键：role / activities / medals / reviewRecords / notices
+ *   - 可持久化键：role / activities / reviewRecords / notices / activitySchemes / schemeScores
  *   - 派生数据（不入库，由 role 即时计算）：userProfile / tabBar / pcMenus
  *   - 数据流单向：UI action → MDS.set/update → watch 通知 → 页面 render 重绘
  * 对应文档：2026-08-11-01 需求拆解 / 2026-08-11-02 菜单模块设计
@@ -55,7 +55,7 @@ window.MDS = (function () {
 
   var ROLE_KEYS = ['admin', 'principal', 'teacher', 'judge', 'parent'];
 
-  /* ────────────────────────── 移动端 tabBar（勋章不再是独立 tab，入口全走首页卡片；选中金黄 #f9ca24） ────────────────────────── */
+  /* ────────────────────────── 移动端 tabBar（首页 / 消息 / 我的；选中金黄 #f9ca24） ────────────────────────── */
   /* 教师：首页 + 消息 + 我的；园长：首页 + 我的；家长：首页 + 活动 + 我的（我的仅教师端 disabled 展示） */
   var TAB_BARS = {
     teacher: [
@@ -76,8 +76,9 @@ window.MDS = (function () {
 
   /* ────────────────────────── PC 端后台菜单（对齐方案文档 2.1 完整菜单树，按角色） ────────────────────────── */
   /* key 对应 medal.js 中按菜单渲染的内容块；未实现的 key 显示"建设中"占位 */
+  /* 注：积分体系重构后仅保留「临时专项活动积分方案」；勋章体系与奖金管理已完全移除 */
   var PC_MENUS = {
-    /* 平台管理员：全量 7 组 */
+    /* 平台管理员：全量 5 组 */
     admin: [
       {
         title: '活动组织',
@@ -106,21 +107,7 @@ window.MDS = (function () {
         title: '积分规则',
         children: [
           { key: 'score-scheme', title: '积分方案管理' },
-        ],
-      },
-      {
-        title: '勋章体系',
-        children: [
-          { key: 'medal-threshold', title: '勋章门槛配置' },
-          { key: 'medal-archive', title: '教师勋章档案' },
-        ],
-      },
-      {
-        title: '奖金管理',
-        children: [
-          { key: 'bonus-gradient', title: '奖金梯度配置' },
-          { key: 'bonus-monthly', title: '月度发放清单' },
-          { key: 'bonus-semester', title: '期末汇总清单' },
+          { key: 'score-obtained', title: '积分获得情况' },
         ],
       },
       {
@@ -141,7 +128,7 @@ window.MDS = (function () {
       },
     ],
     /* 园长：仅排行榜（园内排行榜 + 家长进度看板）
-       活动组织 / 勋章体系 / 奖金管理 / 人员管理 仅平台管理员端可见 */
+       活动组织 / 积分规则 / 人员管理 仅平台管理员端可见 */
     principal: [
       {
         title: '排行榜',
@@ -158,11 +145,10 @@ window.MDS = (function () {
         children: [{ key: 'judge-scoring', title: '评委打分' }],
       },
     ],
-    /* 教师：PC 个人工作台（教师视角：我的活动 / 园内排行 / 我的勋章） */
+    /* 教师：PC 个人工作台（教师视角：我的活动 / 园内排行；勋章体系已移除） */
     teacher: [
       { title: '活动中心', children: [{ key: 'teacher-activity', title: '我的活动' }] },
       { title: '排行榜', children: [{ key: 'teacher-rank', title: '园内排行榜' }] },
-      { title: '我的勋章', children: [{ key: 'teacher-medal', title: '勋章档案' }] },
     ],
     parent: [],
   };
@@ -375,21 +361,8 @@ window.MDS = (function () {
       ],
     },
 
-    /* 月度常规勋章积分方案（固定唯一 · 始终生效 · 不可复制） */
-    monthlyScheme: {
-      id: 1,
-      name: '月度常规勋章积分方案',
-      updatedAt: '2026-08-01 更新',
-      dimensions: [
-        { key: 'usage', name: '平台使用', points: 5, weight: 30, enabled: true, headCoef: 1.0, assocCoef: 0.8 },
-        { key: 'interaction', name: '家园互动', points: 8, weight: 35, enabled: true, headCoef: 1.0, assocCoef: 1.0 },
-        { key: 'promotion', name: '外部推广', points: 15, weight: 20, enabled: true, headCoef: 1.0, assocCoef: 1.2 },
-        { key: 'conversion', name: '会员转化', points: 20, weight: 15, enabled: true, headCoef: 1.0, assocCoef: 1.0 },
-      ],
-    },
-
     /* 活动方案（可多套 · 可复制 · 对应关联活动；参与对象由关联活动界定） */
-    /* bonusRules：该专项活动独立配置的一套活动奖金体系（活动金/银/铜 → 奖金），与月度勋章奖金分开核算 */
+    /* 注：积分体系重构后仅保留「临时专项活动积分方案」，月度常规勋章积分方案已移除 */
     activitySchemes: [
       {
         id: 1,
@@ -402,11 +375,6 @@ window.MDS = (function () {
           { level: '二等奖', points: 60 },
           { level: '三等奖', points: 30 },
           { level: '参与奖', points: 10 },
-        ],
-        bonusRules: [
-          { level: '活动金', amount: 600 },
-          { level: '活动银', amount: 400 },
-          { level: '活动铜', amount: 200 },
         ],
         updatedAt: '2026-08-10 更新',
       },
@@ -421,72 +389,31 @@ window.MDS = (function () {
           { level: '二等奖', points: 50 },
           { level: '三等奖', points: 20 },
         ],
-        bonusRules: [
-          { level: '活动金', amount: 500 },
-          { level: '活动银', amount: 300 },
-          { level: '活动铜', amount: 150 },
-        ],
         updatedAt: '2026-04-28 更新',
       },
     ],
 
-    /* 规则生效记录（方案切换历史） */
-    scoreLogs: [
-      { id: 1, scheme: '月度常规勋章积分方案', action: '启用', operator: '管理员', time: '2026-08-01 09:30' },
-      { id: 2, scheme: '临时专项活动积分方案', action: '启用', operator: '管理员', time: '2026-08-05 14:00' },
-      { id: 3, scheme: '月度常规勋章积分方案', action: '切回启用', operator: '管理员', time: '2026-08-06 10:20' },
-      { id: 4, scheme: '月度常规勋章积分方案', action: '修改权重', operator: '管理员', time: '2026-07-28 16:45' },
-    ],
-
-    /* 勋章门槛（金银铜双套，对齐需求文档 4.1） */
-    medalThresholds: [
-      { id: 1, set: '月度常规勋章门槛', gold: 500, silver: 300, bronze: 150, note: '月度结算积分达门槛授予对应等级勋章' },
-      { id: 2, set: '活动专项勋章门槛', gold: 400, silver: 240, bronze: 120, note: '专项活动总积分达门槛授予对应等级勋章' },
-    ],
-
-    /* 教师勋章档案（历史每月勋章，永久留存） */
-    medals: [
-      { id: 1, teacher: '张慧', className: '中一班', period: '2026-07', type: '月度常规', level: '金', activity: '—', usage: 520, interaction: 610, promotion: 380, conversion: 300, total: 1810, rank: 2 },
-      { id: 2, teacher: '李娜', className: '小一班', period: '2026-07', type: '月度常规', level: '银', activity: '—', usage: 480, interaction: 520, promotion: 420, conversion: 260, total: 1680, rank: 4 },
-      { id: 3, teacher: '王强', className: '大一班', period: '2026-07', type: '月度常规', level: '铜', activity: '—', usage: 420, interaction: 460, promotion: 300, conversion: 240, total: 1420, rank: 7 },
-      { id: 4, teacher: '张慧', className: '中一班', period: '2026-06', type: '月度常规', level: '金', activity: '—', usage: 500, interaction: 580, promotion: 360, conversion: 320, total: 1760, rank: 1 },
-      { id: 5, teacher: '李娜', className: '小一班', period: '2026-06', type: '月度常规', level: '银', activity: '—', usage: 460, interaction: 500, promotion: 400, conversion: 250, total: 1610, rank: 5 },
-      { id: 6, teacher: '张慧', className: '中一班', period: '2026-05', type: '活动专项', level: '金', activity: '六一主题环创比赛', usage: 300, interaction: 420, promotion: 280, conversion: 200, total: 1200, rank: 1 },
-      { id: 7, teacher: '陈晨', className: '中一班', period: '2026-07', type: '活动专项', level: '银', activity: '课件制作技能大赛', usage: 280, interaction: 360, promotion: 300, conversion: 220, total: 1160, rank: 3 },
-      { id: 8, teacher: '刘洋', className: '大一班', period: '2026-06', type: '月度常规', level: '银', activity: '—', usage: 470, interaction: 540, promotion: 340, conversion: 280, total: 1630, rank: 3 },
-      // 2026-07 月度常规勋章（补齐赵敏/孙悦，与月度发放清单 mock 一致，供「自动生成当月发放清单」演示）
-      { id: 9, teacher: '赵敏', className: '小一班', period: '2026-07', type: '月度常规', level: '银', activity: '—', usage: 460, interaction: 500, promotion: 380, conversion: 270, total: 1610, rank: 5 },
-      { id: 10, teacher: '孙悦', className: '中一班', period: '2026-07', type: '月度常规', level: '铜', activity: '—', usage: 400, interaction: 450, promotion: 320, conversion: 230, total: 1400, rank: 9 },
-      // 亲子阅读打卡活动专项勋章（关联专项活动奖金方案：活动金500/活动银300/活动铜150，供期末汇总「月度+专项合并统计」演示）
-      { id: 11, teacher: '张慧', className: '中一班', period: '2026-04', type: '活动专项', level: '金', activity: '亲子阅读打卡活动', usage: 320, interaction: 400, promotion: 260, conversion: 180, total: 1160, rank: 2 },
-      { id: 12, teacher: '李娜', className: '小一班', period: '2026-04', type: '活动专项', level: '银', activity: '亲子阅读打卡活动', usage: 300, interaction: 360, promotion: 240, conversion: 160, total: 1060, rank: 4 },
-      { id: 13, teacher: '王强', className: '大一班', period: '2026-04', type: '活动专项', level: '铜', activity: '亲子阅读打卡活动', usage: 280, interaction: 320, promotion: 220, conversion: 150, total: 970, rank: 6 },
-    ],
-
-    /* 月度勋章奖金梯度（勋章等级 ↔ 月度奖金标准，纯配置面板，需求文档 5.1；固定唯一 · 每月勋章等级自动绑定） */
-    /* 专项活动奖金按活动方案独立配置（见 activitySchemes[].bonusRules），与月度勋章奖金分开核算 */
-    bonusGradients: [
-      { id: 1, level: '金', amount: 800, note: '月度勋章等级 · 金牌' },
-      { id: 2, level: '银', amount: 500, note: '月度勋章等级 · 银牌' },
-      { id: 3, level: '铜', amount: 300, note: '月度勋章等级 · 铜牌' },
-    ],
-
-    /* 月度发放清单（含离职剔除标注，需求文档 5.3） */
-    monthlyBonus: [
-      { id: 1, teacher: '张慧', className: '中一班', medal: '金', bonus: 800, usage: 520, interaction: 610, promotion: 380, conversion: 300, total: 1810, status: '正常', remark: '' },
-      { id: 2, teacher: '李娜', className: '小一班', medal: '银', bonus: 500, usage: 480, interaction: 520, promotion: 420, conversion: 260, total: 1680, status: '正常', remark: '' },
-      { id: 3, teacher: '王强', className: '大一班', medal: '铜', bonus: 300, usage: 420, interaction: 460, promotion: 300, conversion: 240, total: 1420, status: '正常', remark: '' },
-      { id: 4, teacher: '赵敏', className: '小一班', medal: '银', bonus: 500, usage: 460, interaction: 500, promotion: 380, conversion: 270, total: 1610, status: '正常', remark: '' },
-      { id: 5, teacher: '孙悦', className: '中一班', medal: '铜', bonus: 300, usage: 400, interaction: 450, promotion: 320, conversion: 230, total: 1400, status: '已剔除', remark: '6 月离职，放弃评比资格（不影响历史数据）' },
-    ],
-
-    /* 期末汇总清单 */
-    semesterBonus: [
-      { id: 1, teacher: '张慧', className: '中一班', medals: '金×3 / 银×2', monthBonus: 3400, activityBonus: 1800, total: 5200, status: '正常' },
-      { id: 2, teacher: '李娜', className: '小一班', medals: '银×4 / 铜×2', monthBonus: 2600, activityBonus: 1000, total: 3600, status: '正常' },
-      { id: 3, teacher: '王强', className: '大一班', medals: '铜×5', monthBonus: 1500, activityBonus: 400, total: 1900, status: '正常' },
-      { id: 4, teacher: '孙悦', className: '中一班', medals: '铜×2', monthBonus: 600, activityBonus: 0, total: 600, status: '已剔除', remark: '6 月离职，放弃评比资格' },
-    ],
+    /* 积分获得情况（key=活动方案 id → 参与对象在活动期间四维度积分 + 可编辑奖金）
+       usage/interaction/promotion/conversion：平台使用/家园互动/外部推广/会员转化 四维度积分
+       bonus：奖金（表格中可编辑，元）；total/名次/排位分 由 medal.js 动态计算 */
+    schemeScores: {
+      1: [
+        { name: '张慧', className: '中一班', kindergarten: '童蹊幼儿园', usage: 320, interaction: 400, promotion: 260, conversion: 180, bonus: 600 },
+        { name: '李娜', className: '小一班', kindergarten: '童蹊幼儿园', usage: 300, interaction: 360, promotion: 240, conversion: 160, bonus: 400 },
+        { name: '王强', className: '大一班', kindergarten: '童蹊幼儿园', usage: 280, interaction: 320, promotion: 220, conversion: 150, bonus: 200 },
+        { name: '赵敏', className: '小一班', kindergarten: '童蹊幼儿园', usage: 260, interaction: 300, promotion: 210, conversion: 140, bonus: 0 },
+        { name: '陈晨', className: '中一班', kindergarten: '童蹊幼儿园', usage: 250, interaction: 290, promotion: 230, conversion: 130, bonus: 0 },
+        { name: '刘洋', className: '大一班', kindergarten: '童蹊幼儿园', usage: 240, interaction: 280, promotion: 200, conversion: 160, bonus: 0 },
+      ],
+      2: [
+        { name: '张慧', className: '中一班', kindergarten: '童蹊幼儿园', usage: 210, interaction: 260, promotion: 170, conversion: 120, bonus: 500 },
+        { name: '李娜', className: '小一班', kindergarten: '童蹊幼儿园', usage: 200, interaction: 240, promotion: 180, conversion: 110, bonus: 300 },
+        { name: '王强', className: '大一班', kindergarten: '童蹊幼儿园', usage: 190, interaction: 220, promotion: 160, conversion: 100, bonus: 150 },
+        { name: '赵敏', className: '小一班', kindergarten: '童蹊幼儿园', usage: 180, interaction: 210, promotion: 150, conversion: 110, bonus: 0 },
+        { name: '陈晨', className: '中一班', kindergarten: '童蹊幼儿园', usage: 170, interaction: 200, promotion: 150, conversion: 130, bonus: 0 },
+        { name: '刘洋', className: '大一班', kindergarten: '童蹊幼儿园', usage: 160, interaction: 190, promotion: 140, conversion: 100, bonus: 0 },
+      ],
+    },
 
     /* 幼儿园（活动对象多选维度） */
     kindergartens: [
@@ -532,8 +459,8 @@ window.MDS = (function () {
 
     /* 操作日志 */
     sysLogs: [
-      { id: 1, user: '管理员', module: '积分方案管理', action: '启用「月度常规勋章积分方案」', time: '2026-08-01 09:30' },
-      { id: 2, user: '管理员', module: '勋章门槛配置', action: '修改金奖门槛 500 → 480', time: '2026-08-02 11:20' },
+      { id: 1, user: '管理员', module: '积分方案管理', action: '新增「秋季家园共育案例评选专项积分方案」', time: '2026-08-01 09:30' },
+      { id: 2, user: '管理员', module: '积分获得情况', action: '发布积分公告「8 月专项活动积分结果公示」', time: '2026-08-02 11:20' },
       { id: 3, user: '管理员', module: '活动管理', action: '发布「家园互动创意活动评选」', time: '2026-08-03 15:00' },
       { id: 4, user: '李园长', module: '教师管理', action: '将孙悦标记为离职', time: '2026-08-05 10:10' },
     ],
@@ -884,8 +811,6 @@ window.MDS = (function () {
     notices: [
       { id: 'n1', title: '【积分】8 月积分榜已更新', desc: '本园 8 月积分榜已实时更新，查看个人排名……', time: '今天 09:30', from: '系统', read: false },
       { id: 'n2', title: '【活动】课件大赛进入评审阶段', desc: '课件制作技能大赛已进入评审阶段，共 32 份作品……', time: '昨天 17:20', from: '管理员', read: false },
-      { id: 'n3', title: '【勋章】7 月月度勋章已发放', desc: '您的 7 月勋章为「金牌」，查看勋章档案与奖金明细……', time: '08-01 08:00', from: '系统', read: true },
-      { id: 'n4', title: '【奖金】7 月奖金清单已生成', desc: '7 月月度奖金清单已生成，请查看发放明细……', time: '08-02 10:15', from: '财务', read: true },
       { id: 'n5', title: '【活动】春季论文大赛截止提醒', desc: '2026 春季论文评选大赛将于 8 月 20 日截止提交……', time: '08-10 14:30', from: '管理员', read: false },
     ],
 
@@ -961,7 +886,7 @@ window.MDS = (function () {
     ],
   };
 
-  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activityNotices', 'activitySchemes', 'bonusGradients', 'certTemplates', 'teacherSignups', 'principalSignups', 'scoreStandards'];
+  var MUTABLE_KEYS = ['activities', 'reviewRecords', 'reviewBatches', 'notices', 'activityNotices', 'activitySchemes', 'schemeScores', 'certTemplates', 'teacherSignups', 'principalSignups', 'scoreStandards'];
 
   /* ────────────────────────── PC 端界面状态（可持久化，重置时恢复默认） ────────────────────────── */
   var UI_DEFAULTS = {
@@ -1073,39 +998,9 @@ window.MDS = (function () {
           lsSet('activities', cache.activities);
         }
       }
-      // 奖金梯度兼容迁移：旧版为「金/银/铜 + 活动金/银/铜」单列表 → 归一为仅月度 金/银/铜 三项
-      // （专项活动奖金已独立到 activitySchemes[].bonusRules，与月度勋章奖金分开核算）
-      if (Array.isArray(cache.bonusGradients)) {
-        var MONTHLY_LEVELS = { '金': true, '银': true, '铜': true };
-        cache.bonusGradients = cache.bonusGradients.filter(function (g) { return !!MONTHLY_LEVELS[g.level]; });
-        var bgSeed = JSON.parse(JSON.stringify(MOCK.bonusGradients));
-        var bgMigrated = false;
-        bgSeed.forEach(function (seed) {
-          var exists = cache.bonusGradients.some(function (g) { return g.level === seed.level; });
-          if (!exists) {
-            cache.bonusGradients.push(seed);
-            bgMigrated = true;
-          }
-        });
-        if (bgMigrated) lsSet('bonusGradients', cache.bonusGradients);
-      }
-      // 活动方案兼容迁移：确保每个专项活动方案含 bonusRules（缺失时按 mock 种子补齐）
-      if (Array.isArray(cache.activitySchemes)) {
-        var asMigrated = false;
-        cache.activitySchemes.forEach(function (s) {
-          if (!Array.isArray(s.bonusRules)) {
-            var seed = (MOCK.activitySchemes || []).filter(function (m) { return m.id === s.id; })[0];
-            s.bonusRules = seed && seed.bonusRules
-              ? JSON.parse(JSON.stringify(seed.bonusRules))
-              : [{ level: '活动金', amount: 0 }, { level: '活动银', amount: 0 }, { level: '活动铜', amount: 0 }];
-            asMigrated = true;
-          }
-        });
-        if (asMigrated) lsSet('activitySchemes', cache.activitySchemes);
-      }
-      // 只读 mock（不入库）：幼儿园/活动类型/作品/门槛/榜单/首页原始内容等演示数据
-      // （activitySchemes / bonusGradients 已移入 MUTABLE_KEYS 持久化，奖金梯度与活动奖金规则可编辑保留）
-      ['kindergartens', 'principals', 'activityTypes', 'works', 'judges', 'monthlyScheme', 'scoreLogs', 'medalThresholds', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'pointRecords', 'homeAttendance', 'homeGrid'].forEach(function (key) {
+      // 只读 mock（不入库）：幼儿园/活动类型/作品/榜单/首页原始内容等演示数据
+      // （注：积分重构后已移除月度方案/勋章/奖金数据；schemeScores 归入 MUTABLE_KEYS 持久化，奖金列可编辑）
+      ['kindergartens', 'principals', 'activityTypes', 'works', 'judges', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'pointRecords', 'homeAttendance', 'homeGrid'].forEach(function (key) {
         cache[key] = JSON.parse(JSON.stringify(MOCK[key]));
       });
       var role = lsGet('role');

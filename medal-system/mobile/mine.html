@@ -3,9 +3,9 @@
 <!--
   ============================================================
   童蹊社区-原型 · 移动端 · 我的二级页（独立全屏）
-  入口：园长首页功能宫格「奖金清单」
-  结构：顶部橙导航栏（返回首页）+ 橙色渐变头 + 上浮内容区（我的奖金 / 消息中心 / 切换管理端 / 关于，无 tabBar）
-  角色差异：园长显示「我的奖金」；教师端隐藏「我的奖金」模块
+  入口：首页 / 消息页「我的」
+  结构：顶部橙导航栏（返回首页）+ 橙色渐变头 + 上浮内容区（消息中心 / 切换管理端 / 关于，无 tabBar）
+  注：积分体系重构后已移除「我的奖金」模块（奖金管理已移除）
   ============================================================
 -->
 <head>
@@ -37,16 +37,6 @@
 
     <!-- 上浮内容区 -->
     <main class="mine-content">
-
-      <!-- 我的奖金（教师端隐藏；园长端显示为奖金清单入口） -->
-      <div class="subscription-card" id="bonusCard">
-        <div class="sub-title">我的奖金</div>
-        <div id="mineBonus"></div>
-        <div class="sub-cta">
-          <span data-action="show-toast" data-toast="奖金明细">奖金明细</span>
-          <span data-action="show-toast" data-toast="期末汇总">期末汇总</span>
-        </div>
-      </div>
 
       <!-- 消息中心 -->
       <div class="mb-section-title"><span class="title">消息中心</span><span class="subtitle">站内通知</span></div>

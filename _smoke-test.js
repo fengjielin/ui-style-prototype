@@ -1,6 +1,7 @@
 /**
- * 奖金梯度配置原型 · 冒烟测试（Node 环境，无浏览器）
- * 用最小 DOM 模拟驱动 medal.js 的 init()，覆盖「奖金梯度配置」页渲染与交互，验证无运行时错误。
+ * 积分体系重构原型 · 冒烟测试（Node 环境，无浏览器）
+ * 用最小 DOM 模拟驱动 medal.js 的 init()，覆盖「积分获得情况」页渲染、排位分计算（含并列）、发布公告，
+ * 并验证勋章体系/奖金管理相关数据与菜单已完全移除。
  * 运行：node _smoke-test.js
  */
 'use strict';
@@ -51,24 +52,7 @@ function makeElement(tag) {
 }
 
 var elCache = {};
-var docClickHandlers = [];
-/* 可被查询并支持触发 click 的 tab 元素（模拟 init 中 querySelectorAll 绑定的 tab） */
-var tabCache = {};
-function makeTab(value) {
-  var handlers = [];
-  var el = makeElement('span');
-  el.dataset['tabGroup'] = 'bonusGradTabs';
-  el.dataset['tabValue'] = value;
-  el.getAttribute = function (k) {
-    if (k === 'data-tab-value') return value;
-    if (k === 'data-tab-group') return 'bonusGradTabs';
-    return this.attrs[k] !== undefined ? this.attrs[k] : null;
-  };
-  el.addEventListener = function (ev, fn) { if (ev === 'click') handlers.push(fn); };
-  el.click = function () { handlers.forEach(function (fn) { fn(el); }); };
-  el.handlers = handlers;
-  return el;
-}
+var docHandlers = { click: [], change: [] };
 function makeDocument() {
   return {
     readyState: 'loading',
@@ -81,24 +65,16 @@ function makeDocument() {
       if (sel === '#pcPage') return makeElement('div');
       return null;
     },
-    querySelectorAll: function (sel) {
-      if (sel === '[data-tab-group="bonusGradTabs"]') {
-        if (!tabCache.tabs) {
-          tabCache.tabs = [makeTab('monthly'), makeTab('activity')];
-          tabCache.tabs[0].classList.add('is-active');
-        }
-        return tabCache.tabs;
-      }
-      return [];
-    },
+    querySelectorAll: function () { return []; },
     createElement: function (tag) { return makeElement(tag); },
     createTextNode: function (t) { return { textContent: t }; },
-    addEventListener: function (ev, fn) { if (ev === 'click') docClickHandlers.push(fn); },
-    /* 模拟原型的事件委托：以 target 触发全部 click 监听（prototype.js 委托分发 data-action） */
+    addEventListener: function (ev, fn) { if (docHandlers[ev]) docHandlers[ev].push(fn); },
+    /* 模拟原型事件委托：以 target 触发 click / change 监听 */
     dispatchClick: function (target) {
-      docClickHandlers.forEach(function (fn) {
-        fn({ target: target, preventDefault: function () {} });
-      });
+      docHandlers.click.forEach(function (fn) { fn({ target: target, preventDefault: function () {} }); });
+    },
+    dispatchChange: function (target) {
+      docHandlers.change.forEach(function (fn) { fn({ target: target, preventDefault: function () {} }); });
     },
   };
 }
@@ -129,8 +105,6 @@ global.location = { search: '', pathname: 'pc/admin.html', href: '' };
 global.confirm = function () { return true; };
 global.__elCache = elCache;
 
-/* 用 setTimeout 拦截 toast 弹层副作用（showToast 内部会 appendChild + setTimeout 消失） */
-
 /* ────────── 按顺序加载三个脚本 ────────── */
 require('./assets/js/prototype.js');
 require('./medal-system/assets/js/medal-data.js');
@@ -138,150 +112,117 @@ require('./medal-system/assets/js/medal.js');
 
 console.log('Proto / MDS / MedalDemo 加载成功');
 
-/* ────────── 运行 init，覆盖全部 PC 渲染（含奖金梯度配置页） ────────── */
-MedalDemo.init();
-console.log('init() 执行成功，无运行时错误');
-
-/* ────────── 验证奖金梯度配置页渲染产物 ────────── */
-var monthlyGrid = document.getElementById('bonusGradMonthlyGrid');
-var flow = document.getElementById('bonusBindFlow');
-var summary = document.getElementById('bonusBindSummary');
-var actList = document.getElementById('bonusGradActList');
-var actCount = document.getElementById('bonusGradActCount');
-var note = document.getElementById('bonusGradActivityNote');
-
 function assert(cond, msg) {
   if (cond) console.log('  ✔ ' + msg);
   else { console.error('  ✘ ' + msg); process.exitCode = 1; }
 }
 
-console.log('— 月度勋章奖金区 —');
-assert(monthlyGrid.innerHTML.indexOf('bonus-grad-card bg-gold') >= 0, '金牌梯度卡片渲染');
-assert(monthlyGrid.innerHTML.indexOf('bonus-grad-card bg-silver') >= 0, '银牌梯度卡片渲染');
-assert(monthlyGrid.innerHTML.indexOf('bonus-grad-card bg-bronze') >= 0, '铜牌梯度卡片渲染');
-assert(monthlyGrid.innerHTML.indexOf('>800<') >= 0, '金牌金额 800 渲染');
-assert(monthlyGrid.innerHTML.indexOf('>500<') >= 0, '银牌金额 500 渲染');
-assert(monthlyGrid.innerHTML.indexOf('>300<') >= 0, '铜牌金额 300 渲染');
-assert(flow.innerHTML.indexOf('自动绑定奖金') >= 0, '自动绑定流程步骤渲染');
-assert(summary.textContent.indexOf('预计发放') >= 0, '月度预计发放摘要渲染：' + summary.textContent);
+function countOccur(str, sub) { return str.split(sub).length - 1; }
 
-console.log('— 专项活动奖金区（切换 tab 后渲染） —');
-/* 切到「专项活动奖金」tab，触发 init 绑定的 click 监听 */
-document.querySelectorAll('[data-tab-group="bonusGradTabs"]')[1].click();
-assert(actCount.textContent.indexOf('共 2 条') >= 0, '活动奖金方案数量 = 2：' + actCount.textContent);
-assert(actList.innerHTML.indexOf('act-bonus-tag tag-gold') >= 0, '活动金 chip 渲染');
-assert(actList.innerHTML.indexOf('¥ 600') >= 0, '秋季方案活动金 ¥600');
-assert(actList.innerHTML.indexOf('¥ 500') >= 0, '亲子方案活动金 ¥500（独立配置）');
-assert(actList.innerHTML.indexOf('配置奖金') >= 0, '「配置奖金」按钮渲染');
-assert(note.innerHTML.indexOf('分开核算') >= 0, '独立核算说明渲染');
+/* ────────── 1. 运行 init：初始化数据缓存 + PC 渲染（含积分获得情况）无运行时错误 ────────── */
+MedalDemo.init();
+console.log('init() 执行成功，无运行时错误');
 
-console.log('— 月度清单联动 —');
-/* 直接调用生成的 action 逻辑：模拟点击 bonus-generate，验证 monthlyBonus 按勋章等级重算 */
-var genBtn = makeElement('button');
-genBtn.setAttribute('data-action', 'bonus-generate');
-// 重新读取 medal.js 内部不可达，改为断言 generate 所需数据源一致：
-// 2026-07 月度勋章 5 条（金1/银3/铜1），对应梯度 800/500/300 → 预计发放 800+500*3+300 = 2600
-var medals = MDS.get('medals').filter(function (m) { return m.type === '月度常规' && m.period === '2026-07'; });
-var gold = medals.filter(function (m) { return m.level === '金'; }).length;
-var silver = medals.filter(function (m) { return m.level === '银'; }).length;
-var bronze = medals.filter(function (m) { return m.level === '铜'; }).length;
-assert(medals.length === 5, '2026-07 月度勋章共 5 条，实际 ' + medals.length);
-assert(gold === 1 && silver === 2 && bronze === 2, '金1/银2/铜2，实际 金' + gold + '/银' + silver + '/铜' + bronze);
+/* ────────── 2. 数据层：勋章/奖金键已移除，schemeScores 已就绪 ────────── */
+console.log('— 数据层（移除与新增） —');
+assert(MDS.get('monthlyScheme') === undefined, 'monthlyScheme（月度常规勋章积分方案）已移除');
+assert(MDS.get('medals') === undefined, 'medals（教师勋章档案）已移除');
+assert(MDS.get('medalThresholds') === undefined, 'medalThresholds（勋章门槛）已移除');
+assert(MDS.get('bonusGradients') === undefined, 'bonusGradients（月度奖金梯度）已移除');
+assert(MDS.get('monthlyBonus') === undefined, 'monthlyBonus（月度发放清单）已移除');
+assert(MDS.get('semesterBonus') === undefined, 'semesterBonus（期末汇总清单）已移除');
 
-console.log('— 弹窗回填（月度 + 专项活动） —');
-/* 月度弹窗回填：直接设置后验证输入框 value */
-var bg = MDS.get('bonusGradients');
-assert(bg.length === 3 && bg[0].amount === 800 && bg[1].amount === 500 && bg[2].amount === 300, 'bonusGradients 为月度三项 800/500/300');
-var as = MDS.get('activitySchemes');
-assert(as.length === 2 && as[0].bonusRules.length === 3 && as[0].bonusRules[0].level === '活动金', 'activitySchemes 含 bonusRules');
+var schemes = MDS.get('activitySchemes');
+assert(schemes && schemes.length === 2, '活动积分方案保留 2 套，实际 ' + (schemes && schemes.length));
+assert(schemes && !schemes[0].bonusRules && !schemes[1].bonusRules, 'activitySchemes 已移除 bonusRules 字段');
 
-console.log('— 交互动作（事件委托驱动） —');
+var scores = MDS.get('schemeScores') || {};
+assert(scores[1] && scores[1].length === 6 && scores[2] && scores[2].length === 6, 'schemeScores 提供 2 套方案 × 6 名参与对象');
 
-/* tab 工具：切到指定 tab（index 0=月度 / 1=专项活动） */
-var gradTabs = document.querySelectorAll('[data-tab-group="bonusGradTabs"]');
-function switchGradTab(i) { gradTabs[i].click(); }
+/* ────────── 3. 菜单：积分规则新增「积分获得情况」，勋章/奖金菜单组已移除 ────────── */
+console.log('— 菜单结构 —');
+var menus = MDS.get('pcMenus');
+var groupTitles = menus.map(function (g) { return g.title; });
+assert(groupTitles.indexOf('勋章体系') < 0, '「勋章体系」菜单组已移除');
+assert(groupTitles.indexOf('奖金管理') < 0, '「奖金管理」菜单组已移除');
+assert(groupTitles.indexOf('积分规则') >= 0, '「积分规则」菜单组保留');
+var scoreGroup = menus.filter(function (g) { return g.title === '积分规则'; })[0] || { children: [] };
+var scoreKeys = scoreGroup.children.map(function (c) { return c.key; });
+assert(scoreKeys.indexOf('score-scheme') >= 0 && scoreKeys.indexOf('score-obtained') >= 0,
+  '「积分规则」下含「积分方案管理」「积分获得情况」，实际 ' + scoreKeys.join(' / '));
+assert(scoreKeys.indexOf('medal-threshold') < 0 && scoreKeys.indexOf('bonus-gradient') < 0, '积分规则下无勋章/奖金子菜单');
 
-/* 1. 月度奖金编辑弹窗回填（先切回月度 tab） */
-switchGradTab(0);
-document.dispatchClick(actionEl('bonus-grad-edit'));
-assert(String(document.getElementById('bgGold').value) === '800', '月度弹窗金牌回填 800，实际 ' + document.getElementById('bgGold').value);
-assert(String(document.getElementById('bgSilver').value) === '500', '月度弹窗银牌回填 500');
-assert(String(document.getElementById('bgBronze').value) === '300', '月度弹窗铜牌回填 300');
+/* ────────── 4. 积分获得情况页渲染（默认方案 1） ────────── */
+console.log('— 积分获得情况页渲染（方案 1） —');
+var rootEl = document.getElementById('scoreObtainedRoot');
+var html = rootEl.innerHTML;
+assert(html.indexOf('平台使用') >= 0 && html.indexOf('家园互动') >= 0 && html.indexOf('外部推广') >= 0 && html.indexOf('会员转化') >= 0,
+  '表格含四维度列（平台使用/家园互动/外部推广/会员转化）');
+assert(html.indexOf('总积分') >= 0 && html.indexOf('排位分') >= 0 && html.indexOf('奖金（元）') >= 0, '表格含总积分/排位分/奖金列');
+assert(html.indexOf('发布公告') >= 0, '表格左上角含「发布公告」按钮');
+assert(html.indexOf('soSchemeSelect') >= 0, '顶部含活动积分方案下拉');
+['张慧', '李娜', '王强', '赵敏', '陈晨', '刘洋'].forEach(function (n) {
+  assert(html.indexOf(n) >= 0, '参与对象 ' + n + ' 渲染');
+});
+/* 方案 1 总积分 1160/1060/970/910/900/880 → 名次 1-6、排位分 6/5/4/3/2/1（无并列） */
+assert(html.indexOf('第 1 名') >= 0 && html.indexOf('第 6 名') >= 0, '名次 1~6 渲染');
+assert(countOccur(html, '>第 1 名</span>') === 1, '名次无并列（第 1 名仅 1 条）');
+assert(html.indexOf('>6</span> 分') >= 0 && html.indexOf('>1</span> 分') >= 0, '排位分 6（第1名）与 1（第6名）渲染');
 
-/* 2. 修改月度奖金并保存联动（应重渲染月度区，预计发放随梯度联动） */
-document.getElementById('bgGold').value = '900';
-document.getElementById('bgSilver').value = '600';
-document.getElementById('bgBronze').value = '400';
-document.dispatchClick(actionEl('bonus-grad-save'));
-var bgAfter = MDS.get('bonusGradients');
-assert(bgAfter[0].amount === 900 && bgAfter[1].amount === 600 && bgAfter[2].amount === 400,
-  '月度奖金保存生效 900/600/400，实际 ' + bgAfter[0].amount + '/' + bgAfter[1].amount + '/' + bgAfter[2].amount);
-assert(document.getElementById('bonusBindSummary').textContent.indexOf('¥ 2900') >= 0,
-  '保存后预计发放随梯度联动（900+600×2+400×2=2900）：' + document.getElementById('bonusBindSummary').textContent);
+/* ────────── 5. 切换方案 2：出现并列排位分 ────────── */
+console.log('— 切换方案 2：并列排位分（总分 760/730/670/650/650/590） —');
+document.dispatchChange({ id: 'soSchemeSelect', value: '2' });
+var html2 = document.getElementById('scoreObtainedRoot').innerHTML;
+/* 名次 1,2,3,4,4,6 → 第 4 名出现 2 次；排位分 6,5,4,3,3,1 → 并列各 3 分 */
+assert(countOccur(html2, '第 4 名') === 2, '方案 2 第 4 名并列（出现 2 次），实际 ' + countOccur(html2, '第 4 名'));
+assert(countOccur(html2, '>3</span> 分') >= 2, '并列名次得相同排位分 3，出现 ≥2 次，实际 ' + countOccur(html2, '>3</span> 分'));
 
-/* 3. 一键生成当月发放清单（按勋章等级自动绑定奖金，剔除离职教师） */
-document.dispatchClick(actionEl('bonus-generate'));
-var mb = MDS.get('monthlyBonus');
-assert(mb.length === 5, '生成清单共 5 条，实际 ' + mb.length);
-var sun = mb.filter(function (b) { return b.teacher === '孙悦'; })[0];
-assert(sun && sun.status === '已剔除', '离职教师孙悦被自动剔除');
-var zhang = mb.filter(function (b) { return b.teacher === '张慧'; })[0];
-assert(zhang && zhang.bonus === 900, '张慧金牌自动绑定新梯度 900，实际 ' + (zhang && zhang.bonus));
-var zhao = mb.filter(function (b) { return b.teacher === '赵敏'; })[0];
-assert(zhao && zhao.bonus === 600, '赵敏银牌自动绑定 600，实际 ' + (zhao && zhao.bonus));
-/* toast 轻提示应被创建并处于显示态（CSS 可见性由 medal.css .mb-toast 补丁保证） */
-var toast = document.getElementById('mbToast');
-assert(!!toast, '生成后创建 #mbToast 元素');
-assert(toast && toast.textContent.indexOf('自动生成发放清单') >= 0, 'toast 文案：' + (toast ? toast.textContent : ''));
-assert(toast && toast.classList.contains('is-show'), 'toast 处于 is-show 显示态（CSS opacity 规则生效即可见）');
-/* PC 端 toast 可见性依赖 medal.css 中补的 .mb-toast 样式（静态校验） */
-var fs = require('fs');
-var css = fs.readFileSync(__dirname + '/medal-system/assets/css/medal.css', 'utf8');
-assert(css.indexOf('.mb-toast {') >= 0 && css.indexOf('.mb-toast.is-show') >= 0, 'medal.css 已补 .mb-toast 样式（PC 端可见性修复）');
+/* ────────── 6. 发布公告 → 写入 activityNotices（参与对象接收） ────────── */
+console.log('— 发布公告（方案 2 · activityId=5） —');
+document.dispatchClick(actionEl('score-obtained-announce-open'));
+document.getElementById('soAnnounceTitle').value = '【积分公告】亲子阅读打卡积分结果公示';
+document.getElementById('soAnnounceContent').value = '各位老师：本活动积分结果已核定，请查阅。';
+document.dispatchClick(actionEl('score-obtained-announce-publish'));
+var an = MDS.get('activityNotices') || {};
+var list = an['5'] || [];
+assert(list.length >= 1, '公告已写入 activityNotices[活动 5]，共 ' + list.length + ' 条');
+var rec = list[0];
+assert(rec && rec.title.indexOf('积分公告') >= 0, '公告标题写入：' + (rec && rec.title));
+assert(rec && rec.content.indexOf('积分获得情况汇总') >= 0, '公告内容自动附带积分汇总');
+assert(rec && rec.content.indexOf('━━━━━━━━━━━━') >= 0, '公告含分隔线（正文与汇总区隔）');
+assert(rec && rec.content.indexOf('🥇') >= 0, '积分汇总含前三名奖牌标记');
+assert(rec && rec.content.indexOf('排位分') >= 0, '积分汇总含排位分字段');
+assert(rec && rec.scoreSummary && rec.scoreSummary.schemeName === '亲子阅读打卡专项积分方案', '公告存储结构化 scoreSummary（方案名）');
+assert(rec && rec.scoreSummary && rec.scoreSummary.rows.length === 6, 'scoreSummary 含 6 条参与对象明细');
+assert(rec && rec.scoreSummary && rec.scoreSummary.rows[0].totalRank === 1 && rec.scoreSummary.rows[0].rankPoints === 6,
+  'scoreSummary 首条名次/排位分正确（第1名 · 排位分6）');
+assert(rec && rec.recipients && rec.recipients.length === 6, '公告接收对象为 6 名参与对象，实际 ' + (rec && rec.recipients && rec.recipients.length));
+assert(rec && rec.recipients.every(function (r) { return r.read === false; }), '参与对象回执均为未读');
 
-/* 4. 专项活动奖金编辑回填 + 保存（切到专项活动 tab） */
-switchGradTab(1);
-document.dispatchClick(actionEl('act-bonus-edit', [['data-id', '1']]));
-assert(document.getElementById('actBonusTitle').textContent.indexOf('秋季家园共育案例评选') >= 0, '活动弹窗标题带方案名');
-assert(String(document.getElementById('abGold').value) === '600', '活动金回填 600，实际 ' + document.getElementById('abGold').value);
-assert(String(document.getElementById('abSilver').value) === '400', '活动银回填 400');
-assert(String(document.getElementById('abBronze').value) === '200', '活动铜回填 200');
-document.getElementById('abGold').value = '700';
-document.dispatchClick(actionEl('act-bonus-save'));
-var asAfter = MDS.get('activitySchemes');
-assert(asAfter[0].bonusRules[0].amount === 700, '专项活动奖金保存生效 700，实际 ' + asAfter[0].bonusRules[0].amount);
-assert(asAfter[1].bonusRules[0].amount === 500, '亲子方案独立奖金不受影响（500），实际 ' + asAfter[1].bonusRules[0].amount);
+/* 点击公告 → 跳转独立「积分公告详情页」 */
+console.log('— 公告详情页跳转与渲染 —');
+global.location.href = 'notice.html';
+document.dispatchClick(actionEl('open-announce-detail', [['data-activity', '5'], ['data-notice', String(rec.id)]]));
+assert(global.location.href.indexOf('announce-detail.html?activityId=5&noticeId=') >= 0,
+  '点击公告跳转独立详情页：' + global.location.href);
+/* 模拟公告详情页 URL → 重新 init 渲染详情页 */
+global.location = { search: '?activityId=5&noticeId=' + encodeURIComponent(rec.id), pathname: 'mobile/announce-detail.html', href: '' };
+MedalDemo.init();
+var detailHtml = document.getElementById('announceDetailRoot').innerHTML;
+assert(detailHtml.indexOf('积分获得情况汇总') >= 0, '公告详情页渲染「积分获得情况汇总」区');
+assert(detailHtml.indexOf('🥇') >= 0, '公告详情页汇总含奖牌标记');
+assert(detailHtml.indexOf('排位分') >= 0, '公告详情页汇总含排位分');
+assert(detailHtml.indexOf(rec.title) >= 0, '公告详情页展示公告标题');
+assert(detailHtml.indexOf('活动周期') >= 0, '公告详情页展示活动周期');
 
-console.log('— 期末汇总清单（月度+专项合并统计 + 离职剔除） —');
-/* 重置梯度/方案/勋章数据，保证期末汇总结果可预期（此前测试已修改梯度与活动方案） */
-MDS.reset('bonusGradients');
-MDS.reset('activitySchemes');
-MDS.reset('medals');
-/* 点击「自动汇总期末清单」：按勋章档案累计等级/数量，合并月度+专项奖金 */
-document.dispatchClick(actionEl('semester-generate'));
-var sb = MDS.get('semesterBonus');
-assert(sb.length === 7, '期末汇总共 7 位教师，实际 ' + sb.length);
-var zhang = sb.filter(function (b) { return b.teacher === '张慧'; })[0];
-assert(zhang && zhang.medals.indexOf('金×4') >= 0, '张慧累计勋章 金×4：' + (zhang && zhang.medals));
-assert(zhang && zhang.monthBonus === 1600, '张慧月度常规奖金 1600（金×2×800），实际 ' + (zhang && zhang.monthBonus));
-assert(zhang && zhang.activityBonus === 500, '张慧专项活动奖励 500（亲子活动金）合并统计，实际 ' + (zhang && zhang.activityBonus));
-assert(zhang && zhang.total === 2100, '张慧合计 2100（月度+专项合并），实际 ' + (zhang && zhang.total));
-var sun = sb.filter(function (b) { return b.teacher === '孙悦'; })[0];
-assert(sun && sun.status === '已剔除', '离职教师孙悦自动剔除');
-assert(sun && (sun.remark || '').indexOf('6 月离职') >= 0, '剔除原因标注「6 月离职，放弃评比资格」：' + (sun && sun.remark));
-assert(sun && sun.monthBonus === 300, '孙悦保留历史月度奖金 300（不影响历史数据），实际 ' + (sun && sun.monthBonus));
-/* 汇总统计卡渲染（基于全量清单） */
-var semSummary = document.getElementById('semesterSummaryRoot');
-assert(semSummary && semSummary.innerHTML.indexOf('¥ 4850') >= 0, '汇总奖金总额 ¥ 4850（正常发放教师合计）');
-assert(semSummary && semSummary.innerHTML.indexOf('金4 · 银6 · 铜3') >= 0, '汇总累计勋章 金4·银6·铜3');
-var semPeriod = document.getElementById('semesterPeriod');
-assert(semPeriod && semPeriod.textContent.indexOf('2025-2026 第二学期') >= 0, '学期信息展示：' + (semPeriod && semPeriod.textContent));
-/* 清单表格渲染（含剔除标注） */
-var semTbody = document.getElementById('semesterTbody');
-assert(semTbody && semTbody.innerHTML.indexOf('row-excluded') >= 0, '剔除行应用灰色弱化样式');
-assert(semTbody && semTbody.innerHTML.indexOf('6 月离职，放弃评比资格') >= 0, '清单中标注剔除原因');
-assert(semTbody && semTbody.innerHTML.indexOf('sem-medal-item') >= 0, '累计勋章 chip 渲染');
-var semCount = document.getElementById('semesterCount');
-assert(semCount && semCount.textContent.indexOf('共 7 条') >= 0, '清单计数 7 条：' + (semCount && semCount.textContent));
+/* 切回方案 1（activityId=8）再发一条，验证多方案可独立发布 */
+console.log('— 发布公告（方案 1 · activityId=8） —');
+document.dispatchChange({ id: 'soSchemeSelect', value: '1' });
+document.dispatchClick(actionEl('score-obtained-announce-open'));
+document.getElementById('soAnnounceTitle').value = '【积分公告】秋季家园共育案例评选积分结果公示';
+document.getElementById('soAnnounceContent').value = '请查看您的积分获得情况。';
+document.dispatchClick(actionEl('score-obtained-announce-publish'));
+var an2 = MDS.get('activityNotices') || {};
+assert((an2['8'] || []).length >= 1, '公告已写入 activityNotices[活动 8]');
 
 console.log('冒烟测试完成');

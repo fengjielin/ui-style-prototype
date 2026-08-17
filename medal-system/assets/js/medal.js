@@ -6,8 +6,9 @@
  *   - 角色解析（URL 参数 > localStorage > 默认 admin）
  *   - 自动注入角色切换浮动按钮/面板（5 角色）
  *   - PC 端管理台外壳：侧边栏菜单按角色动态渲染 + TagsView 联动 + 内容区切换
- *   - 核心闭环页面渲染：活动/作品/排行榜/积分方案/勋章/奖金/教师管理
- *   - 移动端 5 Tab 角色化渲染：首页/活动/排行榜/我的勋章/我的
+ *   - 核心闭环页面渲染：活动/作品/排行榜/积分方案/积分获得情况/教师管理
+ *   - 移动端 Tab 角色化渲染：首页/活动/排行榜/消息/我的
+ *   - 注：积分体系重构后已移除勋章体系与奖金管理
  * 数据流：UI action → MDS.set/update → watch → render 重绘
  * 对应文档：2026-08-11-01 需求拆解 / 2026-08-11-02 菜单模块设计
  * ============================================================
@@ -26,6 +27,11 @@ window.MedalDemo = (function () {
     return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
+  }
+
+  /* 转义并保留换行（公告/通知多行内容渲染用，换行转 <br> 避免 HTML 折叠成一段） */
+  function escBr(str) {
+    return esc(str).replace(/\n/g, '<br>');
   }
 
   function getParam(name) {
@@ -440,17 +446,12 @@ window.MedalDemo = (function () {
     'rank-platform-all': renderRankPlatformAll,
     'rank-parent': renderRankParent,
     'score-scheme': renderScoreScheme,
-    'medal-threshold': renderMedalThreshold,
-    'medal-archive': renderMedalArchive,
-    'bonus-gradient': renderBonusGradient,
-    'bonus-monthly': renderBonusMonthly,
-    'bonus-semester': renderBonusSemester,
+    'score-obtained': renderScoreObtained,
     'user-teacher': renderUserTeacher,
     'judge-scoring': renderJudgeTasks,
     'cert-template': renderCertTemplate,
     'teacher-activity': renderTeacherActivity,
     'teacher-rank': renderTeacherRank,
-    'teacher-medal': renderTeacherMedal,
   };
 
   /* 渲染内容区：真实页切换对应内容块，其余显示建设中占位 */
@@ -1069,7 +1070,7 @@ window.MedalDemo = (function () {
             : '<span class="status-tag status-warning">未读</span>';
           return (
             '<tr>' +
-            '<td><span class="cell-avatar">' + esc((r.name || '').charAt(0)) + '</span>' + esc(r.name) + '</td>' +
+            '<td>' + esc(r.name) + '</td>' +
             '<td>' + esc(r.kindergarten || '—') + '</td>' +
             '<td>' + esc(r.className || '—') + '</td>' +
             '<td>' + statusTag + '</td>' +
@@ -1277,7 +1278,7 @@ window.MedalDemo = (function () {
           '<tr>' +
           '<td><input type="checkbox" class="work-check"></td>' +
           '<td><strong>' + esc(w.title || w.teacher + ' 的作品') + '</strong></td>' +
-          '<td><span class="cell-avatar">' + esc(w.teacher.charAt(0)) + '</span>' + esc(w.teacher) + '</td>' +
+          '<td>' + esc(w.teacher) + '</td>' +
           '<td>' + esc(w.type) + '</td>' +
           '<td>' + esc(w.size) + '</td>' +
           '<td>' + checkTag + '</td>' +
@@ -1607,7 +1608,7 @@ window.MedalDemo = (function () {
             : '<span class="status-tag status-warning">未上传</span>';
           return (
             '<tr>' +
-            '<td><span class="cell-avatar">' + esc(s.name.charAt(0)) + '</span>' + esc(s.name) + '</td>' +
+            '<td>' + esc(s.name) + '</td>' +
             '<td>' + esc(s.className) + '</td>' +
             '<td>' + esc(s.kindergarten) + '</td>' +
             '<td>' + esc(s.signupTime) + '</td>' +
@@ -2140,7 +2141,7 @@ window.MedalDemo = (function () {
           }
           return (
             '<tr>' +
-            '<td><span class="cell-avatar">' + esc(s.name.charAt(0)) + '</span>' + esc(s.name) + '</td>' +
+            '<td>' + esc(s.name) + '</td>' +
             '<td>' + esc(s.className) + '</td>' +
             '<td>' + esc(s.kindergarten) + '</td>' +
             '<td>' + esc(s.signupTime) + '</td>' +
@@ -2303,6 +2304,12 @@ window.MedalDemo = (function () {
           return arr.map(function (x) { return x.id === amActivityId ? Object.assign({}, x, { workDeadline: t.value }) : x; });
         });
         Proto.showToast('作品提交截止已更新');
+        return;
+      }
+      // 积分获得情况：切换活动积分方案 → 重渲染表格
+      if (t.id === 'soSchemeSelect') {
+        scoreObtainedSchemeId = Number(t.value);
+        renderScoreObtained(qs('#pcPage'));
         return;
       }
     });
@@ -2751,27 +2758,11 @@ window.MedalDemo = (function () {
     Proto.openDialog('pointDetailDialog');
   }
 
-  /* ═══════════════════════ PC：积分方案管理（月度权重配置 + 活动方案 CRUD） ═══════════════════════ */
+  /* ═══════════════════════ PC：积分方案管理（临时专项活动积分方案 CRUD） ═══════════════════════
+     注：积分体系重构后已移除月度常规勋章积分方案，仅保留活动方案 */
 
   function renderScoreScheme(root) {
-    renderMonthlyScheme();
     renderActivitySchemes();
-  }
-
-  /* 月度常规方案卡体：4 维度摘要行 */
-  function renderMonthlyScheme() {
-    var box = document.getElementById('monthlySchemeBox');
-    if (!box) return;
-    var s = MDS.get('monthlyScheme');
-    if (!s) return;
-    box.innerHTML = (s.dimensions || [])
-      .map(function (d) {
-        var enabled = d.enabled
-          ? '单条得分 <b>' + d.points + '</b> · 权重 <b>' + d.weight + '%</b> · 班主任 ' + d.headCoef.toFixed(1) + ' / 配班 ' + d.assocCoef.toFixed(1)
-          : '<span class="dim-off">计分已关闭</span>';
-        return '<div class="scheme-dim-row"><span class="dim-name">' + esc(d.name) + '</span><span class="dim-info">' + enabled + '</span></div>';
-      })
-      .join('');
   }
 
   /* 活动方案列表 */
@@ -2819,54 +2810,6 @@ window.MedalDemo = (function () {
       '<div class="scheme-meta">折算标准：' + (rulesHtml || '<span style="color:#c0c4cc;">—</span>') + '</div>' +
       '</div>'
     );
-  }
-
-  /* 权重配置弹窗：填充月度方案维度值 */
-  function fillWeightDialog(schemeId) {
-    var s = MDS.get('monthlyScheme');
-    if (!s) return;
-    var nameEl = document.getElementById('schemeNameText');
-    if (nameEl) nameEl.textContent = s.name;
-    (s.dimensions || []).forEach(function (d, i) {
-      var points = document.getElementById('dimPoints' + i);
-      var weight = document.getElementById('dimWeight' + i);
-      var enabled = document.getElementById('dimEnabled' + i);
-      var head = document.getElementById('dimHead' + i);
-      var assoc = document.getElementById('dimAssoc' + i);
-      if (points) points.value = d.points;
-      if (weight) weight.value = d.weight;
-      if (enabled) enabled.checked = d.enabled;
-      if (head) head.value = String(d.headCoef);
-      if (assoc) assoc.value = String(d.assocCoef);
-    });
-    Proto.openDialog('weightDialog');
-  }
-
-  function saveWeightDialog() {
-    var s = MDS.get('monthlyScheme');
-    if (!s) return;
-    var dims = (s.dimensions || []).map(function (d, i) {
-      var points = parseInt((document.getElementById('dimPoints' + i) || {}).value, 10);
-      var weight = parseInt((document.getElementById('dimWeight' + i) || {}).value, 10);
-      var enabled = !!(document.getElementById('dimEnabled' + i) || {}).checked;
-      var head = parseFloat((document.getElementById('dimHead' + i) || {}).value);
-      var assoc = parseFloat((document.getElementById('dimAssoc' + i) || {}).value);
-      return {
-        key: d.key,
-        name: d.name,
-        points: isNaN(points) ? d.points : points,
-        weight: isNaN(weight) ? d.weight : weight,
-        enabled: enabled,
-        headCoef: isNaN(head) ? d.headCoef : head,
-        assocCoef: isNaN(assoc) ? d.assocCoef : assoc,
-      };
-    });
-    MDS.update('monthlyScheme', function (cur) {
-      return Object.assign({}, cur, { dimensions: dims, updatedAt: '刚刚 更新' });
-    });
-    Proto.closeDialog('weightDialog');
-    renderScoreScheme(qs('#pcPage'));
-    Proto.showToast('权重配置已保存');
   }
 
   /* ── 活动方案弹窗辅助：关联活动下拉 / 参与对象提示 / 折算表行 ── */
@@ -2934,636 +2877,119 @@ window.MedalDemo = (function () {
     return out;
   }
 
-  /* ═══════════════════════ PC：勋章门槛配置（金银铜双套） ═══════════════════════ */
+  /* ═══════════════════════ PC：积分获得情况（按活动方案查看参与对象四维度积分 + 总积分 + 排位分 + 可编辑奖金 + 发布公告） ═══════════════════════ */
 
-  var thresholdSet = 1;
-  var editingThresholdId = null;
+  var scoreObtainedSchemeId = null;
 
-  function renderMedalThreshold(root) {
-    var grid = document.getElementById('thresholdGrid');
-    if (!grid) return;
-    var thresholds = MDS.get('medalThresholds') || [];
-    var t = thresholds.filter(function (x) { return x.id === thresholdSet; })[0] || thresholds[0];
-    if (!t) return;
-    var levels = [
-      { key: 'gold', label: '金牌', score: t.gold, cls: 'th-gold' },
-      { key: 'silver', label: '银牌', score: t.silver, cls: 'th-silver' },
-      { key: 'bronze', label: '铜牌', score: t.bronze, cls: 'th-bronze' },
+  /* 积分获得情况：由方案参与对象四维度积分组装行，并按总积分计算名次与排位分
+     （并列同分取相同名次、后续名次顺延；排位分 = N - 名次 + 1，N=参与对象数） */
+  function buildSchemeRows(scheme) {
+    var seeds = ((MDS.get('schemeScores') || {})[scheme.id]) || [];
+    var base = seeds.length
+      ? seeds
+      : ((scopeParticipants(activityById(scheme.activityId)) || []).map(function (p) {
+          return { name: p.name, className: p.className, kindergarten: p.kindergarten, usage: 0, interaction: 0, promotion: 0, conversion: 0, bonus: 0 };
+        }));
+    var rows = base.map(function (r) {
+      return {
+        name: r.name,
+        className: r.className || '—',
+        kindergarten: r.kindergarten || '童蹊幼儿园',
+        usage: r.usage || 0,
+        interaction: r.interaction || 0,
+        promotion: r.promotion || 0,
+        conversion: r.conversion || 0,
+        bonus: r.bonus || 0,
+      };
+    });
+    rows.forEach(function (r) {
+      r.total = r.usage + r.interaction + r.promotion + r.conversion;
+    });
+    // 竞赛名次：按总积分降序，并列同分取相同名次、后续名次顺延
+    var rank = 0;
+    var prev = null;
+    rows.slice().sort(function (a, b) { return b.total - a.total; }).forEach(function (r, i) {
+      if (r.total !== prev) {
+        rank = i + 1;
+        prev = r.total;
+      }
+      r.totalRank = rank;
+      r.rankPoints = Math.max(1, rows.length - rank + 1);
+    });
+    rows.sort(function (a, b) { return a.totalRank - b.totalRank || (a.name < b.name ? -1 : 1); });
+    return { rows: rows, N: rows.length };
+  }
+
+  /* 积分汇总文本（只读预览 + 发布时拼入公告内容；若表格已渲染则读取奖金输入框实时值） */
+  function buildScoreSummaryText(scheme) {
+    var data = buildSchemeRows(scheme);
+    var box = document.getElementById('scoreObtainedRoot');
+    if (box) {
+      box.querySelectorAll('.so-bonus-input').forEach(function (inp) {
+        var row = data.rows.filter(function (x) { return x.name === inp.getAttribute('data-name'); })[0];
+        if (row) row.bonus = parseInt(inp.value, 10) || 0;
+      });
+    }
+    var lines = [
+      '《' + scheme.name + '》积分获得情况汇总',
+      '活动周期：' + (scheme.cycleStart || '—') + ' ~ ' + (scheme.cycleEnd || '—') + ' · 参与对象 ' + data.N + ' 名',
+      '',
     ];
-    grid.innerHTML = levels
-      .map(function (l) {
-        return (
-          '<div class="threshold-card ' + l.cls + '">' +
-          '<span class="medal-badge level-' + l.key + '"></span>' +
-          '<div class="th-level">' + l.label + '</div>' +
-          '<div class="th-score">' + l.score + '<span class="unit"> 分</span></div>' +
-          '<div class="th-desc">积分达门槛授予' + l.label + '</div>' +
-          '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm th-edit" data-action="threshold-edit" data-id="' + t.id + '" data-level="' + l.key + '">调整门槛</button>' +
-          '</div>'
-        );
-      })
-      .join('');
-  }
-
-  function fillThresholdDialog(id, level) {
-    var thresholds = MDS.get('medalThresholds') || [];
-    var t = thresholds.filter(function (x) { return x.id === id; })[0];
-    if (!t) return;
-    editingThresholdId = id;
-    var setText = document.getElementById('thresholdSetText');
-    if (setText) setText.textContent = t.set;
-    var cur = level === 'gold' ? t.gold : level === 'silver' ? t.silver : t.bronze;
-    var gold = document.getElementById('thGold');
-    var silver = document.getElementById('thSilver');
-    var bronze = document.getElementById('thBronze');
-    if (gold) gold.value = t.gold;
-    if (silver) silver.value = t.silver;
-    if (bronze) bronze.value = t.bronze;
-    Proto.openDialog('thresholdDialog');
-  }
-
-  function saveThresholdDialog() {
-    var gold = parseInt((document.getElementById('thGold') || {}).value, 10);
-    var silver = parseInt((document.getElementById('thSilver') || {}).value, 10);
-    var bronze = parseInt((document.getElementById('thBronze') || {}).value, 10);
-    if (isNaN(gold) || isNaN(silver) || isNaN(bronze)) {
-      Proto.showToast('请填写完整门槛分值');
-      return;
-    }
-    MDS.update('medalThresholds', function (list) {
-      return list.map(function (t) {
-        return t.id === editingThresholdId ? Object.assign({}, t, { gold: gold, silver: silver, bronze: bronze }) : t;
-      });
+    var medalMarks = ['🥇', '🥈', '🥉'];
+    data.rows.forEach(function (r, i) {
+      // 前三名用奖牌标记，其余用序号，便于扫读
+      var mark = r.totalRank <= 3 ? medalMarks[r.totalRank - 1] + ' ' : (i + 1) + '. ';
+      lines.push(mark + r.name + '（' + r.className + '）· 总积分 ' + r.total + ' 分 · 排位分 ' + r.rankPoints + ' · 奖金 ¥' + r.bonus);
     });
-    Proto.closeDialog('thresholdDialog');
-    renderMedalThreshold(qs('#pcPage'));
-    Proto.showToast('门槛已更新，已联动月度发放清单');
+    return lines.join('\n');
   }
 
-  /* ═══════════════════════ PC：教师勋章档案 ═══════════════════════ */
-
-  var medalTeacherFilter = '';
-  var medalSemesterFilter = '';
-  var detailMedalId = null;
-
-  function renderMedalArchive(root) {
-    var grid = document.getElementById('medalArchiveGrid');
-    if (!grid) return;
-    var medals = MDS.get('medals') || [];
-    var list = medals.filter(function (m) {
-      if (medalTeacherFilter && m.teacher !== medalTeacherFilter) return false;
-      if (medalSemesterFilter && m.period.indexOf(medalSemesterFilter) < 0) return false;
-      return true;
-    });
-    if (!list.length) {
-      grid.innerHTML = '<div class="pc-empty" style="grid-column:1/-1;"><div class="empty-icon">🎖️</div><div>暂无匹配勋章记录</div></div>';
-      return;
-    }
-    grid.innerHTML = list
-      .map(function (m) {
-        return (
-          '<div class="medal-cell" data-action="medal-detail" data-id="' + m.id + '">' +
-          '<span class="medal-badge level-' + (m.level === '金' ? 'gold' : m.level === '银' ? 'silver' : 'bronze') + '"></span>' +
-          '<div class="mc-period">' + esc(m.teacher) + ' · ' + esc(m.period) + '</div>' +
-          '<span class="mc-type">' + esc(m.type) + (m.type === '活动专项' ? ' · ' + esc(m.activity) : '') + '</span>' +
-          '<div class="mc-total">当期总积分 ' + m.total + ' · 第 ' + m.rank + ' 名</div>' +
-          '</div>'
-        );
-      })
-      .join('');
-  }
-
-  function fillMedalDetail(id) {
-    var medals = MDS.get('medals') || [];
-    var m = medals.filter(function (x) { return x.id === id; })[0];
-    if (!m) return;
-    detailMedalId = id;
-    var head = document.getElementById('medalDetailTitle');
-    if (head) head.textContent = m.teacher + ' · ' + m.period + ' · ' + m.type;
-    var body = document.getElementById('medalDetailBody');
-    if (!body) return;
-    body.innerHTML =
-      '<table class="dim-table">' +
-      '<thead><tr><th>指标</th><th>数值</th><th>单项排位分</th></tr></thead>' +
-      '<tbody>' +
-      '<tr><td>平台使用</td><td>' + m.usage + '</td><td>' + Math.round(m.usage / 10) + '</td></tr>' +
-      '<tr><td>家园互动</td><td>' + m.interaction + '</td><td>' + Math.round(m.interaction / 10) + '</td></tr>' +
-      '<tr><td>外部推广</td><td>' + m.promotion + '</td><td>' + Math.round(m.promotion / 10) + '</td></tr>' +
-      '<tr><td>会员转化</td><td>' + m.conversion + '</td><td>' + Math.round(m.conversion / 10) + '</td></tr>' +
-      '<tr><td><strong>当期总积分</strong></td><td class="dim-total"><strong>' + m.total + '</strong></td><td><strong>' + m.rank + ' 名</strong></td></tr>' +
-      '</tbody></table>';
-    Proto.openDialog('medalDetailDialog');
-  }
-
-  /* ═══════════════════════ PC：月度发放清单（含离职剔除标注） ═══════════════════════ */
-
-  var bonusFilter = 'ALL';
-
-  function renderBonusMonthly(root) {
-    renderBonusTable();
-  }
-
-  function filteredBonus() {
-    var all = MDS.get('monthlyBonus') || [];
-    return all.filter(function (b) {
-      if (bonusFilter === 'ALL') return true;
-      if (bonusFilter === 'EXCLUDED') return b.status === '已剔除';
-      return b.status === '正常';
-    });
-  }
-
-  function renderBonusTable() {
-    var tbody = document.getElementById('bonusTbody');
-    var count = document.getElementById('bonusCount');
-    if (count) count.textContent = '共 ' + filteredBonus().length + ' 条';
-    if (!tbody) return;
-    var list = filteredBonus();
-    if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#909399;padding:40px 0;">暂无清单记录</td></tr>';
-      return;
-    }
-    tbody.innerHTML = list
-      .map(function (b) {
-        var excluded = b.status === '已剔除';
-        var levelCls = b.medal === '金' ? 'gold' : b.medal === '银' ? 'silver' : 'bronze';
-        var statusCell = excluded
-          ? '<span class="excluded-tag">已剔除</span>'
-          : '<span class="status-tag status-success">正常</span>';
-        var remarkCell = excluded
-          ? '<span style="color:#e03a2e;font-size:12px;">' + esc(b.remark) + '</span>'
-          : '<span style="color:#909399;">—</span>';
-        return (
-          '<tr class="' + (excluded ? 'row-excluded' : '') + '">' +
-          '<td>' + esc(b.teacher) + '</td>' +
-          '<td>' + esc(b.className) + '</td>' +
-          '<td><span class="medal-badge level-' + levelCls + '"></span></td>' +
-          '<td>' + b.usage + '</td>' +
-          '<td>' + b.interaction + '</td>' +
-          '<td>' + b.promotion + '</td>' +
-          '<td>' + b.conversion + '</td>' +
-          '<td><strong>' + b.total + '</strong></td>' +
-          '<td class="bonus-amount">' + b.bonus + '</td>' +
-          '<td>' + statusCell + '</td>' +
-          '<td>' + remarkCell + '</td>' +
-          '</tr>'
-        );
-      })
-      .join('');
-  }
-
-  /* ═══════════════════════ PC：奖金梯度配置（月度勋章奖金 + 专项活动奖金双区独立配置） ═══════════════════════ */
-
-  var bonusGradTab = 'monthly';
-  var editingActBonusId = null;
-
-  /* 当前激活的月度周期（取月度常规勋章记录中最新一期） */
-  function latestMonthlyPeriod() {
-    var medals = MDS.get('medals') || [];
-    var periods = [];
-    medals.forEach(function (m) {
-      if (m.type === '月度常规' && m.period) periods.push(m.period);
-    });
-    periods.sort();
-    return periods.length ? periods[periods.length - 1] : '';
-  }
-
-  /* 指定周期的月度常规勋章列表 */
-  function monthlyMedalsByPeriod(period) {
-    var medals = MDS.get('medals') || [];
-    return medals.filter(function (m) {
-      return m.type === '月度常规' && m.period === period;
-    });
-  }
-
-  /* 主渲染：按当前 tab 切换月度/专项活动区域 */
-  function renderBonusGradient(root) {
-    var monthlyBox = document.getElementById('bonusGradMonthly');
-    var activityBox = document.getElementById('bonusGradActivity');
-    if (monthlyBox) monthlyBox.hidden = bonusGradTab !== 'monthly';
-    if (activityBox) activityBox.hidden = bonusGradTab !== 'activity';
-    if (bonusGradTab === 'monthly') {
-      renderBonusGradMonthly();
-    } else {
-      renderBonusGradActivity();
-    }
-  }
-
-  /* 月度勋章奖金区：梯度卡片 */
-  function renderBonusGradMonthly() {
-    var grid = document.getElementById('bonusGradMonthlyGrid');
-    if (grid) {
-      var grads = MDS.get('bonusGradients') || [];
-      grid.innerHTML = grads.length
-        ? grads.map(function (g) {
-            var cls = g.level === '金' ? 'gold' : g.level === '银' ? 'silver' : 'bronze';
-            return (
-              '<div class="bonus-grad-card bg-' + cls + '">' +
-              '<span class="medal-badge level-' + cls + '"></span>' +
-              '<div class="bg-level">' + esc(g.level) + '牌</div>' +
-              '<div class="bg-amount">' + g.amount + '<span class="unit"> 元</span></div>' +
-              '<div class="bg-desc">' + esc(g.note || '月度勋章等级') + '</div>' +
-              '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm bg-edit" data-action="bonus-grad-edit" data-level="' + esc(g.level) + '">调整奖金</button>' +
-              '</div>'
-            );
-          }).join('')
-        : '<div class="pc-empty" style="grid-column:1/-1;"><div class="empty-icon">💰</div><div>暂未配置月度奖金梯度</div></div>';
-    }
-    renderBonusBindFlow();
-  }
-
-  /* 月度勋章奖金区：自动绑定流程 + 当月预计发放摘要 */
-  function renderBonusBindFlow() {
-    var flow = document.getElementById('bonusBindFlow');
-    if (flow) {
-      flow.innerHTML =
-        '<div class="bonus-bind-flow">' +
-        '<div class="bind-step"><b>① 月度积分结算</b><span>四大维度积分汇总</span></div>' +
-        '<span class="bind-arrow">→</span>' +
-        '<div class="bind-step"><b>② 勋章等级评定</b><span>金银铜按门槛授予</span></div>' +
-        '<span class="bind-arrow">→</span>' +
-        '<div class="bind-step"><b>③ 自动绑定奖金</b><span>等级匹配梯度标准</span></div>' +
-        '<span class="bind-arrow">→</span>' +
-        '<div class="bind-step"><b>④ 生成月度清单</b><span>一键生成发放清单</span></div>' +
-        '</div>';
-    }
-    var summary = document.getElementById('bonusBindSummary');
-    if (summary) summary.textContent = monthBonusSummary();
-  }
-
-  /* 当月勋章统计 + 按梯度标准预计发放额（自动绑定演示数据） */
-  function monthBonusSummary() {
-    var period = latestMonthlyPeriod();
-    var medals = monthlyMedalsByPeriod(period);
-    var grads = MDS.get('bonusGradients') || [];
-    var amountOf = function (level) {
-      var g = grads.filter(function (x) { return x.level === level; })[0];
-      return g ? g.amount : 0;
-    };
-    var gold = 0;
-    var silver = 0;
-    var bronze = 0;
-    var total = 0;
-    medals.forEach(function (m) {
-      if (m.level === '金') { gold++; total += amountOf('金'); }
-      else if (m.level === '银') { silver++; total += amountOf('银'); }
-      else if (m.level === '铜') { bronze++; total += amountOf('铜'); }
-    });
-    return period + '：金牌 ' + gold + ' · 银牌 ' + silver + ' · 铜牌 ' + bronze + '，预计发放 ¥ ' + total;
-  }
-
-  /* 专项活动奖金区：说明 + 各专项活动独立奖金方案卡片 */
-  function renderBonusGradActivity() {
-    var note = document.getElementById('bonusGradActivityNote');
-    if (note) {
-      note.innerHTML =
-        '<div style="font-size:13px;line-height:2;color:#606266;">' +
-        '每个专项活动可独立配置一套活动奖金体系（活动金 / 活动银 / 活动铜 → 奖金），与月度勋章奖金<b>分开核算</b>。' +
-        '活动勋章等级由「<a href="javascript:void(0);" data-action="pc-menu-select" data-menu-key="medal-threshold" style="color:#2563eb;">活动专项勋章门槛</a>」评定，' +
-        '奖金仅计入专项活动核算，不并入月度勋章奖金。' +
-        '</div>';
-    }
-    var list = document.getElementById('bonusGradActList');
-    var count = document.getElementById('bonusGradActCount');
-    if (count) count.textContent = '共 ' + (MDS.get('activitySchemes') || []).length + ' 条';
-    if (!list) return;
-    var schemes = MDS.get('activitySchemes') || [];
-    list.innerHTML = schemes.length
-      ? schemes.map(actBonusSchemeCard).join('')
-      : '<div class="pc-empty"><div class="empty-icon">💰</div><div>暂无专项活动奖金方案</div></div>';
-  }
-
-  /* 专项活动奖金方案卡片 */
-  function actBonusSchemeCard(s) {
-    var act = activityById(s.activityId);
-    var th = (MDS.get('medalThresholds') || []).filter(function (t) { return t.id === 2; })[0];
-    var bonusHtml = (s.bonusRules || [])
-      .map(function (r) {
-        var cls = r.level === '活动金' ? 'gold' : r.level === '活动银' ? 'silver' : 'bronze';
-        return (
-          '<span class="act-bonus-tag tag-' + cls + '">' +
-          '<span class="medal-badge medal-badge-sm level-' + cls + '"></span>' +
-          '<span class="abt-level">' + esc(r.level) + '</span>' +
-          '<span class="abt-amount">¥ ' + r.amount + '</span>' +
-          '</span>'
-        );
-      }).join(' ');
-    return (
-      '<div class="scheme-card act-bonus-card">' +
-      '<div class="scheme-head">' +
-      '<span class="scheme-name">' + esc(s.name) + '</span>' +
-      activitySchemeStatus(s) +
-      '<div class="scheme-ops">' +
-      '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="act-bonus-edit" data-id="' + s.id + '">配置奖金</button>' +
-      '</div>' +
-      '</div>' +
-      '<div class="scheme-meta">关联活动：' + esc(act ? act.title : '未关联') + ' · 活动周期：' + esc(s.cycleStart || '—') + ' ~ ' + esc(s.cycleEnd || '—') + '</div>' +
-      '<div class="scheme-meta">活动勋章门槛：' + (th ? '金 ≥ ' + th.gold + ' · 银 ≥ ' + th.silver + ' · 铜 ≥ ' + th.bronze + '（分）' : '—') + '</div>' +
-      '<div class="scheme-meta">奖金标准（独立核算）：</div>' +
-      '<div class="act-bonus-rules">' + (bonusHtml || '<span style="color:#c0c4cc;">—</span>') + '</div>' +
-      '</div>'
-    );
-  }
-
-  /* 月度奖金编辑弹窗：回填金/银/铜金额 */
-  function fillBonusGradDialog() {
-    var grads = MDS.get('bonusGradients') || [];
-    var gOf = function (level) {
-      var g = grads.filter(function (x) { return x.level === level; })[0];
-      return g ? g.amount : '';
-    };
-    var gold = document.getElementById('bgGold');
-    var silver = document.getElementById('bgSilver');
-    var bronze = document.getElementById('bgBronze');
-    if (gold) gold.value = gOf('金');
-    if (silver) silver.value = gOf('银');
-    if (bronze) bronze.value = gOf('铜');
-    Proto.openDialog('bonusGradDialog');
-  }
-
-  function saveBonusGradDialog() {
-    var gold = parseInt((document.getElementById('bgGold') || {}).value, 10);
-    var silver = parseInt((document.getElementById('bgSilver') || {}).value, 10);
-    var bronze = parseInt((document.getElementById('bgBronze') || {}).value, 10);
-    if (isNaN(gold) || isNaN(silver) || isNaN(bronze)) {
-      Proto.showToast('请填写完整奖金金额');
-      return;
-    }
-    var map = { '金': gold, '银': silver, '铜': bronze };
-    MDS.update('bonusGradients', function (list) {
-      return (list || []).map(function (g) {
-        return map[g.level] != null
-          ? Object.assign({}, g, { amount: map[g.level], note: '月度勋章等级 · ' + g.level + '牌' })
-          : g;
-      });
-    });
-    Proto.closeDialog('bonusGradDialog');
-    renderBonusGradient(qs('#pcPage'));
-    Proto.showToast('月度奖金梯度已更新，将联动月度发放清单');
-  }
-
-  /* 专项活动奖金编辑弹窗：按活动回填 活动金/银/铜 金额 */
-  function fillActBonusDialog(id) {
-    var s = (MDS.get('activitySchemes') || []).filter(function (x) { return x.id === id; })[0];
-    if (!s) return;
-    editingActBonusId = id;
-    var title = document.getElementById('actBonusTitle');
-    if (title) title.textContent = '配置专项活动奖金 · ' + s.name;
-    var rules = s.bonusRules || [];
-    var amtOf = function (level) {
-      var r = rules.filter(function (x) { return x.level === level; })[0];
-      return r ? r.amount : '';
-    };
-    var gold = document.getElementById('abGold');
-    var silver = document.getElementById('abSilver');
-    var bronze = document.getElementById('abBronze');
-    if (gold) gold.value = amtOf('活动金');
-    if (silver) silver.value = amtOf('活动银');
-    if (bronze) bronze.value = amtOf('活动铜');
-    Proto.openDialog('actBonusDialog');
-  }
-
-  function saveActBonusDialog() {
-    var gold = parseInt((document.getElementById('abGold') || {}).value, 10);
-    var silver = parseInt((document.getElementById('abSilver') || {}).value, 10);
-    var bronze = parseInt((document.getElementById('abBronze') || {}).value, 10);
-    if (isNaN(gold) || isNaN(silver) || isNaN(bronze)) {
-      Proto.showToast('请填写完整奖金金额');
-      return;
-    }
-    var map = { '活动金': gold, '活动银': silver, '活动铜': bronze };
-    MDS.update('activitySchemes', function (arr) {
-      return (arr || []).map(function (s) {
-        if (s.id !== editingActBonusId) return s;
-        var rules = (s.bonusRules || []).map(function (r) {
-          return map[r.level] != null ? Object.assign({}, r, { amount: map[r.level] }) : r;
-        });
-        // 方案尚未配置过奖金规则时按 活动金/银/铜 补全
-        if (!rules.length) {
-          rules = ['活动金', '活动银', '活动铜'].map(function (lvl) { return { level: lvl, amount: map[lvl] }; });
-        }
-        return Object.assign({}, s, { bonusRules: rules, updatedAt: '刚刚 更新' });
-      });
-    });
-    Proto.closeDialog('actBonusDialog');
-    renderBonusGradient(qs('#pcPage'));
-    Proto.showToast('专项活动奖金已更新（独立核算）');
-  }
-
-  /* 一键生成当月发放清单：按最新月度勋章等级 + 梯度标准自动绑定，剔除离职教师，并跳转月度清单页 */
-  function generateMonthlyBonus() {
-    var period = latestMonthlyPeriod();
-    var medals = monthlyMedalsByPeriod(period);
-    var grads = MDS.get('bonusGradients') || [];
-    var amountOf = function (level) {
-      var g = grads.filter(function (x) { return x.level === level; })[0];
-      return g ? g.amount : 0;
-    };
-    var teachers = MDS.get('teachers') || [];
-    var tOf = function (name) {
-      return teachers.filter(function (t) { return t.name === name; })[0] || null;
-    };
-    var list = medals.map(function (m) {
-      var t = tOf(m.teacher);
-      var excluded = t && !t.isActive;
-      return {
-        id: m.id,
-        teacher: m.teacher,
-        className: m.className,
-        medal: m.level,
-        bonus: amountOf(m.level),
-        usage: m.usage,
-        interaction: m.interaction,
-        promotion: m.promotion,
-        conversion: m.conversion,
-        total: m.total,
-        status: excluded ? '已剔除' : '正常',
-        remark: excluded ? '离职，放弃评比资格（不影响历史数据）' : '',
-      };
-    });
-    MDS.set('monthlyBonus', list);
-    Proto.showToast('已按 ' + period + ' 勋章等级自动生成发放清单（' + list.length + ' 条）');
-    activateTag('bonus-monthly');
-  }
-
-  /* ═══════════════════════ PC：期末汇总清单（月度常规奖金 + 当期专项活动奖励合并统计，自动剔除离职教师） ═══════════════════════ */
-
-  var semesterFilter = 'ALL';
-
-  function renderBonusSemester(root) {
-    renderSemesterSummary();
-    renderSemesterTable();
-  }
-
-  function filteredSemester() {
-    var all = MDS.get('semesterBonus') || [];
-    return all.filter(function (b) {
-      if (semesterFilter === 'ALL') return true;
-      if (semesterFilter === 'EXCLUDED') return b.status === '已剔除';
-      return b.status === '正常';
-    });
-  }
-
-  /* 解析累计勋章字符串「金×3 / 银×2」为 { 金:n, 银:n, 铜:n } */
-  function parseMedalsStr(str) {
-    var out = { '金': 0, '银': 0, '铜': 0 };
-    String(str || '').replace(/([金银铜])\s*[xX×]\s*(\d+)/g, function (_, lv, n) {
-      out[lv] += parseInt(n, 10);
-      return '';
-    });
-    return out;
-  }
-
-  /* 累计勋章单元格：徽章 + 等级×数量 chip（如「金×3 银×2」） */
-  function semesterMedalsHtml(str) {
-    var list = String(str || '').split('/').map(function (s) { return s.trim(); }).filter(Boolean);
-    if (!list.length) return '<span style="color:#c0c4cc;">—</span>';
-    return list
-      .map(function (part) {
-        var m = part.match(/^([金银铜])\s*[xX×]\s*(\d+)$/);
-        if (!m) return esc(part);
-        var key = m[1] === '金' ? 'gold' : m[1] === '银' ? 'silver' : 'bronze';
-        return (
-          '<span class="sem-medal-item">' +
-          '<span class="medal-badge medal-badge-sm level-' + key + '"></span>' +
-          '<span>' + m[1] + '×' + m[2] + '</span>' +
-          '</span>'
-        );
-      })
-      .join('');
-  }
-
-  /* 汇总统计卡：在册评比 / 累计勋章 / 剔除人数 / 奖金总额（基于全量清单，不受筛选影响） */
-  function renderSemesterSummary() {
-    var box = document.getElementById('semesterSummaryRoot');
+  /* 积分获得情况页：方案下拉 + 保存奖金按钮 + 表格（名次/参与对象/班级/四维度/总积分/排位分/奖金输入框） */
+  function renderScoreObtained(root) {
+    var box = document.getElementById('scoreObtainedRoot');
     if (!box) return;
-    var sys = MDS.get('sysConfig') || {};
-    var period = document.getElementById('semesterPeriod');
-    if (period) period.textContent = '学期：' + (sys.semester || '—');
-    var all = MDS.get('semesterBonus') || [];
-    var normal = all.filter(function (b) { return b.status === '正常'; });
-    var excluded = all.filter(function (b) { return b.status === '已剔除'; });
-    var gold = 0, silver = 0, bronze = 0;
-    all.forEach(function (b) {
-      var c = parseMedalsStr(b.medals);
-      gold += c['金']; silver += c['银']; bronze += c['铜'];
-    });
-    var total = normal.reduce(function (s, b) { return s + (b.total || 0); }, 0);
-    box.innerHTML =
-      '<div class="stat-grid" style="margin-bottom:0;">' +
-      statCard('教师', '在册评比（正常发放）', normal.length + ' 人', '👩‍🏫', 'rgba(37,99,235,0.12)') +
-      statCard('勋章', '本学期累计勋章', '金' + gold + ' · 银' + silver + ' · 铜' + bronze, '🎖️', 'rgba(245,166,35,0.16)') +
-      statCard('剔除', '离职放弃评比', excluded.length + ' 人', '⚠️', 'rgba(224,58,46,0.12)') +
-      statCard('奖金', '期末奖金总额', '¥ ' + total, '💰', 'rgba(245,158,11,0.14)') +
-      '</div>';
-  }
-
-  function renderSemesterTable() {
-    var tbody = document.getElementById('semesterTbody');
-    var count = document.getElementById('semesterCount');
-    var list = filteredSemester();
-    if (count) count.textContent = '共 ' + list.length + ' 条';
-    if (!tbody) return;
-    if (!list.length) {
-      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#909399;padding:40px 0;">暂无清单记录</td></tr>';
+    var schemes = MDS.get('activitySchemes') || [];
+    if (!scoreObtainedSchemeId || !schemes.some(function (s) { return s.id === scoreObtainedSchemeId; })) {
+      scoreObtainedSchemeId = schemes.length ? schemes[0].id : null;
+    }
+    if (!scoreObtainedSchemeId) {
+      box.innerHTML = '<section class="pc-card"><div class="card-body"><div class="pc-empty"><div class="empty-icon">🏷️</div><div>请先在「积分方案管理」创建活动积分方案</div></div></div></section>';
       return;
     }
-    tbody.innerHTML = list
-      .map(function (b) {
-        var excluded = b.status === '已剔除';
-        var statusCell = excluded
-          ? '<span class="excluded-tag">已剔除</span>'
-          : '<span class="status-tag status-success">正常</span>';
-        var remarkCell = excluded
-          ? '<span style="color:#e03a2e;font-size:12px;">' + esc(b.remark || '中途离职，放弃评比资格') + '</span>'
-          : '<span style="color:#909399;">—</span>';
-        return (
-          '<tr class="' + (excluded ? 'row-excluded' : '') + '">' +
-          '<td>' + esc(b.teacher) + '</td>' +
-          '<td>' + esc(b.className) + '</td>' +
-          '<td>' + semesterMedalsHtml(b.medals) + '</td>' +
-          '<td class="bonus-amount">' + (b.monthBonus || 0) + '</td>' +
-          '<td class="bonus-amount">' + (b.activityBonus || 0) + '</td>' +
-          '<td><strong>' + (b.total || 0) + '</strong></td>' +
-          '<td>' + statusCell + '</td>' +
-          '<td>' + remarkCell + '</td>' +
-          '</tr>'
-        );
-      })
-      .join('');
-  }
-
-  /* 一键自动汇总期末清单：按勋章档案累计等级/数量，合并月度常规奖金 + 当期专项活动奖励，自动剔除离职教师 */
-  function generateSemesterBonus() {
-    var medals = MDS.get('medals') || [];
-    var grads = MDS.get('bonusGradients') || [];
-    var schemes = MDS.get('activitySchemes') || [];
-    var activities = MDS.get('activities') || [];
-    var teachers = MDS.get('teachers') || [];
-    var sys = MDS.get('sysConfig') || {};
-    var amountOf = function (level) {
-      var g = grads.filter(function (x) { return x.level === level; })[0];
-      return g ? g.amount : 0;
-    };
-    // 专项活动奖金方案速查：activityId → { 活动金/活动银/活动铜: 金额 }
-    var schemeBonus = {};
-    schemes.forEach(function (s) {
-      var map = {};
-      (s.bonusRules || []).forEach(function (r) { map[r.level] = r.amount; });
-      schemeBonus[s.activityId] = map;
-    });
-    // 活动 id → 标题 对照（反查活动专项勋章所属活动的奖金方案）
-    var actTitle = {};
-    activities.forEach(function (a) { actTitle[a.id] = a.title; });
-    // 按教师聚合勋章：累计等级/数量 + 月度/专项奖金
-    var byTeacher = {};
-    medals.forEach(function (m) {
-      if (!byTeacher[m.teacher]) {
-        byTeacher[m.teacher] = { teacher: m.teacher, className: m.className, counts: { '金': 0, '银': 0, '铜': 0 }, monthBonus: 0, activityBonus: 0 };
-      }
-      var row = byTeacher[m.teacher];
-      row.counts[m.level] = (row.counts[m.level] || 0) + 1;
-      if (m.type === '月度常规') {
-        row.monthBonus += amountOf(m.level);
-      } else {
-        // 专项活动奖励：按关联活动方案的独立奖金规则核算（等级 金/银/铜 → 活动金/活动银/活动铜）
-        var actId = null;
-        Object.keys(actTitle).forEach(function (id) {
-          if (actTitle[id] === m.activity) actId = Number(id);
-        });
-        var map = actId != null ? (schemeBonus[actId] || null) : null;
-        row.activityBonus += (map && map['活动' + m.level]) || 0;
-      }
-    });
-    var tOf = function (name) {
-      return teachers.filter(function (t) { return t.name === name; })[0] || null;
-    };
-    var list = Object.keys(byTeacher).map(function (name) {
-      var row = byTeacher[name];
-      var t = tOf(name);
-      var excluded = t && !t.isActive;
-      var medalsStr = [];
-      ['金', '银', '铜'].forEach(function (lv) {
-        if (row.counts[lv]) medalsStr.push(lv + '×' + row.counts[lv]);
-      });
-      return {
-        teacher: name,
-        className: row.className,
-        medals: medalsStr.join(' / '),
-        monthBonus: row.monthBonus,
-        activityBonus: row.activityBonus,
-        total: row.monthBonus + row.activityBonus,
-        status: excluded ? '已剔除' : '正常',
-        remark: excluded ? (t.leaveReason || '中途离职，放弃评比资格（不影响历史数据）') : '',
-      };
-    });
-    // 正常教师在前、剔除在后，同状态按合计降序
-    list.sort(function (a, b) {
-      if (a.status !== b.status) return a.status === '正常' ? -1 : 1;
-      return b.total - a.total;
-    });
-    MDS.set('semesterBonus', list);
-    Proto.showToast('已按' + (sys.semester || '本学期') + '勋章档案自动汇总（' + list.length + ' 条，剔除 ' + list.filter(function (b) { return b.status === '已剔除'; }).length + ' 人）');
-    activateTag('bonus-semester');
+    var s = schemes.filter(function (x) { return x.id === scoreObtainedSchemeId; })[0];
+    var opts = schemes.map(function (x) {
+      return '<option value="' + x.id + '"' + (x.id === scoreObtainedSchemeId ? ' selected' : '') + '>' + esc(x.name) + '</option>';
+    }).join('');
+    var data = buildSchemeRows(s);
+    var trs = data.rows.map(function (r) {
+      return (
+        '<tr>' +
+        '<td>' + esc(r.name) + '</td>' +
+        '<td>' + esc(r.className) + '</td>' +
+        '<td>' + r.usage + '</td><td>' + r.interaction + '</td><td>' + r.promotion + '</td><td>' + r.conversion + '</td>' +
+        '<td><span class="total-cell">' + r.total + '</span> 分</td>' +
+        '<td><span class="rank-cell">' + r.rankPoints + '</span> 分</td>' +
+        '<td><span class="rank-cell' + (r.totalRank <= 3 ? ' rank-top' : '') + '">第 ' + r.totalRank + ' 名</span></td>' +
+        '<td><input class="pc-input so-bonus-input" type="number" min="0" style="width:90px;" data-name="' + esc(r.name) + '" value="' + r.bonus + '"></td>' +
+        '</tr>'
+      );
+    }).join('');
+    box.innerHTML =
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">筛选条件</span></div>' +
+      '<div class="card-body"><div class="search-form">' +
+      '<div class="search-item"><label>活动积分方案</label><select class="pc-select" id="soSchemeSelect" style="width:320px;">' + opts + '</select></div>' +
+      '<div class="search-item" style="color:#909399;font-size:12px;">奖金列可编辑，保存后持久化；「发布公告」自动附带积分汇总。</div>' +
+      '</div></div></section>' +
+      '<section class="pc-card">' +
+      '<div class="card-head">' +
+      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="score-obtained-bonus-save">保存奖金</button>' +
+      '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="score-obtained-announce-open" style="margin-left: 12px;">📢 发布公告</button>' +
+      '<span class="table-count">' + esc(s.name) + ' · 参与对象 ' + data.N + ' 名 · 排位分：第 1 名 ' + data.N + ' 分 … 第 ' + data.N + ' 名 1 分，并列顺延</span>' +
+      '</div>' +
+      '<div class="card-body no-padding"><table class="pc-table"><thead><tr>' +
+      '<th>参与对象</th><th>班级</th><th>平台使用</th><th>家园互动</th><th>外部推广</th><th>会员转化</th><th>总积分</th><th>排位分</th><th>名次</th><th>奖金（元）</th>' +
+      '</tr></thead><tbody>' + trs + '</tbody></table></div></section>';
   }
 
   /* ═══════════════════════ PC：教师管理（含离职标注，复用 CRUD 模式） ═══════════════════════ */
@@ -3608,7 +3034,7 @@ window.MedalDemo = (function () {
         return (
           '<tr' + (t.status === '离职' ? ' class="row-excluded"' : '') + '>' +
           '<td><input type="checkbox" class="mt-check" data-id="' + t.id + '"></td>' +
-          '<td><span class="cell-avatar">' + esc(t.name.charAt(0)) + '</span>' + esc(t.name) + '</td>' +
+          '<td>' + esc(t.name) + '</td>' +
           '<td>' + esc(t.gender) + '</td>' +
           '<td>' + esc(t.phone) + '</td>' +
           '<td>' + esc(t.className) + '</td>' +
@@ -3653,7 +3079,6 @@ window.MedalDemo = (function () {
     var path = location.pathname;
     if (path.indexOf('activity.html') >= 0) return 'activity';
     if (path.indexOf('rank.html') >= 0) return 'rank';
-    if (path.indexOf('medal.html') >= 0) return 'medal';
     if (path.indexOf('notice.html') >= 0) return 'notice';
     if (path.indexOf('mine.html') >= 0) return 'mine';
     return 'home';
@@ -3731,13 +3156,13 @@ window.MedalDemo = (function () {
 
     // ── 底部：激励体系内容 ──
     if (role === 'teacher') {
-      // 教师：童蹊社区专区（合并原「积分勋章激励」卡 + 「积分勋章」宫格为单一区域）
+      // 教师：童蹊社区专区（今日积分 + 排名/差距 + 活动/排行榜宫格）
       html += renderTeacherCommunity();
     } else if (role === 'principal') {
-      // 园长：童蹊社区专区（园内激励动态 + 排行榜/家长进度/勋章入口）
+      // 园长：童蹊社区专区（园内激励动态 + 排行榜/家长进度入口）
       html += renderPrincipalCommunity();
     } else {
-      // 家长简版首页（无勋章卡片）
+      // 家长简版首页（班级动态 + 活动推荐）
       html += renderParentHome();
     }
 
@@ -3745,39 +3170,30 @@ window.MedalDemo = (function () {
   }
 
   /* 教师「童蹊社区」专区：合并原「积分勋章激励」卡 + 「积分勋章」功能宫格为单一社区区域
-     今日积分 + 排名/勋章/差距 + 距金牌进度 + 快捷按钮 + 勋章功能宫格 */
+     今日积分 + 排名/差距 + 快捷入口宫格（勋章体系已移除） */
   function renderTeacherCommunity() {
     var s = MDS.get('teacherScores') || {};
-    var total = s.usage.total + s.interaction.total + s.promotion.total + s.conversion.total;
     var today = s.usage.today + s.interaction.today + s.promotion.today + s.conversion.today;
-    var next = 2000; // 金牌目标
-    var pct = Math.min(100, Math.round((total / next) * 100));
     var html = '';
-    html += '<div class="mb-section-title"><span class="title">童蹊社区</span><span class="subtitle">积分 · 勋章 · 激励</span></div>';
+    html += '<div class="mb-section-title"><span class="title">童蹊社区</span><span class="subtitle">积分 · 排位 · 激励</span></div>';
     html += '<div class="mb-card community-card">';
-    // 激励卡：今日积分 + 排名/勋章/差距 + 距金牌进度 + 快捷按钮
+    // 激励卡：今日积分 + 排名/差距
     html += '<div class="community-hero">';
     html += '<div class="flex-between">';
     html += '<div><div style="font-size:13px;color:#6b7280;">今日新增积分</div>' +
       '<div class="mb-point-today"><span class="num">+' + today + '</span><span class="unit">分</span></div></div>';
-    html += '<span class="medal-badge level-gold"></span>';
     html += '</div>';
     html += '<div class="mb-point-grid">';
     html += '<div class="mb-point-cell"><div class="num">' + s.interaction.rank + '</div><div class="label">本园排名</div></div>';
-    html += '<div class="mb-point-cell"><div class="num">金牌</div><div class="label">本月勋章</div></div>';
     html += '<div class="mb-point-cell"><div class="num">-' + s.usage.gap + '</div><div class="label">距上一名</div></div>';
     html += '</div>';
-    html += '<div style="margin-top:14px;"><div class="mb-medal-progress"><div class="bar" style="width:' + pct + '%;"></div></div>' +
-      '<div class="flex-between" style="font-size:11px;color:#9ca3af;margin-top:6px;">' +
-      '<span>当前 ' + total + ' 分</span><span>距金牌 ' + Math.max(0, next - total) + ' 分</span></div></div>';
     html += '</div>';
-    // 分隔线 + 勋章功能宫格（入口进入二级页）
+    // 分隔线 + 功能宫格（入口进入二级页）
     html += '<div class="community-divider"></div>';
     html += '<div class="mb-grid community-grid">';
     var items = [
       { name: '活动中心', icon: '📋', color: '#4facfe', bg: '#e6f4ff', path: 'activity.html' },
       { name: '排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'rank.html' },
-      { name: '我的勋章', icon: '★', color: '#f5a623', bg: '#fff7e6', path: 'medal.html' },
     ];
     items.forEach(function (it) {
       html += mbGridCell(it.name, it.icon, it.color, it.bg, it.path);
@@ -4028,14 +3444,119 @@ window.MedalDemo = (function () {
       return;
     }
     root.innerHTML = list.map(function (item) {
+      // 积分公告：列表仅展示标题 + 正文摘要 + 「查看完整公告」入口，详情进入独立公告详情页
+      var SEP = '━━━━━━━━━━━━';
+      var raw = item.notice.content || '';
+      var head = raw;
+      var sepIdx = raw.indexOf(SEP);
+      if (sepIdx >= 0) head = raw.slice(0, sepIdx);
+      var isAnnounce = sepIdx >= 0;
+      if (isAnnounce) {
+        // 正文摘要：取首段（最多约 64 字）
+        var brief = head.replace(/\s+/g, ' ').trim();
+        if (brief.length > 64) brief = brief.slice(0, 64) + '…';
+        return (
+          '<div class="mb-list-item' + (item.read ? '' : ' is-unread') + '" data-action="open-announce-detail" data-activity="' + item.actId + '" data-notice="' + esc(item.notice.id) + '">' +
+          '<div class="item-title">' + esc(item.notice.title) + '</div>' +
+          '<div class="item-desc" style="margin-top:8px;">' + escBr(brief) + '</div>' +
+          '<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--mb-border-divider,#f5f5f5);">' +
+          '<div style="display:flex;align-items:center;color:#ff8a00;font-size:12px;font-weight:600;">查看完整公告 <span style="margin-left:2px;">›</span></div>' +
+          '<div style="font-size:11px;color:var(--mb-text-muted,#9ca3af);margin-top:6px;">' + esc(item.activityTitle) + ' · ' + esc(item.notice.sendTime) + '</div>' +
+          '</div>' +
+          '</div>'
+        );
+      }
+      // 普通活动通知：标题 + 内容 + 跳转活动详情
       return (
         '<div class="mb-list-item' + (item.read ? '' : ' is-unread') + '" data-action="open-activity-detail" data-id="' + item.actId + '">' +
         '<div class="item-title">' + esc(item.notice.title) + '</div>' +
-        '<div class="item-desc">' + esc(item.notice.content) + '</div>' +
+        '<div class="item-desc" style="margin-top:8px;">' + escBr(item.notice.content) + '</div>' +
         '<div class="item-time">' + esc(item.activityTitle) + ' · ' + esc(item.notice.sendTime) + '</div>' +
         '</div>'
       );
     }).join('');
+  }
+
+  /* ═══════════════════════ 移动端：积分公告详情页 ═══════════════════════ */
+
+  /* 独立公告详情页：公告标题/正文 + 积分获得情况汇总表格（数据来源发布时存的 scoreSummary） */
+  function renderAnnounceDetail() {
+    var root = document.getElementById('announceDetailRoot');
+    if (!root) return;
+    var actId = getParam('activityId');
+    var noticeId = getParam('noticeId');
+    var act = activityById(Number(actId));
+    var notices = (MDS.get('activityNotices') || {})[String(actId)] || [];
+    var n = notices.filter(function (x) { return String(x.id) === String(noticeId); })[0];
+    if (!n) {
+      root.innerHTML = '<div class="mb-empty-tip">公告不存在或已删除</div>';
+      return;
+    }
+    // 打开即标记当前参与对象已读
+    var p = currentParticipant();
+    if (p) {
+      MDS.update('activityNotices', function (map) {
+        var next = Object.assign({}, map || {});
+        var key = String(actId);
+        next[key] = (next[key] || []).map(function (x) {
+          if (String(x.id) !== String(noticeId)) return x;
+          var recipients = (x.recipients || []).map(function (r) {
+            return r.name === p.name ? Object.assign({}, r, { read: true, readTime: nowTimeStr() }) : r;
+          });
+          return Object.assign({}, x, { recipients: recipients });
+        });
+        return next;
+      });
+    }
+    // 公告正文：分隔线前为用户填写的内容
+    var SEP = '━━━━━━━━━━━━';
+    var raw = n.content || '';
+    var head = raw;
+    var sepIdx = raw.indexOf(SEP);
+    if (sepIdx >= 0) head = raw.slice(0, sepIdx);
+    var summary = n.scoreSummary || null;
+
+    var medalMarks = ['🥇', '🥈', '🥉'];
+    var html = '';
+    // 公告正文卡
+    html += '<div class="mb-card" style="margin-top:12px;padding:16px;">';
+    html += '<div style="font-size:16px;font-weight:700;color:#1f2937;line-height:1.5;">' + esc(n.title) + '</div>';
+    html += '<div style="font-size:12px;color:var(--mb-text-muted,#9ca3af);margin-top:8px;padding-bottom:10px;border-bottom:1px solid var(--mb-border-light,#e5e7eb);">' +
+      esc(act ? act.title : '—') + ' · ' + esc(n.sender || '管理员') + ' · ' + esc(n.sendTime) + '</div>';
+    html += '<div style="font-size:14px;color:#1f2937;line-height:1.8;margin-top:12px;">' + escBr(head) + '</div>';
+    html += '</div>';
+    // 积分汇总卡
+    html += '<div class="mb-section-title" style="margin-top:16px;"><span class="title">积分获得情况汇总</span>' +
+      (summary ? '<span class="subtitle">' + esc(summary.schemeName) + '</span>' : '') + '</div>';
+    html += '<div class="mb-card" style="padding:2px 14px 6px;">';
+    if (summary && summary.rows && summary.rows.length) {
+      html += '<div style="font-size:12px;color:var(--mb-text-secondary,#6b7280);padding:10px 0;border-bottom:1px solid var(--mb-border-light,#e5e7eb);">活动周期：' +
+        esc(summary.cycleStart || '—') + ' ~ ' + esc(summary.cycleEnd || '—') + ' · 参与对象 ' + summary.rows.length + ' 名</div>';
+      html += '<div style="padding:2px 0;">' + summary.rows.map(function (r) {
+        var mark = r.totalRank <= 3 ? medalMarks[r.totalRank - 1] + ' ' : '';
+        var isTop = r.totalRank <= 3;
+        var nameCls = 'style="font-size:14px;color:' + (isTop ? '#ff8a00' : 'var(--mb-text-primary,#1f2937)') + ';' + (isTop ? 'font-weight:600;' : '') + '"';
+        return (
+          // 移动端双行布局：第一行 姓名/班级/名次排位，第二行 总积分/奖金，避免窄屏拥挤
+          '<div style="padding:9px 0;border-bottom:1px solid var(--mb-border-divider,#f5f5f5);">' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span ' + nameCls + '>' + mark + esc(r.name) + '</span>' +
+          '<span style="font-size:12px;color:var(--mb-text-muted,#9ca3af);">' + esc(r.className) + '</span>' +
+          '<span style="margin-left:auto;font-size:12px;color:var(--mb-text-secondary,#6b7280);">第 ' + r.totalRank + ' 名 · 排位分 ' + r.rankPoints + '</span>' +
+          '</div>' +
+          '<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;padding-left:20px;">' +
+          '<span style="font-size:12px;color:var(--mb-text-secondary,#6b7280);">总积分</span>' +
+          '<span style="font-size:16px;font-weight:700;color:var(--mb-text-primary,#1f2937);">' + r.total + '<span style="font-size:11px;font-weight:400;color:var(--mb-text-muted,#9ca3af);"> 分</span></span>' +
+          '<span style="margin-left:auto;font-size:13px;color:#ff8a00;font-weight:600;">奖金 ¥' + r.bonus + '</span>' +
+          '</div>' +
+          '</div>'
+        );
+      }).join('') + '</div>';
+    } else {
+      html += '<div class="mb-empty-tip" style="padding:20px 0;">暂无积分明细</div>';
+    }
+    html += '</div>';
+    root.innerHTML = html;
   }
 
   /* ═══════════════════════ 移动端：活动详情页 ═══════════════════════ */
@@ -4356,61 +3877,12 @@ window.MedalDemo = (function () {
     root.innerHTML = html;
   }
 
-  /* ═══════════════════════ 移动端：我的勋章 ═══════════════════════ */
-
-  var medalTypeFilter = 'all';
-  var medalPeriodFilter = '';
-
-  function renderMobileMedal() {
-    var hero = document.getElementById('medalHero');
-    var list = document.getElementById('medalList');
-    var s = MDS.get('teacherScores') || {};
-    if (hero) {
-      var total = s.usage.total + s.interaction.total + s.promotion.total + s.conversion.total;
-      var next = 2000; // 距下一级（金牌）目标
-      var pct = Math.min(100, Math.round((total / next) * 100));
-      hero.innerHTML =
-        '<div class="mb-medal-hero">' +
-        '<div class="flex-between">' +
-        '<div><div style="font-size:13px;color:#6b7280;">本月勋章</div>' +
-        '<div style="margin-top:8px;"><span class="medal-badge level-gold medal-badge-lg"></span></div></div>' +
-        '<div style="text-align:right;">' +
-        '<div style="font-size:13px;color:#6b7280;">当前积分</div>' +
-        '<div style="font-size:26px;font-weight:800;color:#ff8a00;">' + total + '</div>' +
-        '<div style="font-size:11px;color:#9ca3af;">距金牌 ' + Math.max(0, next - total) + ' 分</div>' +
-        '</div></div>' +
-        '<div style="margin-top:14px;"><div class="mb-medal-progress"><div class="bar" style="width:' + pct + '%;"></div></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:11px;color:#9ca3af;margin-top:6px;"><span>铜牌 150</span><span>银牌 300</span><span>金牌 500</span></div></div>' +
-        '</div>';
-    }
-    if (!list) return;
-    var medals = MDS.get('medals') || [];
-    var filtered = medals.filter(function (m) {
-      if (medalTypeFilter !== 'all' && m.type !== medalTypeFilter) return false;
-      if (medalPeriodFilter && m.period !== medalPeriodFilter) return false;
-      return true;
-    });
-    list.innerHTML = filtered
-      .map(function (m) {
-        var levelCls = m.level === '金' ? 'gold' : m.level === '银' ? 'silver' : 'bronze';
-        return (
-          '<div class="mb-medal-row" data-action="medal-detail" data-id="' + m.id + '">' +
-          '<span class="medal-badge level-' + levelCls + '"></span>' +
-          '<div class="mm-period">' + esc(m.period) + ' · ' + esc(m.type) + '</div>' +
-          '<span style="font-size:12px;color:#6b7280;">总积分 ' + m.total + '</span>' +
-          '</div>'
-        );
-      })
-      .join('');
-    if (!filtered.length) list.innerHTML = '<div class="mb-empty-tip">暂无勋章记录</div>';
-  }
-
-  /* ═══════════════════════ 移动端：我的 ═══════════════════════ */
+  /* ═══════════════════════ 移动端：我的 ═══════════════════════
+     注：积分重构后已移除「我的奖金」模块（奖金管理已移除），消息中心保留 */
 
   var noticeFilter = 'all';
 
   function renderMobileMine() {
-    var role = currentRole();
     var p = MDS.get('userProfile');
     var avatar = document.getElementById('mineAvatar');
     var name = document.getElementById('mineName');
@@ -4418,18 +3890,6 @@ window.MedalDemo = (function () {
     if (avatar) avatar.textContent = p.avatar;
     if (name) name.textContent = p.name;
     if (roleLine) roleLine.textContent = p.roleLine;
-
-    // 教师端不展示「我的奖金」模块（奖金为园长/管理端管理项）
-    var bonusCard = document.getElementById('bonusCard');
-    if (bonusCard) bonusCard.hidden = role === 'teacher';
-
-    var bonus = document.getElementById('mineBonus');
-    if (bonus) {
-      bonus.innerHTML =
-        '<div class="sub-row"><span class="label">本月勋章</span><span class="value" style="color:#f5a623;">金牌 · 奖金 ¥800</span></div>' +
-        '<div class="sub-row"><span class="label">历史累计奖金</span><span class="value">¥ 5,200</span></div>' +
-        '<div class="sub-row"><span class="label">期末汇总</span><span class="value">¥ 6,300（含专项）</span></div>';
-    }
 
     renderNoticeList();
   }
@@ -5147,30 +4607,9 @@ window.MedalDemo = (function () {
     });
   }
 
-  /* 我的勋章档案：仅展示当前教师（TEACHER_NAME）的历史勋章 */
-  function renderTeacherMedal(root) {
-    var grid = document.getElementById('teacherMedalGrid');
-    if (!grid) return;
-    var medals = (MDS.get('medals') || []).filter(function (m) { return m.teacher === TEACHER_NAME; });
-    if (!medals.length) {
-      grid.innerHTML = '<div class="pc-empty" style="grid-column:1/-1;"><div class="empty-icon">🎖️</div><div>暂无勋章记录</div></div>';
-      return;
-    }
-    grid.innerHTML = medals.map(function (m) {
-      return (
-        '<div class="medal-cell" data-action="medal-detail" data-id="' + m.id + '">' +
-        '<span class="medal-badge level-' + (m.level === '金' ? 'gold' : m.level === '银' ? 'silver' : 'bronze') + '"></span>' +
-        '<div class="mc-period">' + esc(m.period) + '</div>' +
-        '<span class="mc-type">' + esc(m.type) + (m.type === '活动专项' ? ' · ' + esc(m.activity) : '') + '</span>' +
-        '<div class="mc-total">当期总积分 ' + m.total + ' · 第 ' + m.rank + ' 名</div>' +
-        '</div>'
-      );
-    }).join('');
-  }
-
   /* ═══════════════════════ 园长小程序端（principal.html） ═══════════════════════ */
 
-  /* 园长小程序独立首页：仅排行榜（园内排行榜 + 家长注册进度），无工作台/奖金/勋章 */
+  /* 园长小程序独立首页：仅排行榜（园内排行榜 + 家长注册进度），无工作台 */
   function renderPrincipalMini() {
     var root = document.getElementById('principalMiniRoot');
     if (!root) return;
@@ -5319,7 +4758,7 @@ window.MedalDemo = (function () {
     });
 
     Proto.registerAction('goto-index', function () {
-      // 勋章体系独立入口（medal-system/index.html）
+      // 返回原型演示入口（medal-system/index.html）
       var from = location.pathname;
       if (from.indexOf('/pc/') >= 0 || from.indexOf('/mobile/') >= 0) {
         location.href = '../index.html';
@@ -5755,14 +5194,7 @@ window.MedalDemo = (function () {
       Proto.openDialog('worksPreviewDialog');
     });
 
-    // ── 积分方案：月度权重 + 活动方案 CRUD ──
-    Proto.registerAction('score-weight-edit', function (el) {
-      fillWeightDialog(Number(el.getAttribute('data-id')));
-    });
-
-    Proto.registerAction('score-weight-save', function () {
-      saveWeightDialog();
-    });
+    // ── 积分方案：活动方案 CRUD（月度常规勋章积分方案已移除） ──
 
     // 新增活动方案：打开空表单弹窗
     Proto.registerAction('as-add', function () {
@@ -5905,68 +5337,106 @@ window.MedalDemo = (function () {
       Proto.showToast(id ? '已保存活动方案修改' : '已新增活动方案');
     });
 
-    // ── 勋章门槛 ──
-    Proto.registerAction('threshold-edit', function (el) {
-      fillThresholdDialog(Number(el.getAttribute('data-id')), el.getAttribute('data-level'));
-    });
-
-    Proto.registerAction('threshold-save', function () {
-      saveThresholdDialog();
-    });
-
-    // ── 勋章档案 ──
-    Proto.registerAction('medal-detail', function (el) {
-      var id = Number(el.getAttribute('data-id'));
-      if (location.pathname.indexOf('pc/') >= 0) {
-        fillMedalDetail(id);
-      } else {
-        showMedalDetailSheet(id);
+    // ── 积分获得情况：打开发布公告弹窗（生成只读积分汇总预览） ──
+    Proto.registerAction('score-obtained-announce-open', function () {
+      var s = (MDS.get('activitySchemes') || []).filter(function (x) { return x.id === scoreObtainedSchemeId; })[0];
+      if (!s) {
+        Proto.showToast('请先选择活动积分方案');
+        return;
       }
+      var titleEl = document.getElementById('soAnnounceTitle');
+      var contentEl = document.getElementById('soAnnounceContent');
+      if (titleEl) titleEl.value = '';
+      if (contentEl) contentEl.value = '';
+      var nameEl = document.getElementById('soAnnounceSchemeName');
+      if (nameEl) nameEl.textContent = s.name;
+      var pv = document.getElementById('soAnnouncePreview');
+      if (pv) pv.textContent = buildScoreSummaryText(s);
+      Proto.openDialog('scoreAnnounceDialog');
+    });
+
+    // ── 积分获得情况：发布公告 → 写入活动通知（recipients=参与对象，消息中心可收） ──
+    Proto.registerAction('score-obtained-announce-publish', function () {
+      var s = (MDS.get('activitySchemes') || []).filter(function (x) { return x.id === scoreObtainedSchemeId; })[0];
+      if (!s) {
+        Proto.showToast('请先选择活动积分方案');
+        return;
+      }
+      var title = ((document.getElementById('soAnnounceTitle') || {}).value || '').trim();
+      var content = ((document.getElementById('soAnnounceContent') || {}).value || '').trim();
+      if (!title) {
+        Proto.showToast('请填写公告标题');
+        return;
+      }
+      if (!content) {
+        Proto.showToast('请填写公告内容');
+        return;
+      }
+      var data = buildSchemeRows(s);
+      var recipients = data.rows.map(function (r) {
+        return { name: r.name, kindergarten: r.kindergarten, className: r.className, read: false, readTime: '' };
+      });
+      var record = {
+        id: 'an' + Date.now(),
+        title: title,
+        content: content + '\n\n━━━━━━━━━━━━\n' + buildScoreSummaryText(s),
+        sender: '管理员',
+        sendTime: nowTimeStr(),
+        recipients: recipients,
+        // 结构化积分汇总：供「积分公告详情页」渲染表格（name/className/total/totalRank/rankPoints/bonus）
+        scoreSummary: {
+          schemeName: s.name,
+          cycleStart: s.cycleStart || '',
+          cycleEnd: s.cycleEnd || '',
+          rows: data.rows.map(function (r) {
+            return {
+              name: r.name,
+              className: r.className,
+              total: r.total,
+              totalRank: r.totalRank,
+              rankPoints: r.rankPoints,
+              bonus: r.bonus,
+            };
+          }),
+        },
+      };
+      MDS.update('activityNotices', function (map) {
+        var next = Object.assign({}, map || {});
+        var key = String(s.activityId);
+        next[key] = (next[key] || []).slice();
+        next[key].unshift(record);
+        return next;
+      });
+      Proto.closeDialog('scoreAnnounceDialog');
+      Proto.showToast('公告已发布，发送给 ' + recipients.length + ' 位参与对象');
+    });
+
+    // ── 积分获得情况：保存奖金（持久化到 schemeScores[方案id]） ──
+    Proto.registerAction('score-obtained-bonus-save', function () {
+      if (scoreObtainedSchemeId == null) {
+        Proto.showToast('请先选择活动积分方案');
+        return;
+      }
+      var box = document.getElementById('scoreObtainedRoot');
+      var map = {};
+      (box ? box.querySelectorAll('.so-bonus-input') : []).forEach(function (inp) {
+        var v = parseInt(inp.value, 10);
+        map[inp.getAttribute('data-name')] = isNaN(v) || v < 0 ? 0 : v;
+      });
+      MDS.update('schemeScores', function (all) {
+        var next = Object.assign({}, all || {});
+        next[scoreObtainedSchemeId] = (next[scoreObtainedSchemeId] || []).map(function (r) {
+          return map[r.name] != null ? Object.assign({}, r, { bonus: map[r.name] }) : r;
+        });
+        return next;
+      });
+      Proto.showToast('奖金已保存');
     });
 
     // ── 全平台教师榜：查看教师积分获取明细 ──
     Proto.registerAction('rank-point-detail', function (el) {
       var name = el.getAttribute('data-teacher');
       if (name) renderPointDetailDialog(name);
-    });
-
-    // ── 月度清单 ──
-    Proto.registerAction('bonus-export', function () {
-      Proto.showToast('演示功能：已导出月度发放清单（含四大维度数据）');
-    });
-
-    Proto.registerAction('bonus-batch-export', function () {
-      Proto.showToast('演示功能：已导出所选清单');
-    });
-
-    // ── 奖金梯度配置 ──
-    Proto.registerAction('bonus-grad-edit', function () {
-      fillBonusGradDialog();
-    });
-
-    Proto.registerAction('bonus-grad-save', function () {
-      saveBonusGradDialog();
-    });
-
-    Proto.registerAction('act-bonus-edit', function (el) {
-      fillActBonusDialog(Number(el.getAttribute('data-id')));
-    });
-
-    Proto.registerAction('act-bonus-save', function () {
-      saveActBonusDialog();
-    });
-
-    Proto.registerAction('bonus-generate', function () {
-      generateMonthlyBonus();
-    });
-
-    // ── 期末汇总清单 ──
-    Proto.registerAction('semester-generate', function () {
-      generateSemesterBonus();
-    });
-
-    Proto.registerAction('semester-export', function () {
-      Proto.showToast('演示功能：已导出期末汇总清单（含月度常规 + 专项活动合并明细）');
     });
 
     // ── 教师管理 ──
@@ -6077,6 +5547,13 @@ window.MedalDemo = (function () {
     Proto.registerAction('open-activity-detail', function (el) {
       var id = el.getAttribute('data-id');
       if (id) location.href = 'activity-detail.html?activityId=' + id;
+    });
+
+    // 积分公告：进入独立「积分公告详情页」
+    Proto.registerAction('open-announce-detail', function (el) {
+      var actId = el.getAttribute('data-activity');
+      var noticeId = el.getAttribute('data-notice');
+      location.href = 'announce-detail.html?activityId=' + actId + '&noticeId=' + encodeURIComponent(noticeId);
     });
 
     // 活动详情页报名：写入当前参与者（教师/园长）报名状态并回显
@@ -7136,35 +6613,6 @@ window.MedalDemo = (function () {
       .join('');
   }
 
-  /* 移动端：勋章详情底部弹层 */
-  function showMedalDetailSheet(id) {
-    var medals = MDS.get('medals') || [];
-    var m = medals.filter(function (x) { return x.id === id; })[0];
-    if (!m) return;
-    var sheet = document.getElementById('medalDetailSheet');
-    if (!sheet) return;
-    var levelCls = m.level === '金' ? 'gold' : m.level === '银' ? 'silver' : 'bronze';
-    var body = document.getElementById('medalDetailSheetBody');
-    if (body) {
-      body.innerHTML =
-        '<div style="text-align:center;padding:12px 0 16px;">' +
-        '<span class="medal-badge level-' + levelCls + ' medal-badge-lg"></span>' +
-        '<div style="margin-top:10px;font-weight:700;">' + esc(m.period) + ' · ' + esc(m.type) + '</div>' +
-        '<div style="font-size:12px;color:#9ca3af;margin-top:4px;">' + esc(m.activity) + ' · 当期排名第 ' + m.rank + ' 名</div>' +
-        '</div>' +
-        '<table class="dim-table">' +
-        '<thead><tr><th>指标</th><th>当期原始数据</th><th>单项排位分</th></tr></thead>' +
-        '<tbody>' +
-        '<tr><td>平台使用</td><td>' + m.usage + '</td><td>' + Math.round(m.usage / 10) + '</td></tr>' +
-        '<tr><td>家园互动</td><td>' + m.interaction + '</td><td>' + Math.round(m.interaction / 10) + '</td></tr>' +
-        '<tr><td>外部推广</td><td>' + m.promotion + '</td><td>' + Math.round(m.promotion / 10) + '</td></tr>' +
-        '<tr><td>会员转化</td><td>' + m.conversion + '</td><td>' + Math.round(m.conversion / 10) + '</td></tr>' +
-        '<tr><td><strong>当期总积分</strong></td><td class="dim-total"><strong>' + m.total + '</strong></td><td><strong>第 ' + m.rank + ' 名</strong></td></tr>' +
-        '</tbody></table>';
-    }
-    sheet.hidden = false;
-  }
-
   /* ═══════════════════════ 重新渲染当前页 ═══════════════════════ */
 
   function rerenderCurrentPage() {
@@ -7175,9 +6623,9 @@ window.MedalDemo = (function () {
       renderMobileRankScore();
     }
     if (document.getElementById('statRoot')) renderMobileStat();
-    if (document.getElementById('medalList')) renderMobileMedal();
     if (document.getElementById('noticeList')) renderNoticeList();
     if (document.getElementById('mobileNoticeList')) renderMobileNotice();
+    if (document.getElementById('announceDetailRoot')) renderAnnounceDetail();
     if (document.getElementById('activityDetailRoot')) renderActivityDetail();
     if (document.getElementById('tabbarRoot')) renderTabBar(currentTabKey());
     if (document.getElementById('pcMenuRoot')) renderPcShell();
@@ -7282,7 +6730,7 @@ window.MedalDemo = (function () {
       });
     }
 
-    // 移动端：首页为角色化首页（hero + 勋章卡 + 宫格 + tabBar），二级页无 tabBar
+    // 移动端：首页为角色化首页（hero + 社区宫格 + tabBar），二级页无 tabBar
     if (document.getElementById('homeRoot')) {
       renderMobileHome();
       renderTabBar(currentTabKey());
@@ -7306,15 +6754,6 @@ window.MedalDemo = (function () {
     if (document.getElementById('statRoot')) {
       renderMobileStat();
     }
-    if (document.getElementById('medalList')) {
-      renderMobileMedal();
-      document.querySelectorAll('[data-tab-group="medalFilter"]').forEach(function (tab) {
-        tab.addEventListener('click', function () {
-          medalTypeFilter = tab.getAttribute('data-tab-value') || 'all';
-          renderMobileMedal();
-        });
-      });
-    }
     if (document.getElementById('noticeList')) {
       renderNoticeList();
       document.querySelectorAll('[data-tab-group="noticeFilter"]').forEach(function (tab) {
@@ -7325,8 +6764,9 @@ window.MedalDemo = (function () {
       });
     }
     if (document.getElementById('mobileNoticeList')) renderMobileNotice();
+    if (document.getElementById('announceDetailRoot')) renderAnnounceDetail();
     if (document.getElementById('activityDetailRoot')) renderActivityDetail();
-    if (document.getElementById('mineBonus')) {
+    if (document.getElementById('mineAvatar')) {
       renderMobileMine();
     }
 
@@ -7374,58 +6814,11 @@ window.MedalDemo = (function () {
     if (document.getElementById('parentProgressRoot')) {
       renderRankParent(qs('#pcPage'));
     }
-    if (document.getElementById('monthlySchemeBox')) {
+    if (document.getElementById('activitySchemeList')) {
       renderScoreScheme(qs('#pcPage'));
     }
-    if (document.getElementById('thresholdGrid')) {
-      renderMedalThreshold(qs('#pcPage'));
-      // 门槛双套切换
-      document.querySelectorAll('[data-tab-group="thresholdTabs"]').forEach(function (tab) {
-        tab.addEventListener('click', function () {
-          thresholdSet = Number(tab.getAttribute('data-tab-value')) || 1;
-          renderMedalThreshold(qs('#pcPage'));
-        });
-      });
-    }
-    if (document.getElementById('medalArchiveGrid')) {
-      renderMedalArchive(qs('#pcPage'));
-      var mt = document.getElementById('mtTeacher');
-      if (mt) mt.addEventListener('change', function () {
-        medalTeacherFilter = mt.value;
-        renderMedalArchive(qs('#pcPage'));
-      });
-      var ms = document.getElementById('mtSemester');
-      if (ms) ms.addEventListener('change', function () {
-        medalSemesterFilter = ms.value;
-        renderMedalArchive(qs('#pcPage'));
-      });
-    }
-    if (document.getElementById('bonusTbody')) {
-      renderBonusTable();
-      document.querySelectorAll('[data-tab-group="bonusFilter"]').forEach(function (tab) {
-        tab.addEventListener('click', function () {
-          bonusFilter = tab.getAttribute('data-tab-value') || 'ALL';
-          renderBonusTable();
-        });
-      });
-    }
-    if (document.getElementById('bonusGradMonthlyGrid')) {
-      renderBonusGradient(qs('#pcPage'));
-      document.querySelectorAll('[data-tab-group="bonusGradTabs"]').forEach(function (tab) {
-        tab.addEventListener('click', function () {
-          bonusGradTab = tab.getAttribute('data-tab-value') || 'monthly';
-          renderBonusGradient(qs('#pcPage'));
-        });
-      });
-    }
-    if (document.getElementById('semesterTbody')) {
-      renderBonusSemester(qs('#pcPage'));
-      document.querySelectorAll('[data-tab-group="semesterFilter"]').forEach(function (tab) {
-        tab.addEventListener('click', function () {
-          semesterFilter = tab.getAttribute('data-tab-value') || 'ALL';
-          renderBonusSemester(qs('#pcPage'));
-        });
-      });
+    if (document.getElementById('scoreObtainedRoot')) {
+      renderScoreObtained(qs('#pcPage'));
     }
     if (document.getElementById('medalTeacherTbody')) {
       renderTeacherTable();

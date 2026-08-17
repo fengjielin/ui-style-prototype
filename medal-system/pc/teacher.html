@@ -4,10 +4,9 @@
   ============================================================
   童蹊社区-原型 · 教师 PC 个人工作台（完整 PC 后台外壳）
   说明：教师 PC 端，定位为个人工作台（非管理端），展示教师个人视角数据
-  菜单：活动中心 > 我的活动 / 排行榜 > 园内排行榜 / 我的勋章 > 勋章档案 /
-        我的奖金 > 奖金明细（medal-data.js PC_MENUS.teacher）
-  交互：我的活动报名 / 上传作品（演示交互，写入 teacherSignups）；榜单切换；
-        勋章详情弹层
+  菜单：活动中心 > 我的活动 / 排行榜 > 园内排行榜（medal-data.js PC_MENUS.teacher）
+  交互：我的活动报名 / 上传作品（演示交互，写入 teacherSignups）；榜单切换
+  注：积分体系重构后已移除勋章体系与奖金管理
   对应文档：2026-08-11-01 需求拆解 / 2026-08-11-02 菜单设计
   ============================================================
 -->
@@ -62,35 +61,11 @@
           <div id="teacherRankRoot"></div>
         </div>
 
-        <!-- ═════════ ④ 我的勋章档案（teacher-medal） ═════════ -->
-        <div class="pc-page-block" data-page-key="teacher-medal">
-          <section class="pc-card">
-            <div class="card-head">
-              <span class="card-title">我的勋章档案</span>
-              <span class="table-count">永久留存</span>
-            </div>
-            <div class="card-body">
-              <div class="medal-grid" id="teacherMedalGrid"></div>
-            </div>
-          </section>
-        </div>
-
       </div><!-- /#pcPage -->
 
       <div id="pagePlaceholder" hidden></div>
 
     </main>
-  </div>
-
-  <!-- ══════════════════ 勋章详情弹窗 ══════════════════ -->
-  <div class="mask-layer" id="medalDetailDialog" hidden data-close-on-mask="true">
-    <div class="pc-dialog">
-      <div class="dialog-head" id="medalDetailTitle">勋章详情</div>
-      <div class="dialog-body" id="medalDetailBody"></div>
-      <div class="dialog-footer">
-        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="medalDetailDialog">关 闭</button>
-      </div>
-    </div>
   </div>
 
   <!-- ══════════════════ 我的活动结果弹窗 ══════════════════ -->

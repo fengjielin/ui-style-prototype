@@ -2,20 +2,18 @@
 <html lang="zh-CN">
 <!--
   ============================================================
-  童蹊社区-原型 · 移动端 · 角色化首页（独立全屏）
-  结构对齐：ui-style-prototype/mobile/home.html（hero + 宫格 + tabBar）
-  积分激励模块作为角色首页的卡片：
-    - 教师：hero(指标胶囊) + 出勤横幅 + 功能宫格 + 「童蹊社区」专区(今日积分/本园排名/距上一名 + 活动/排行榜宫格) + tabBar
-    - 园长：hero(指标胶囊) + 园内动态卡(TOP5/家长三色进度/待办) + 功能宫格 + tabBar
-    - 家长：简版首页（班级动态 + 活动推荐）
-  二级页：activity / rank / notice / mine（无 tabBar，navbar 返回首页）
-  注：积分体系重构后已移除勋章体系与奖金管理
+  童蹊社区-原型 · 移动端 · 积分公告详情页（独立全屏，无 tabBar）
+  入口：消息页点击「积分公告」消息
+  结构：顶部橙导航栏（返回消息页）+ 公告正文卡 + 积分获得情况汇总卡
+  内容（medal.js renderAnnounceDetail 渲染）：公告标题/发布人/时间/正文 + 参与对象积分汇总表格
+  交互：打开即标记当前参与对象已读
+  对应文档：积分体系重构 · 积分获得情况 → 发布公告
   ============================================================
 -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>首页 · 积分勋章</title>
+  <title>积分公告 · 积分勋章</title>
   <link rel="stylesheet" href="../../assets/css/tokens-mobile.css">
   <link rel="stylesheet" href="../../assets/css/common.css">
   <link rel="stylesheet" href="../../assets/css/base-mobile.css">
@@ -27,17 +25,15 @@
   <div class="mb-page">
 
     <header class="mb-navbar">
-      <span class="nav-back"></span>
-      <span class="nav-title">首页</span>
+      <span class="nav-back" data-action="navigate" data-path="notice.html">‹</span>
+      <span class="nav-title">积分公告</span>
       <span class="nav-action" data-action="show-toast" data-toast="更多">⋯</span>
     </header>
 
-    <main class="mb-content">
-      <!-- 内容区（medal.js 按角色渲染） -->
-      <div id="homeRoot"></div>
+    <main class="mb-content no-tabbar">
+      <!-- 积分公告详情（medal.js 渲染） -->
+      <div id="announceDetailRoot"></div>
     </main>
-
-    <nav class="mb-tabbar" id="tabbarRoot"></nav>
 
   </div>
 

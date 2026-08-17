@@ -354,7 +354,7 @@ window.Demo = (function () {
         return (
           '<tr>' +
           '<td><input type="checkbox" data-id="' + t.id + '" class="teacher-check"></td>' +
-          '<td><span class="cell-avatar">' + esc(t.name.charAt(0)) + '</span>' + esc(t.name) + '</td>' +
+          '<td>' + esc(t.name) + '</td>' +
           '<td>' + esc(t.gender) + '</td>' +
           '<td>' + esc(t.phone) + '</td>' +
           '<td>' + esc(t.className) + '</td>' +

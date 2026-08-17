@@ -8,7 +8,8 @@
     - 侧边栏菜单按角色（admin/principal）从 PC_MENUS 动态渲染，父级可展开/收起
     - 点击子级菜单 → TagsView 自动新增并激活标签，面包屑/内容区同步切换
     - 核心闭环页真实实现：数据概览/活动列表/作品管理/园内排行榜/家长进度/
-      积分方案/勋章门槛/勋章档案/月度清单/教师管理；其余菜单"建设中"占位
+      积分方案/积分获得情况/教师管理；其余菜单"建设中"占位
+    - 注：积分体系重构后已移除勋章体系与奖金管理
   对应文档：2026-08-11-01 需求拆解 / 2026-08-11-02 菜单模块设计
   ============================================================
 -->
@@ -244,21 +245,8 @@
           </section>
         </div>
 
-        <!-- ═════════ ⑥ 积分方案管理（score-scheme）：月度固定方案 + 临时专项活动积分方案双区 ═════════ -->
+        <!-- ═════════ ⑥ 积分方案管理（score-scheme）：临时专项活动积分方案（月度常规方案已移除） ═════════ -->
         <div class="pc-page-block" data-page-key="score-scheme">
-          <!-- 月度常规勋章积分方案（固定唯一 · 始终生效 · 不可复制） -->
-          <section class="pc-card">
-            <div class="card-head">
-              <span class="card-title">月度常规勋章积分方案</span>
-              <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-                <span class="table-count">固定唯一 · 始终生效 · 不可复制</span>
-                <button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="score-weight-edit" data-id="1">编辑权重</button>
-              </div>
-            </div>
-            <div class="card-body" id="monthlySchemeBox" style="padding-top:8px;"></div>
-          </section>
-
-          <!-- 临时专项活动积分方案（可多套 · 可复制 · 对应关联活动） -->
           <section class="pc-card">
             <div class="card-body" style="display:flex;align-items:center;gap:12px;">
               <button type="button" class="pc-btn pc-btn-add" data-action="as-add">＋ 新增活动方案</button>
@@ -274,234 +262,12 @@
           </section>
         </div>
 
-        <!-- ═════════ ⑦ 勋章门槛配置（medal-threshold） ═════════ -->
-        <div class="pc-page-block" data-page-key="medal-threshold">
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">门槛方案</span></div>
-            <div class="card-body">
-              <div class="pc-filter-tabs">
-                <span class="pc-filter-tab is-active" data-action="switch-tab" data-tab-group="thresholdTabs" data-tab-value="1">月度常规勋章门槛</span>
-                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="thresholdTabs" data-tab-value="2">活动专项勋章门槛</span>
-              </div>
-            </div>
-          </section>
-          <section class="pc-card">
-            <div class="card-head">
-              <span class="card-title">金银铜等级门槛</span>
-              <span class="table-count">修改门槛自动联动月度发放清单</span>
-            </div>
-            <div class="card-body"><div class="threshold-grid" id="thresholdGrid"></div></div>
-          </section>
+        <!-- ═════════ ⑥½ 积分获得情况（score-obtained）：按活动方案查看参与对象四维度积分 + 总积分 + 排位分 + 可编辑奖金 + 发布公告 ═════════ -->
+        <div class="pc-page-block" data-page-key="score-obtained">
+          <div id="scoreObtainedRoot"></div>
         </div>
 
-        <!-- ═════════ ⑧ 教师勋章档案（medal-archive） ═════════ -->
-        <div class="pc-page-block" data-page-key="medal-archive">
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">筛选条件</span></div>
-            <div class="card-body">
-              <div class="search-form">
-                <div class="search-item">
-                  <label>教师</label>
-                  <select class="pc-select" id="mtTeacher" style="width:180px;">
-                    <option value="">全部教师</option>
-                    <option value="张慧">张慧</option>
-                    <option value="李娜">李娜</option>
-                    <option value="王强">王强</option>
-                    <option value="陈晨">陈晨</option>
-                    <option value="刘洋">刘洋</option>
-                  </select>
-                </div>
-                <div class="search-item">
-                  <label>学期</label>
-                  <select class="pc-select" id="mtSemester" style="width:200px;">
-                    <option value="">全部周期</option>
-                    <option value="2026">2026 年度</option>
-                    <option value="2026-07">2026-07</option>
-                    <option value="2026-06">2026-06</option>
-                    <option value="2026-05">2026-05</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </section>
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">勋章收藏档案</span></div>
-            <div class="card-body">
-              <div class="medal-grid" id="medalArchiveGrid"></div>
-            </div>
-          </section>
-        </div>
-
-        <!-- ═════════ ⑨ 月度发放清单（bonus-monthly） ═════════ -->
-        <div class="pc-page-block" data-page-key="bonus-monthly">
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">清单状态</span></div>
-            <div class="card-body">
-              <div class="pc-filter-tabs">
-                <span class="pc-filter-tab is-active" data-action="switch-tab" data-tab-group="bonusFilter" data-tab-value="ALL">全部</span>
-                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="bonusFilter" data-tab-value="NORMAL">正常发放</span>
-                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="bonusFilter" data-tab-value="EXCLUDED">已剔除（离职）</span>
-              </div>
-            </div>
-          </section>
-          <section class="pc-card">
-            <div class="card-body" style="display:flex;align-items:center;gap:12px;">
-              <button type="button" class="pc-btn pc-btn-export" data-action="bonus-export">⇩ 导出发放清单</button>
-              <button type="button" class="pc-btn pc-btn-default" data-action="bonus-batch-export">⇩ 导出所选</button>
-              <span style="font-size:12px;color:#909399;">导出字段：四大维度数据 + 单项得分 + 总积分 + 奖金明细（支持对账）</span>
-            </div>
-          </section>
-          <section class="pc-card">
-            <div class="card-head">
-              <span class="card-title">2026 年 7 月发放清单</span>
-              <span class="table-count" id="bonusCount">共 0 条</span>
-            </div>
-            <div class="card-body no-padding">
-              <table class="pc-table">
-                <thead>
-                  <tr>
-                    <th>教师</th>
-                    <th>班级</th>
-                    <th>勋章</th>
-                    <th>平台使用</th>
-                    <th>家园互动</th>
-                    <th>外部推广</th>
-                    <th>会员转化</th>
-                    <th>总积分</th>
-                    <th>奖金</th>
-                    <th>状态</th>
-                    <th>备注</th>
-                  </tr>
-                </thead>
-                <tbody id="bonusTbody"></tbody>
-              </table>
-              <div class="pc-pagination">
-                <span>共 <span id="bonusTotal">0</span> 条</span>
-                <span>
-                  <span class="page-btn is-disabled" data-action="switch-page" data-page-group="bn">上一页</span>
-                  <span class="page-number is-active" data-action="switch-page" data-page-group="bn">1</span>
-                  <span class="page-btn" data-action="switch-page" data-page-group="bn">下一页</span>
-                </span>
-                <span>10 条/页</span>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <!-- ═════════ ⑨½ 奖金梯度配置（bonus-gradient）：月度勋章奖金 + 专项活动奖金双区独立配置 ═════════ -->
-        <div class="pc-page-block" data-page-key="bonus-gradient">
-          <!-- 方案切换：月度勋章奖金 / 专项活动奖金 -->
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">奖金方案</span></div>
-            <div class="card-body">
-              <div class="pc-filter-tabs">
-                <span class="pc-filter-tab is-active" data-action="switch-tab" data-tab-group="bonusGradTabs" data-tab-value="monthly">月度勋章奖金</span>
-                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="bonusGradTabs" data-tab-value="activity">专项活动奖金</span>
-              </div>
-            </div>
-          </section>
-
-          <!-- 月度勋章奖金区：梯度卡片 + 自动绑定流程 + 一键生成当月发放清单 -->
-          <div id="bonusGradMonthly">
-            <section class="pc-card">
-              <div class="card-head">
-                <span class="card-title">月度勋章奖金梯度</span>
-                <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-                  <span class="table-count">固定唯一 · 每月勋章等级自动绑定对应奖金</span>
-                  <button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="bonus-generate">⚡ 自动生成当月发放清单</button>
-                </div>
-              </div>
-              <div class="card-body"><div class="threshold-grid" id="bonusGradMonthlyGrid"></div></div>
-            </section>
-            <section class="pc-card">
-              <div class="card-head">
-                <span class="card-title">月度自动绑定流程</span>
-                <span class="table-count" id="bonusBindSummary"></span>
-              </div>
-              <div class="card-body" id="bonusBindFlow"></div>
-            </section>
-          </div>
-
-          <!-- 专项活动奖金区：每套活动独立配置一套奖金体系，与月度勋章奖金分开核算 -->
-          <div id="bonusGradActivity" hidden>
-            <section class="pc-card">
-              <div class="card-head"><span class="card-title">专项活动奖金体系</span></div>
-              <div class="card-body" id="bonusGradActivityNote"></div>
-            </section>
-            <section class="pc-card">
-              <div class="card-head">
-                <span class="card-title">专项活动奖金方案</span>
-                <span class="table-count" id="bonusGradActCount">共 0 条</span>
-              </div>
-              <div class="card-body" id="bonusGradActList"></div>
-            </section>
-          </div>
-        </div>
-
-        <!-- ═════════ ⑨½ 期末汇总清单（bonus-semester）：学期末自动汇总 + 月度/专项合并统计 + 离职剔除 ═════════ -->
-        <div class="pc-page-block" data-page-key="bonus-semester">
-          <section class="pc-card">
-            <div class="card-head">
-              <span class="card-title">期末汇总清单</span>
-              <div style="margin-left:auto;display:flex;align-items:center;gap:12px;">
-                <span class="table-count" id="semesterPeriod">学期：—</span>
-                <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="semester-generate">⚡ 自动汇总期末清单</button>
-                <button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="semester-export">⇩ 导出发放清单</button>
-              </div>
-            </div>
-            <div style="font-size:12px;color:#909399;padding:10px 16px 0;">期末汇总 = 月度常规奖金 + 当期所有专项活动奖励合并统计；中途离职教师自动剔除并标注原因（不影响历史数据）。</div>
-          </section>
-
-          <section class="pc-card">
-            <div class="card-body" id="semesterSummaryRoot"></div>
-          </section>
-
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">清单状态</span></div>
-            <div class="card-body">
-              <div class="pc-filter-tabs">
-                <span class="pc-filter-tab is-active" data-action="switch-tab" data-tab-group="semesterFilter" data-tab-value="ALL">全部</span>
-                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="semesterFilter" data-tab-value="NORMAL">正常发放</span>
-                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="semesterFilter" data-tab-value="EXCLUDED">已剔除（离职）</span>
-              </div>
-            </div>
-          </section>
-
-          <section class="pc-card">
-            <div class="card-head">
-              <span class="card-title">期末总结大会统一发放清单</span>
-              <span class="table-count" id="semesterCount">共 0 条</span>
-            </div>
-            <div class="card-body no-padding">
-              <table class="pc-table">
-                <thead>
-                  <tr>
-                    <th>教师</th>
-                    <th>班级</th>
-                    <th>累计勋章</th>
-                    <th>月度常规奖金</th>
-                    <th>专项活动奖金</th>
-                    <th>合计奖金</th>
-                    <th>状态</th>
-                    <th>剔除原因</th>
-                  </tr>
-                </thead>
-                <tbody id="semesterTbody"></tbody>
-              </table>
-              <div class="pc-pagination">
-                <span>共 <span id="semesterTotal">0</span> 条</span>
-                <span>
-                  <span class="page-btn is-disabled" data-action="switch-page" data-page-group="sm">上一页</span>
-                  <span class="page-number is-active" data-action="switch-page" data-page-group="sm">1</span>
-                  <span class="page-btn" data-action="switch-page" data-page-group="sm">下一页</span>
-                </span>
-                <span>10 条/页</span>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <!-- ═════════ ⑩ 教师管理（user-teacher） ═════════ -->
+        <!-- ═════════ ⑦ 教师管理（user-teacher） ═════════ -->
         <div class="pc-page-block" data-page-key="user-teacher">
           <section class="pc-card">
             <div class="card-head"><span class="card-title">筛选条件</span></div>
@@ -1084,37 +850,6 @@
     </div>
   </div>
 
-  <!-- ══════════════════ 权重配置弹窗（积分方案） ══════════════════ -->
-  <div class="mask-layer" id="weightDialog" hidden data-close-on-mask="true">
-    <div class="pc-dialog">
-      <div class="dialog-head">指标权重配置 · <span id="schemeNameText">积分方案</span></div>
-      <div class="dialog-body">
-        <div style="font-size:12px;color:#909399;margin-bottom:12px;">四大核心统计维度：单条得分 + 权重占比 + 计分开关 + 班主任/配班角色差异化系数</div>
-        <table class="pc-table">
-          <thead>
-            <tr>
-              <th>维度</th>
-              <th>单条得分</th>
-              <th>权重 %</th>
-              <th>计分开关</th>
-              <th>班主任系数</th>
-              <th>配班系数</th>
-            </tr>
-          </thead>
-          <tbody id="weightTbody">
-            <tr><td>平台使用</td><td><input class="pc-input" id="dimPoints0" style="width:90px;"></td><td><input class="pc-input" id="dimWeight0" style="width:90px;"></td><td><input type="checkbox" id="dimEnabled0"></td><td><select class="pc-select" id="dimHead0" style="width:90px;"><option value="1">1.0</option><option value="1.2">1.2</option><option value="0.8">0.8</option></select></td><td><select class="pc-select" id="dimAssoc0" style="width:90px;"><option value="1">1.0</option><option value="1.2">1.2</option><option value="0.8">0.8</option></select></td></tr>
-            <tr><td>家园互动</td><td><input class="pc-input" id="dimPoints1" style="width:90px;"></td><td><input class="pc-input" id="dimWeight1" style="width:90px;"></td><td><input type="checkbox" id="dimEnabled1"></td><td><select class="pc-select" id="dimHead1" style="width:90px;"><option value="1">1.0</option><option value="1.2">1.2</option><option value="0.8">0.8</option></select></td><td><select class="pc-select" id="dimAssoc1" style="width:90px;"><option value="1">1.0</option><option value="1.2">1.2</option><option value="0.8">0.8</option></select></td></tr>
-            <tr><td>外部推广</td><td><input class="pc-input" id="dimPoints2" style="width:90px;"></td><td><input class="pc-input" id="dimWeight2" style="width:90px;"></td><td><input type="checkbox" id="dimEnabled2"></td><td><select class="pc-select" id="dimHead2" style="width:90px;"><option value="1">1.0</option><option value="1.2">1.2</option><option value="0.8">0.8</option></select></td><td><select class="pc-select" id="dimAssoc2" style="width:90px;"><option value="1">1.0</option><option value="1.2">1.2</option><option value="0.8">0.8</option></select></td></tr>
-            <tr><td>会员转化</td><td><input class="pc-input" id="dimPoints3" style="width:90px;"></td><td><input class="pc-input" id="dimWeight3" style="width:90px;"></td><td><input type="checkbox" id="dimEnabled3"></td><td><select class="pc-select" id="dimHead3" style="width:90px;"><option value="1">1.0</option><option value="1.2">1.2</option><option value="0.8">0.8</option></select></td><td><select class="pc-select" id="dimAssoc3" style="width:90px;"><option value="1">1.0</option><option value="1.2">1.2</option><option value="0.8">0.8</option></select></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="dialog-footer">
-        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="weightDialog">取 消</button>
-        <button type="button" class="pc-btn pc-btn-add" data-action="score-weight-save">保存并生效</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ══════════════════ 新增/编辑活动方案弹窗 ══════════════════ -->
   <div class="mask-layer" id="asDialog" hidden data-close-on-mask="true">
@@ -1167,98 +902,29 @@
     </div>
   </div>
 
-  <!-- ══════════════════ 勋章门槛编辑弹窗 ══════════════════ -->
-  <div class="mask-layer" id="thresholdDialog" hidden data-close-on-mask="true">
+  <!-- ══════════════════ 发布积分公告弹窗（积分获得情况：公告标题 + 公告内容 + 自动附带积分汇总只读预览） ══════════════════ -->
+  <div class="mask-layer" id="scoreAnnounceDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
-      <div class="dialog-head">编辑勋章门槛 · <span id="thresholdSetText">门槛方案</span></div>
+      <div class="dialog-head">发布积分公告 · <span id="soAnnounceSchemeName">积分方案</span></div>
       <div class="dialog-body">
         <form class="pc-form" onsubmit="return false">
-          <div class="pc-form-item">
-            <label>金牌门槛（分）</label>
-            <input class="pc-input" id="thGold" type="number" placeholder="请输入金牌门槛积分">
+          <div class="pc-form-item full-width">
+            <label>公告标题<span class="required">*</span></label>
+            <input class="pc-input" id="soAnnounceTitle" placeholder="请输入公告标题">
           </div>
-          <div class="pc-form-item">
-            <label>银牌门槛（分）</label>
-            <input class="pc-input" id="thSilver" type="number" placeholder="请输入银牌门槛积分">
+          <div class="pc-form-item full-width">
+            <label>公告内容<span class="required">*</span></label>
+            <textarea class="pc-input" id="soAnnounceContent" rows="3" placeholder="请输入公告内容" style="height:auto;min-height:72px;resize:vertical;"></textarea>
           </div>
-          <div class="pc-form-item">
-            <label>铜牌门槛（分）</label>
-            <input class="pc-input" id="thBronze" type="number" placeholder="请输入铜牌门槛积分">
-          </div>
-        </form>
-        <div style="margin-top:12px;font-size:12px;color:#909399;">提示：修改勋章门槛后将自动联动月度发放清单与奖金梯度。</div>
-      </div>
-      <div class="dialog-footer">
-        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="thresholdDialog">取 消</button>
-        <button type="button" class="pc-btn pc-btn-add" data-action="threshold-save">保存并联动</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════ 月度勋章奖金编辑弹窗（奖金梯度配置 · 月度勋章奖金区） ══════════════════ -->
-  <div class="mask-layer" id="bonusGradDialog" hidden data-close-on-mask="true">
-    <div class="pc-dialog">
-      <div class="dialog-head">编辑月度勋章奖金</div>
-      <div class="dialog-body">
-        <form class="pc-form" onsubmit="return false">
-          <div class="pc-form-item">
-            <label>金牌奖金（元）</label>
-            <input class="pc-input" id="bgGold" type="number" min="0" placeholder="请输入金牌奖金">
-          </div>
-          <div class="pc-form-item">
-            <label>银牌奖金（元）</label>
-            <input class="pc-input" id="bgSilver" type="number" min="0" placeholder="请输入银牌奖金">
-          </div>
-          <div class="pc-form-item">
-            <label>铜牌奖金（元）</label>
-            <input class="pc-input" id="bgBronze" type="number" min="0" placeholder="请输入铜牌奖金">
+          <div class="pc-form-item full-width">
+            <label>自动附带积分汇总（只读预览，发布时拼入公告内容）</label>
+            <div id="soAnnouncePreview" style="background:var(--pc-primary-bg);border:1px dashed var(--pc-border-card);border-radius:6px;padding:10px 12px;font-size:12px;color:#606266;line-height:1.9;white-space:pre-wrap;max-height:220px;overflow-y:auto;"></div>
           </div>
         </form>
-        <div style="margin-top:12px;font-size:12px;color:#909399;">提示：修改月度奖金梯度后，点击「自动生成当月发放清单」即按新标准重新生成月度清单。</div>
       </div>
       <div class="dialog-footer">
-        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="bonusGradDialog">取 消</button>
-        <button type="button" class="pc-btn pc-btn-add" data-action="bonus-grad-save">保存并联动</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════ 专项活动奖金编辑弹窗（奖金梯度配置 · 专项活动奖金区，按活动独立配置） ══════════════════ -->
-  <div class="mask-layer" id="actBonusDialog" hidden data-close-on-mask="true">
-    <div class="pc-dialog">
-      <div class="dialog-head" id="actBonusTitle">配置专项活动奖金</div>
-      <input type="hidden" id="actBonusId">
-      <div class="dialog-body">
-        <form class="pc-form" onsubmit="return false">
-          <div class="pc-form-item">
-            <label>活动金奖金（元）</label>
-            <input class="pc-input" id="abGold" type="number" min="0" placeholder="请输入活动金奖金">
-          </div>
-          <div class="pc-form-item">
-            <label>活动银奖金（元）</label>
-            <input class="pc-input" id="abSilver" type="number" min="0" placeholder="请输入活动银奖金">
-          </div>
-          <div class="pc-form-item">
-            <label>活动铜奖金（元）</label>
-            <input class="pc-input" id="abBronze" type="number" min="0" placeholder="请输入活动铜奖金">
-          </div>
-        </form>
-        <div style="margin-top:12px;font-size:12px;color:#909399;">专项活动奖金按活动方案独立配置，与月度勋章奖金分开核算；活动勋章等级由「活动专项勋章门槛」评定。</div>
-      </div>
-      <div class="dialog-footer">
-        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="actBonusDialog">取 消</button>
-        <button type="button" class="pc-btn pc-btn-add" data-action="act-bonus-save">保 存</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════════════ 勋章详情弹窗 ══════════════════ -->
-  <div class="mask-layer" id="medalDetailDialog" hidden data-close-on-mask="true">
-    <div class="pc-dialog">
-      <div class="dialog-head" id="medalDetailTitle">勋章详情</div>
-      <div class="dialog-body" id="medalDetailBody"></div>
-      <div class="dialog-footer">
-        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="medalDetailDialog">关 闭</button>
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="scoreAnnounceDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="score-obtained-announce-publish">发布公告</button>
       </div>
     </div>
   </div>
@@ -1376,7 +1042,7 @@
             </select>
           </div>
         </form>
-        <div style="margin-top:12px;font-size:12px;color:#909399;">标记「离职」后，月度结算自动剔除（is_active=false），不影响历史勋章数据。</div>
+        <div style="margin-top:12px;font-size:12px;color:#909399;">标记「离职」后，结算与排名自动剔除（is_active=false），不影响历史数据。</div>
       </div>
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="mtEditDialog">取 消</button>
