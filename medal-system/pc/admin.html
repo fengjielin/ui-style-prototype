@@ -768,7 +768,7 @@
 
   <!-- ══════════════════ 评分标准弹窗（score-standard：新增/编辑评分标准，配置指标名称/指标说明/满分上限/权重） ══════════════════ -->
   <div class="mask-layer" id="scoreStandardDialog" hidden data-close-on-mask="true">
-    <div class="pc-dialog">
+    <div class="pc-dialog" style="width: 1000px;">
       <div class="dialog-head" id="scoreStandardTitle">新增评分标准</div>
       <input type="hidden" id="ssId">
       <div class="dialog-body">
@@ -784,7 +784,7 @@
           <div class="pc-form-item full-width">
             <label>评分指标</label>
             <table class="pc-table">
-              <thead><tr><th>指标名称</th><th style="width:220px;">指标说明</th><th style="width:150px;">满分上限</th><th style="width:150px;">权重 %</th><th style="width:90px;">操作</th></tr></thead>
+              <thead><tr><th>指标名称</th><th>指标说明</th><th style="width:150px;">满分上限</th><th style="width:150px;">权重 %</th><th style="width:90px;">操作</th></tr></thead>
               <tbody id="ssIndicatorTbody"></tbody>
             </table>
             <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="ss-indicator-add" style="margin-top:8px;">＋ 添加指标</button>
