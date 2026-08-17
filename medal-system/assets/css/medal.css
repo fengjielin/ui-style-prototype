@@ -1076,6 +1076,18 @@
   resize: vertical;
 }
 
+/* 评委打分任务卡：已完成作品的总分展示 */
+.judge-task-score {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--pc-text-regular);
+}
+
+.judge-task-score b {
+  color: var(--pc-primary);
+  font-size: 16px;
+}
+
 /* 移动端「获奖公示」结果弹层：全员报表较长时内部滚动 */
 #resultBody {
   max-height: 60vh;

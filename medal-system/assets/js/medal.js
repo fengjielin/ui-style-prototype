@@ -7065,6 +7065,21 @@ window.MedalDemo = (function () {
 
   var judgeActFilter = ''; // 评委打分：活动筛选值（先按活动筛选，再按具体活动评分）
 
+  /* 作品综合评分：该作品全部评委评分的平均（取 1 位小数；未评分返回 null），卡片展示总分用 */
+  function judgeWorkScore(t) {
+    var records = (MDS.get('reviewRecords') || []).filter(function (r) {
+      return r.activity === t.activity && r.work.indexOf(t.teacher) >= 0;
+    });
+    var total = 0, n = 0;
+    records.forEach(function (r) {
+      (r.scores || '').split('/').forEach(function (s) {
+        var v = parseInt(s.trim(), 10);
+        if (!isNaN(v)) { total += v; n++; }
+      });
+    });
+    return n ? Math.round((total / n) * 10) / 10 : null;
+  }
+
   function renderJudgeTasks() {
     var root = document.getElementById('judgeTaskList');
     if (!root) return;
@@ -7098,6 +7113,8 @@ window.MedalDemo = (function () {
     }
     root.innerHTML = filtered
       .map(function (t) {
+        // 已完成作品：计算该作品综合评分（总分）并展示在卡片上
+        var score = t.done ? judgeWorkScore(t) : null;
         return (
           '<div class="scheme-card' + (t.done ? '' : ' is-active') + '">' +
           '<div class="scheme-head">' +
@@ -7105,6 +7122,9 @@ window.MedalDemo = (function () {
           (t.done ? '<span class="status-tag status-success">已完成</span>' : '<span class="status-tag status-warning">待打分</span>') +
           '</div>' +
           '<div class="scheme-meta">' + esc(t.activity) + ' · 提交教师 ' + esc(t.teacher) + ' · ' + esc(t.type) + '</div>' +
+          (score !== null
+            ? '<div class="judge-task-score">该作品总分：<b>' + score + '</b> 分</div>'
+            : '') +
           '<div style="margin-top:12px;">' +
           (t.done
             ? '<span class="action-btn action-edit" data-action="judge-open" data-id="' + t.id + '">查看打分</span>'
