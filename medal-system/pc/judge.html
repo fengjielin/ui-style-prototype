@@ -56,9 +56,9 @@
         <!-- ═════════ 评委打分（judge-scoring，真实页） ═════════ -->
         <div class="pc-page-block" data-page-key="judge-scoring">
 
-          <!-- 任务统计卡 -->
+          <!-- 我的打分任务（含活动筛选：切换活动时统计与作品列表联动） -->
           <section class="pc-card">
-            <div class="card-body" style="display:flex;align-items:center;gap:24px;">
+            <div class="card-body" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
               <div>
                 <div class="stat-label" style="font-size:12px;color:#909399;">我的打分任务</div>
                 <div class="stat-value" style="font-size:22px;font-weight:700;" id="judgeTaskCount">已评 0 / 共 0 份</div>
@@ -66,11 +66,17 @@
               <div class="progress-tri" style="max-width:320px;flex:1;">
                 <span class="seg seg-registered" id="judgeTaskProgress" style="width:40%;"></span>
               </div>
-              <span style="font-size:12px;color:#909399;margin-left:auto;">打分记录留痕 · 支持多评委评分</span>
+              <!-- 活动筛选：先按活动筛选，再按具体活动评分 -->
+              <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+                <label style="font-size:12px;color:#606266;">活动筛选</label>
+                <select class="pc-select" id="judgeActFilter" style="width:200px;">
+                  <option value="">全部活动</option>
+                </select>
+              </div>
             </div>
           </section>
 
-          <!-- 打分任务列表（medal.js renderJudgeTasks 渲染） -->
+          <!-- 打分任务列表（medal.js renderJudgeTasks 渲染：按「我的打分任务」的活动筛选联动） -->
           <section class="pc-card">
             <div class="card-head"><span class="card-title">待打分作品</span></div>
             <div class="card-body" id="judgeTaskList" style="display:flex;flex-direction:column;gap:14px;"></div>
@@ -99,37 +105,9 @@
         </div>
         <div class="score-work-meta" id="judgeWorkMeta"></div>
 
-        <table class="pc-table" style="margin-top:16px;">
-          <thead>
-            <tr>
-              <th>评分维度</th>
-              <th style="width:120px;">分数（0-100）</th>
-              <th>说明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>内容质量</td>
-              <td><input class="pc-input" id="judgeScore1" type="number" placeholder="0-100"></td>
-              <td style="font-size:12px;color:#909399;">主题契合度、内容完整性</td>
-            </tr>
-            <tr>
-              <td>创新创意</td>
-              <td><input class="pc-input" id="judgeScore2" type="number" placeholder="0-100"></td>
-              <td style="font-size:12px;color:#909399;">形式新颖、构思巧妙</td>
-            </tr>
-            <tr>
-              <td>呈现效果</td>
-              <td><input class="pc-input" id="judgeScore3" type="number" placeholder="0-100"></td>
-              <td style="font-size:12px;color:#909399;">视觉/演示效果、课堂适用性</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div style="margin-top:14px;">
-          <label style="display:block;font-size:13px;font-weight:500;color:#606266;margin-bottom:8px;">评语 / 备注</label>
-          <textarea class="pc-input" id="judgeComment" rows="3" placeholder="请输入评语（选填）"></textarea>
-        </div>
+        <!-- 评分指标（medal.js 按活动关联评分标准动态渲染：指标名称 + 满分上限 + 各指标评语） -->
+        <div style="font-size:12px;color:#909399;margin-top:14px;margin-bottom:8px;" id="judgeScoreHint">评分指标</div>
+        <div id="judgeScoreFields"></div>
       </div>
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="judgeDialog">取 消</button>

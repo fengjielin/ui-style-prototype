@@ -931,6 +931,215 @@
   user-select: none;
 }
 
+/* 指定教师选择区（活动发起「参赛对象=指定教师」时显示：选择按钮 + 已选回显，随幼儿园范围联动） */
+.spec-teacher-box {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--pc-border-input);
+  border-radius: 6px;
+  background: var(--pc-bg-table-head);
+}
+
+/* 指定教师弹窗内教师多选列表（可滚动） */
+.spec-teacher-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.spec-teacher-list .notify-teacher-item {
+  margin-right: 6px;
+}
+
+/* 指定教师已选回显 tag */
+.spec-teacher-tags {
+  margin-top: 8px;
+}
+
+.spec-teacher-tag {
+  display: inline-block;
+  margin: 2px 6px 2px 0;
+  padding: 2px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--pc-primary-border);
+  background: var(--pc-primary-active-bg);
+  color: var(--pc-primary);
+  font-size: var(--pc-font-tag);
+  white-space: nowrap;
+}
+
+/* 通知弹窗/通知管理：各园区统计卡（通知已读率 + 活动参与率） */
+.notify-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.notify-stat-card {
+  flex: 1 1 200px;
+  max-width: 260px;
+  border: 1px solid var(--pc-border-card);
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px 12px;
+}
+
+.notify-stat-card .ns-kg {
+  font-weight: 600;
+  color: var(--pc-text-primary);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.notify-stat-card .ns-cell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.notify-stat-card .ns-label {
+  color: var(--pc-text-secondary);
+}
+
+.notify-stat-card .ns-val {
+  color: var(--pc-primary);
+  font-weight: 600;
+}
+
+/* 通知弹窗：按幼儿园分区的接收老师分组标题 */
+.notify-kg-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pc-primary);
+  border-bottom: 1px dashed var(--pc-border-divider);
+  padding: 8px 0 4px;
+  margin-top: 4px;
+}
+
+/* 评分标准：列表卡片 + 指标摘要 tag */
+.score-standard-card {
+  margin-bottom: 14px;
+}
+
+.score-standard-indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.score-standard-indicator {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--pc-border-input);
+  background: var(--pc-bg-table-head);
+  color: var(--pc-text-regular);
+  font-size: var(--pc-font-tag);
+}
+
+/* 评委打分：按评分标准动态生成的指标行（指标头 + 该指标评语） */
+.judge-score-row {
+  padding: 10px 12px;
+  border: 1px solid var(--pc-border-card);
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.judge-score-row .js-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.judge-score-row .js-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pc-text-primary);
+}
+
+.judge-score-row .js-max {
+  font-size: 12px;
+  color: var(--pc-text-secondary);
+}
+
+.judge-score-row .judge-score {
+  width: 110px;
+}
+
+.judge-score-row .judge-comment {
+  width: 100%;
+  margin-top: 8px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+/* 移动端「获奖公示」结果弹层：全员报表较长时内部滚动 */
+#resultBody {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* 全员得奖报表（结果公示：完整获奖名单，本人行高亮、未获奖置灰） */
+.result-full-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pc-text-primary);
+}
+
+.result-full-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.result-full-table th,
+.result-full-table td {
+  border: 1px solid var(--pc-border-card);
+  padding: 7px 10px;
+  text-align: center;
+  background: #fff;
+}
+
+.result-full-table th {
+  background: var(--pc-bg-table-head);
+  color: var(--pc-text-secondary);
+  font-weight: 600;
+}
+
+.result-full-table .result-row-me {
+  background: #fff7e6;
+}
+
+.result-full-table .result-row-me td {
+  background: #fff7e6;
+}
+
+.result-full-table .result-row-nonwin td {
+  color: #c0c4cc;
+}
+
+.result-full-table .result-me-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--pc-primary);
+  color: #fff;
+  font-size: 10px;
+  vertical-align: 1px;
+}
+
+/* 活动对象（参赛角色）强调标签：区分于幼儿园 tag 的主色 */
+.act-scope-role {
+  border-color: var(--pc-primary-border);
+  background: var(--pc-primary-active-bg);
+  color: var(--pc-primary);
+  font-weight: 600;
+}
+
 /* 通知弹窗老师选择项 */
 .notify-teacher-item {
   display: flex;

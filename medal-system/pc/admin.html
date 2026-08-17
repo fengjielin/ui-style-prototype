@@ -70,7 +70,6 @@
                     <option value="">全部类型</option>
                     <option value="论文比赛">论文比赛</option>
                     <option value="课件比赛">课件比赛</option>
-                    <option value="朋友圈点赞比赛">朋友圈点赞比赛</option>
                   </select>
                 </div>
                 <div class="search-item">
@@ -589,6 +588,17 @@
           <div id="certTemplateList"></div>
         </div>
 
+        <!-- ═════════ ⑪½ 评分标准（score-standard）：评审打分指标模板 CRUD，活动发起时关联，评委按关联标准打分 ═════════ -->
+        <div class="pc-page-block" data-page-key="score-standard">
+          <section class="pc-card">
+            <div class="card-body" style="display:flex;align-items:center;gap:12px;">
+              <button type="button" class="pc-btn pc-btn-add" data-action="score-standard-add">＋ 新增评分标准</button>
+              <span style="font-size:12px;color:#909399;">配置评审打分指标项（指标名称/满分上限/权重，权重合计 100%）；活动发起时关联评分标准，评委按关联标准的指标打分。</span>
+            </div>
+          </section>
+          <div id="scoreStandardList"></div>
+        </div>
+
       </div><!-- /#pcPage -->
 
       <!-- ── 其他菜单占位内容容器 ── -->
@@ -612,7 +622,6 @@
             <select class="pc-select" id="actType">
               <option value="论文比赛">论文比赛</option>
               <option value="课件比赛">课件比赛</option>
-              <option value="朋友圈点赞比赛">朋友圈点赞比赛</option>
             </select>
           </div>
           <div class="pc-form-item full-width">
@@ -636,13 +645,31 @@
               <label class="scope-check"><input type="checkbox" value="蓝天幼儿园" data-scope-group="kgScope">蓝天幼儿园</label>
             </div>
           </div>
+          <div class="pc-form-item full-width">
+            <label>参赛对象（角色控制）</label>
+            <div class="scope-checks">
+              <label class="scope-check"><input type="radio" name="actTargetRole" value="ALL" checked>园长与教师都可以参赛</label>
+              <label class="scope-check"><input type="radio" name="actTargetRole" value="PRINCIPAL">仅园长参赛</label>
+              <label class="scope-check"><input type="radio" name="actTargetRole" value="TEACHER">仅教师参赛</label>
+              <label class="scope-check"><input type="radio" name="actTargetRole" value="SPECIFIED">指定教师参赛</label>
+            </div>
+            <!-- 指定教师：弹窗选择 + 回显（仅勾选「指定教师参赛」时显示，随幼儿园范围联动筛选在职教师） -->
+            <div class="spec-teacher-box" id="actSpecTeacherBox" hidden>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="open-spec-teacher" data-mode="add">＋ 选择指定教师</button>
+                <span style="font-size:12px;color:#909399;">已选 <span id="actSpecTeacherCount">0</span> 位</span>
+              </div>
+              <!-- 回显已选教师 -->
+              <div class="spec-teacher-tags" id="actSpecTeacherTags"></div>
+            </div>
+          </div>
           <div class="pc-form-item">
             <label>作品格式</label>
             <select class="pc-select" id="actFormat">
-              <option value="文档/PDF">文档/PDF</option>
-              <option value="课件/PPT">课件/PPT</option>
-              <option value="图片">图片</option>
-              <option value="压缩包">压缩包</option>
+              <option value="文档(docx、xlsx、pdf)">文档(docx、xlsx、pdf)</option>
+              <option value="图片(png、jpg)">图片(png、jpg)</option>
+              <option value="视频(mp4)">视频(mp4)</option>
+              <option value="压缩包(zip、rar)">压缩包(zip、rar)</option>
             </select>
           </div>
           <div class="pc-form-item full-width">
@@ -651,6 +678,10 @@
               <label class="scope-check"><input type="radio" name="actExpertReview" value="1" checked>是（分配专家评审）</label>
               <label class="scope-check"><input type="radio" name="actExpertReview" value="0">否（管理员直接审核）</label>
             </div>
+          </div>
+          <div class="pc-form-item full-width" id="actScoreStandardField">
+            <label>评分标准</label>
+            <select class="pc-select" id="actScoreStandard" style="width:100%;"></select>
           </div>
           <div class="pc-form-item full-width">
             <label>奖状模板</label>
@@ -699,7 +730,6 @@
             <select class="pc-select" id="eActType">
               <option value="论文比赛">论文比赛</option>
               <option value="课件比赛">课件比赛</option>
-              <option value="朋友圈点赞比赛">朋友圈点赞比赛</option>
             </select>
           </div>
           <div class="pc-form-item full-width">
@@ -717,10 +747,10 @@
           <div class="pc-form-item">
             <label>作品格式</label>
             <select class="pc-select" id="eActFormat">
-              <option value="文档/PDF">文档/PDF</option>
-              <option value="课件/PPT">课件/PPT</option>
-              <option value="图片">图片</option>
-              <option value="压缩包">压缩包</option>
+              <option value="文档(docx、xlsx、pdf)">文档(docx、xlsx、pdf)</option>
+              <option value="图片(png、jpg)">图片(png、jpg)</option>
+              <option value="视频(mp4)">视频(mp4)</option>
+              <option value="压缩包(zip、rar)">压缩包(zip、rar)</option>
             </select>
           </div>
           <div class="pc-form-item full-width">
@@ -733,11 +763,33 @@
             </div>
           </div>
           <div class="pc-form-item full-width">
+            <label>参赛对象（角色控制）</label>
+            <div class="scope-checks">
+              <label class="scope-check"><input type="radio" name="eActTargetRole" value="ALL" checked>园长与教师都可以参赛</label>
+              <label class="scope-check"><input type="radio" name="eActTargetRole" value="PRINCIPAL">仅园长参赛</label>
+              <label class="scope-check"><input type="radio" name="eActTargetRole" value="TEACHER">仅教师参赛</label>
+              <label class="scope-check"><input type="radio" name="eActTargetRole" value="SPECIFIED">指定教师参赛</label>
+            </div>
+            <!-- 指定教师：弹窗选择 + 回显（仅勾选「指定教师参赛」时显示，随幼儿园范围联动筛选在职教师） -->
+            <div class="spec-teacher-box" id="eActSpecTeacherBox" hidden>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="open-spec-teacher" data-mode="edit">＋ 选择指定教师</button>
+                <span style="font-size:12px;color:#909399;">已选 <span id="eActSpecTeacherCount">0</span> 位</span>
+              </div>
+              <!-- 回显已选教师 -->
+              <div class="spec-teacher-tags" id="eActSpecTeacherTags"></div>
+            </div>
+          </div>
+          <div class="pc-form-item full-width">
             <label>是否需要专家评审</label>
             <div class="scope-checks">
               <label class="scope-check"><input type="radio" name="eActExpertReview" value="1">是（分配专家评审）</label>
               <label class="scope-check"><input type="radio" name="eActExpertReview" value="0">否（管理员直接审核）</label>
             </div>
+          </div>
+          <div class="pc-form-item full-width" id="eActScoreStandardField">
+            <label>评分标准</label>
+            <select class="pc-select" id="eActScoreStandard" style="width:100%;"></select>
           </div>
           <div class="pc-form-item full-width">
             <label>奖状模板</label>
@@ -770,6 +822,36 @@
     </div>
   </div>
 
+  <!-- ══════════════════ 指定教师选择弹窗（新增活动） ══════════════════ -->
+  <div class="mask-layer" id="actSpecTeacherDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head">选择指定教师</div>
+      <div class="dialog-body">
+        <input class="pc-input" id="actSpecTeacherSearch" placeholder="输入教师姓名搜索" style="margin-bottom:10px;box-sizing:border-box;width:100%;">
+        <div class="spec-teacher-list" id="actSpecTeacherList"></div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="actSpecTeacherDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="spec-teacher-confirm" data-mode="add">确 定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 指定教师选择弹窗（编辑活动） ══════════════════ -->
+  <div class="mask-layer" id="eActSpecTeacherDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head">选择指定教师</div>
+      <div class="dialog-body">
+        <input class="pc-input" id="eActSpecTeacherSearch" placeholder="输入教师姓名搜索" style="margin-bottom:10px;box-sizing:border-box;width:100%;">
+        <div class="spec-teacher-list" id="eActSpecTeacherList"></div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="eActSpecTeacherDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="spec-teacher-confirm" data-mode="edit">确 定</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════════ 活动通知弹窗 ══════════════════ -->
   <div class="mask-layer" id="notifyDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
@@ -781,6 +863,8 @@
         </div>
         <textarea class="pc-input" id="notifyContent" rows="3" placeholder="通知内容（必填）" style="height:auto;min-height:72px;resize:vertical;width:100%;margin-bottom:12px;box-sizing:border-box;"></textarea>
         <div style="font-size:13px;color:#909399;margin-bottom:12px;" id="notifyScopeText">发送对象：全部幼儿园</div>
+        <!-- 各园区统计（medal.js notifyKgStats 填充：通知已读率 + 活动参与率） -->
+        <div id="notifyKgStats" style="margin-bottom:12px;"></div>
         <!-- 筛选：按活动对象幼儿园 / 老师姓名（medal.js 按范围老师动态填充幼儿园选项） -->
         <div style="display:flex;gap:10px;margin-bottom:10px;">
           <select class="pc-select" id="notifyKgFilter" style="width:170px;flex:0 0 auto;">
@@ -803,53 +887,23 @@
     </div>
   </div>
 
-  <!-- ══════════════════ 评委分配弹窗（评审阶段「评委分配」：自动分配 / 手动分配 两种方式可选） ══════════════════ -->
+  <!-- ══════════════════ 评委分配弹窗（评审阶段「评委分配」：仅手动分配专家，已取消系统随机抽评） ══════════════════ -->
   <div class="mask-layer" id="judgeAssignDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
       <div class="dialog-head" id="judgeAssignTitle">评委分配</div>
       <div class="dialog-body">
-        <!-- 分配方式切换 -->
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-          <span style="font-size:13px;color:#606266;">分配方式</span>
-          <div class="pc-filter-tabs" id="judgeModeTabs">
-            <span class="pc-filter-tab is-active" data-action="judge-mode" data-mode="auto">自动分配</span>
-            <span class="pc-filter-tab" data-action="judge-mode" data-mode="manual">手动分配</span>
-          </div>
-        </div>
-
-        <!-- 自动分配面板：分组数 / 每组评委数 / 系统随机抽取 -->
-        <div id="judgeAutoPanel">
-          <form class="pc-form" onsubmit="return false">
-            <div class="pc-form-item">
-              <label>分组数</label>
-              <input class="pc-input" id="judgeAutoGroupCount" type="number" min="1" value="2" placeholder="请输入分组数">
-            </div>
-            <div class="pc-form-item">
-              <label>每组评委数</label>
-              <input class="pc-input" id="judgeAutoPerGroup" type="number" min="1" value="1" placeholder="请输入每组评委数">
-            </div>
-          </form>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
-            <button type="button" class="pc-btn pc-btn-add" data-action="judge-draw">进行分组抽取</button>
-            <span style="font-size:12px;color:#909399;">系统自动抽取评委并分配需评作品</span>
-          </div>
-          <div id="judgeAutoDrawPreview" style="margin-top:12px;font-size:13px;color:#606266;line-height:1.8;max-height:420px;overflow-y:auto;"></div>
-        </div>
-
         <!-- 手动分配面板：分组数 / 按组选择评委 -->
-        <div id="judgeManualPanel" hidden>
-          <form class="pc-form" onsubmit="return false">
-            <div class="pc-form-item">
-              <label>分组数</label>
-              <input class="pc-input" id="judgeGroupCount" type="number" min="1" value="2" placeholder="请输入分组数">
-            </div>
-          </form>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
-            <button type="button" class="pc-btn pc-btn-add" data-action="judge-build-groups">生成分组</button>
-            <span style="font-size:12px;color:#909399;">为每组选择评委，每位评委仅可分配至一组</span>
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>分组数</label>
+            <input class="pc-input" id="judgeGroupCount" type="number" min="1" value="2" placeholder="请输入分组数">
           </div>
-          <div id="judgeDrawPreview" style="margin-top:12px;font-size:13px;color:#606266;line-height:1.8;max-height:420px;overflow-y:auto;"></div>
+        </form>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+          <button type="button" class="pc-btn pc-btn-add" data-action="judge-build-groups">生成分组</button>
+          <span style="font-size:12px;color:#909399;">为每组选择评委，每位评委仅可分配至一组</span>
         </div>
+        <div id="judgeDrawPreview" style="margin-top:12px;font-size:13px;color:#606266;line-height:1.8;max-height:420px;overflow-y:auto;"></div>
       </div>
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="judgeAssignDialog">取 消</button>
@@ -899,7 +953,7 @@
         <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="scoreDetailMeta"></div>
         <div style="max-height:320px;overflow-y:auto;border:1px solid var(--pc-border-card);border-radius:6px;">
           <table class="pc-table">
-            <thead><tr><th>评委</th><th>三项评分</th><th>评语</th><th>时间</th></tr></thead>
+            <thead><tr><th>评委</th><th>评分</th><th>评语</th><th>时间</th></tr></thead>
             <tbody id="scoreDetailTbody"></tbody>
           </table>
         </div>
@@ -974,22 +1028,46 @@
     </div>
   </div>
 
-  <!-- ══════════════════ 打分权重配置弹窗（评审阶段「打分权重配置」：添加指标项并设置权重） ══════════════════ -->
-  <div class="mask-layer" id="weightConfigDialog" hidden data-close-on-mask="true">
+  <!-- ══════════════════ 评分标准弹窗（score-standard：新增/编辑评分标准，配置指标名称/满分上限/权重） ══════════════════ -->
+  <div class="mask-layer" id="scoreStandardDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
-      <div class="dialog-head" id="weightConfigTitle">打分权重配置</div>
+      <div class="dialog-head" id="scoreStandardTitle">新增评分标准</div>
+      <input type="hidden" id="ssId">
       <div class="dialog-body">
-        <div style="font-size:12px;color:#909399;margin-bottom:12px;">配置打分指标项及权重占比，可添加一个或多个指标项，权重合计需为 100%。</div>
-        <table class="pc-table">
-          <thead><tr><th>指标名称</th><th style="width:150px;">权重 %</th><th style="width:100px;">操作</th></tr></thead>
-          <tbody id="weightConfigTbody"></tbody>
-        </table>
-        <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="wc-add" style="margin-top:8px;">＋ 添加指标项</button>
-        <div style="margin-top:10px;font-size:13px;color:#606266;" id="weightConfigHint"></div>
+        <form class="pc-form" onsubmit="return false">
+          <div class="pc-form-item">
+            <label>标准名称<span class="required">*</span></label>
+            <input class="pc-input" id="ssName" placeholder="请输入评分标准名称">
+          </div>
+          <div class="pc-form-item full-width">
+            <label>备注</label>
+            <input class="pc-input" id="ssRemark" placeholder="标准适用范围说明（选填）">
+          </div>
+          <div class="pc-form-item full-width">
+            <label>评分指标</label>
+            <table class="pc-table">
+              <thead><tr><th>指标名称</th><th style="width:150px;">满分上限</th><th style="width:150px;">权重 %</th><th style="width:90px;">操作</th></tr></thead>
+              <tbody id="ssIndicatorTbody"></tbody>
+            </table>
+            <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="ss-indicator-add" style="margin-top:8px;">＋ 添加指标</button>
+            <div style="margin-top:10px;font-size:13px;color:#606266;" id="ssWeightHint"></div>
+          </div>
+        </form>
       </div>
       <div class="dialog-footer">
-        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="weightConfigDialog">取 消</button>
-        <button type="button" class="pc-btn pc-btn-add" data-action="wc-save">保 存</button>
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="scoreStandardDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-add" data-action="ss-save">保 存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ 评分标准只读查看弹窗（评审阶段「查看评分标准」） ══════════════════ -->
+  <div class="mask-layer" id="scoreStandardViewDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog">
+      <div class="dialog-head" id="ssViewTitle">评分标准</div>
+      <div class="dialog-body" id="ssViewBody"></div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="scoreStandardViewDialog">关 闭</button>
       </div>
     </div>
   </div>

@@ -89,6 +89,8 @@ window.MDS = (function () {
           // 活动查询：归档历史活动只读查询（统计 / 全量导出 / 报名与评审详情）
           { key: 'activity-manage', title: '活动管理' },
           { key: 'activity-query', title: '活动查询' },
+          // 评分标准：评审打分指标模板 CRUD（指标名称/满分上限/权重），活动发起时关联
+          { key: 'score-standard', title: '评分标准' },
           { key: 'cert-template', title: '奖状模板' },
         ],
       },
@@ -195,19 +197,19 @@ window.MDS = (function () {
     activities: [
       // stage 生命周期阶段：'' 草稿 / signup 报名 / review 审核 / archive 归档（驱动「活动管理」步骤条）
       // resultStatus 归档阶段结果状态：pending 未发布 / published 已发布 / archived 已归档
-      { id: 1, title: '2026 春季论文评选大赛', type: '论文比赛', status: 'PUBLISHED', stage: 'review', publishTime: '2026-06-25', signupStart: '2026-07-01', signupEnd: '2026-08-20', targetKindergartens: ['全部幼儿园'], format: '文档/PDF', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '面向全体教师的春季教育教学论文评选，围绕教学实践总结与反思展开，鼓励一线教师沉淀教学经验。', participants: 46, worksCount: 38 },
-      { id: 2, title: '课件制作技能大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', publishTime: '2026-06-05', signupStart: '2026-06-10', signupEnd: '2026-07-15', targetKindergartens: ['童蹊幼儿园'], format: '课件/PPT/图片', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '提升教师多媒体课件制作能力，展示信息技术与课堂教学的融合成果。', participants: 32, worksCount: 32, certTemplateId: 1 },
-      { id: 3, title: '家园互动创意活动评选', type: '朋友圈点赞比赛', status: 'PUBLISHED', stage: 'signup', expertReview: false, publishTime: '2026-07-25', signupStart: '2026-08-01', signupEnd: '2026-09-15', targetKindergartens: ['全部幼儿园'], format: '文档/图片/压缩包', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '征集家园共育创意活动方案，促进幼儿园与家庭之间的深度互动与协作。', participants: 8, worksCount: 0 },
-      { id: 4, title: '六一主题环创比赛', type: '朋友圈点赞比赛', status: 'DRAFT', stage: '', expertReview: false, publishTime: '', signupStart: '', signupEnd: '', targetKindergartens: ['童蹊幼儿园', '阳光幼儿园'], format: '图片/压缩包', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '围绕六一儿童节主题开展班级环境创设评比，营造节日氛围、提升幼儿参与感。', participants: 0, worksCount: 0 },
-      { id: 5, title: '亲子阅读打卡活动', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'published', publishTime: '2026-02-20', signupStart: '2026-03-01', signupEnd: '2026-04-30', targetKindergartens: ['全部幼儿园'], format: '文档', awards: [{ name: '一等奖', count: 5 }, { name: '二等奖', count: 8 }, { name: '三等奖', count: 12 }], desc: '以亲子共读为主题的持续阅读打卡活动，培养幼儿早期阅读习惯。', participants: 58, worksCount: 58 },
-      { id: 6, title: '2025 秋季论文大赛', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'archived', publishTime: '2025-08-25', signupStart: '2025-09-01', signupEnd: '2025-10-31', targetKindergartens: ['全部幼儿园'], format: '文档/PDF', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '上一学年秋季学期教育教学论文评选，现已归档保存。', participants: 51, worksCount: 51 },
-      { id: 7, title: '班级环创成果评比', type: '朋友圈点赞比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'archived', expertReview: false, publishTime: '2025-12-30', signupStart: '2026-01-05', signupEnd: '2026-02-10', targetKindergartens: ['童蹊幼儿园'], format: '图片/压缩包', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 6 }, { name: '三等奖', count: 9 }], desc: '学期初班级环创成果集中评比，检验各班环境创设的完成质量。', participants: 28, worksCount: 28 },
+      { id: 1, title: '2026 春季论文评选大赛', type: '论文比赛', status: 'PUBLISHED', stage: 'review', publishTime: '2026-06-25', signupStart: '2026-07-01', signupEnd: '2026-08-20', targetKindergartens: ['全部幼儿园'], format: '文档(docx、xlsx、pdf)', scoreStandardId: 1, awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '面向全体教师的春季教育教学论文评选，围绕教学实践总结与反思展开，鼓励一线教师沉淀教学经验。', participants: 46, worksCount: 38 },
+      { id: 2, title: '课件制作技能大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', publishTime: '2026-06-05', signupStart: '2026-06-10', signupEnd: '2026-07-15', targetKindergartens: ['童蹊幼儿园'], format: '文档(docx、xlsx、pdf)', scoreStandardId: 1, awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '提升教师多媒体课件制作能力，展示信息技术与课堂教学的融合成果。', participants: 32, worksCount: 32, certTemplateId: 1 },
+      { id: 3, title: '家园互动创意活动评选', type: '论文比赛', status: 'PUBLISHED', stage: 'signup', expertReview: false, publishTime: '2026-07-25', signupStart: '2026-08-01', signupEnd: '2026-09-15', targetKindergartens: ['全部幼儿园'], targetRole: 'PRINCIPAL', format: '文档(docx、xlsx、pdf)', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '征集家园共育创意活动方案，促进幼儿园与家庭之间的深度互动与协作。', participants: 8, worksCount: 0 },
+      { id: 4, title: '六一主题环创比赛', type: '课件比赛', status: 'DRAFT', stage: '', expertReview: false, publishTime: '', signupStart: '', signupEnd: '', targetKindergartens: ['童蹊幼儿园', '阳光幼儿园'], format: '图片(png、jpg)', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '围绕六一儿童节主题开展班级环境创设评比，营造节日氛围、提升幼儿参与感。', participants: 0, worksCount: 0 },
+      { id: 5, title: '亲子阅读打卡活动', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'published', publishTime: '2026-02-20', signupStart: '2026-03-01', signupEnd: '2026-04-30', targetKindergartens: ['全部幼儿园'], format: '文档(docx、xlsx、pdf)', awards: [{ name: '一等奖', count: 5 }, { name: '二等奖', count: 8 }, { name: '三等奖', count: 12 }], desc: '以亲子共读为主题的持续阅读打卡活动，培养幼儿早期阅读习惯。', participants: 58, worksCount: 58 },
+      { id: 6, title: '2025 秋季论文大赛', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'archived', publishTime: '2025-08-25', signupStart: '2025-09-01', signupEnd: '2025-10-31', targetKindergartens: ['全部幼儿园'], format: '文档(docx、xlsx、pdf)', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 5 }, { name: '三等奖', count: 8 }], desc: '上一学年秋季学期教育教学论文评选，现已归档保存。', participants: 51, worksCount: 51 },
+      { id: 7, title: '班级环创成果评比', type: '课件比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'archived', expertReview: false, publishTime: '2025-12-30', signupStart: '2026-01-05', signupEnd: '2026-02-10', targetKindergartens: ['童蹊幼儿园'], format: '图片(png、jpg)', awards: [{ name: '一等奖', count: 3 }, { name: '二等奖', count: 6 }, { name: '三等奖', count: 9 }], desc: '学期初班级环创成果集中评比，检验各班环境创设的完成质量。', participants: 28, worksCount: 28 },
       // 报名阶段：已发布待报名
-      { id: 8, title: '秋季家园共育案例评选', type: '论文比赛', status: 'PUBLISHED', stage: 'signup', publishTime: '2026-08-10', signupStart: '2026-08-10', signupEnd: '2026-09-20', targetKindergartens: ['全部幼儿园'], format: '文档/PDF', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '征集家园共育优秀案例，推动家园协作经验沉淀与分享。', participants: 15, worksCount: 0, supplementEnabled: true, workDeadline: '2026-09-25' },
+      { id: 8, title: '秋季家园共育案例评选', type: '论文比赛', status: 'PUBLISHED', stage: 'signup', publishTime: '2026-08-10', signupStart: '2026-08-10', signupEnd: '2026-09-20', targetKindergartens: ['全部幼儿园'], targetRole: 'SPECIFIED', targetTeachers: ['张慧', '李娜'], format: '文档(docx、xlsx、pdf)', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '征集家园共育优秀案例，推动家园协作经验沉淀与分享。', participants: 15, worksCount: 0, supplementEnabled: true, workDeadline: '2026-09-25' },
       // 审核阶段：管理员直接审核
-      { id: 9, title: '户外活动设计大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', expertReview: false, publishTime: '2026-07-20', signupStart: '2026-07-22', signupEnd: '2026-08-08', targetKindergartens: ['阳光幼儿园', '蓝天幼儿园'], format: '课件/压缩包', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '提升教师户外活动组织与设计能力，展示户外游戏课程化探索成果。', participants: 20, worksCount: 12 },
+      { id: 9, title: '户外活动设计大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', expertReview: false, publishTime: '2026-07-20', signupStart: '2026-07-22', signupEnd: '2026-08-08', targetKindergartens: ['阳光幼儿园', '蓝天幼儿园'], format: '压缩包(zip、rar)', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '提升教师户外活动组织与设计能力，展示户外游戏课程化探索成果。', participants: 20, worksCount: 12 },
       // 归档阶段：评审已完成，待发布结果
-      { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'pending', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'], format: '文档', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，评审已完成，待发布评审结果。', participants: 30, worksCount: 30, certTemplateId: 1 },
+      { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'pending', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'], format: '文档(docx、xlsx、pdf)', awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，评审已完成，待发布评审结果。', participants: 30, worksCount: 30, certTemplateId: 1 },
     ],
 
     /* 教师端「活动中心」当前教师（张慧）的报名/上传状态（活动 id → 参与状态，可持久化）
@@ -218,24 +220,51 @@ window.MDS = (function () {
       10: { signedUp: true, signupTime: '2026-05-15 09:30', workSubmitted: true,  workTitle: '建构区幼儿合作行为观察记录' },
     },
 
+    /* 园长端「活动中心」当前园长（李园长）的报名/上传状态（活动 id → 参与状态，可持久化，结构同 teacherSignups） */
+    principalSignups: {},
+
     /* 活动类型字典（可配置，多层级） */
     activityTypes: [
       { id: 1, name: '论文比赛', parent: '教学教研', sort: 1, enabled: true },
       { id: 2, name: '课件比赛', parent: '教学教研', sort: 2, enabled: true },
-      { id: 3, name: '朋友圈点赞比赛', parent: '家园互动', sort: 3, enabled: true },
+    ],
+
+    /* 评分标准（评审打分指标模板，可 CRUD 多套；活动发起时关联 scoreStandardId，评委按关联标准动态打分）
+       indicators 每项：name 指标名称 / maxScore 单项满分上限 / weight 权重占比（合计 100%） */
+    scoreStandards: [
+      {
+        id: 1,
+        name: '教学活动评选标准',
+        remark: '适用于教学教研类活动（论文/课件/环创评比）',
+        indicators: [
+          { name: '内容质量', maxScore: 40, weight: 40 },
+          { name: '创新创意', maxScore: 30, weight: 30 },
+          { name: '呈现效果', maxScore: 30, weight: 30 },
+        ],
+      },
+      {
+        id: 2,
+        name: '家园共育案例标准',
+        remark: '适用于家园共育/案例征集类活动',
+        indicators: [
+          { name: '案例真实性', maxScore: 30, weight: 30 },
+          { name: '方法可复制性', maxScore: 40, weight: 40 },
+          { name: '成效数据', maxScore: 30, weight: 30 },
+        ],
+      },
     ],
 
     /* 参赛作品（含作品名称 title，作品管理页支持按作品名称/教师筛选） */
     works: [
       { id: 1, activity: '2026 春季论文评选大赛', title: '浅谈幼儿园一日活动中的生活教育', teacher: '张慧', className: '中一班', type: '文档', size: '2.3MB', status: '已提交', check: '未检出重复', submitTime: '2026-08-03 14:20' },
       { id: 2, activity: '2026 春季论文评选大赛', title: '家园共育背景下小班幼儿自理能力培养策略', teacher: '李娜', className: '小一班', type: '文档', size: '1.8MB', status: '已提交', check: '未检出重复', submitTime: '2026-08-05 09:12' },
-      { id: 3, activity: '2026 春季论文评选大赛', title: '游戏化教学在幼儿数学启蒙中的应用', teacher: '王强', className: '大一班', type: 'PDF', size: '3.1MB', status: '已提交', check: '相似度 12%', submitTime: '2026-08-07 16:40' },
-      { id: 4, activity: '课件制作技能大赛', title: '《秋天的果实》科学活动课件', teacher: '赵敏', className: '小一班', type: '课件', size: '15.6MB', status: '评审中', check: '未检出重复', submitTime: '2026-07-10 10:05' },
-      { id: 5, activity: '课件制作技能大赛', title: '《你好，春天》主题教学课件', teacher: '陈晨', className: '中一班', type: '课件', size: '22.4MB', status: '评审中', check: '未检出重复', submitTime: '2026-07-12 11:30' },
+      { id: 3, activity: '2026 春季论文评选大赛', title: '游戏化教学在幼儿数学启蒙中的应用', teacher: '王强', className: '大一班', type: '文档', size: '3.1MB', status: '已提交', check: '相似度 12%', submitTime: '2026-08-07 16:40' },
+      { id: 4, activity: '课件制作技能大赛', title: '《秋天的果实》科学活动课件', teacher: '赵敏', className: '小一班', type: '文档', size: '15.6MB', status: '评审中', check: '未检出重复', submitTime: '2026-07-10 10:05' },
+      { id: 5, activity: '课件制作技能大赛', title: '《你好，春天》主题教学课件', teacher: '陈晨', className: '中一班', type: '文档', size: '22.4MB', status: '评审中', check: '未检出重复', submitTime: '2026-07-12 11:30' },
       { id: 6, activity: '课件制作技能大赛', title: '大班户外体育游戏资源包', teacher: '刘洋', className: '大一班', type: '压缩包', size: '48.2MB', status: '评审中', check: '相似度 8%', submitTime: '2026-07-14 15:22' },
       { id: 7, activity: '亲子阅读打卡活动', title: '亲子共读 21 天打卡记录', teacher: '孙悦', className: '中一班', type: '文档', size: '1.2MB', status: '已完成', check: '未检出重复', submitTime: '2026-04-20 09:00' },
       // 户外活动设计大赛（审核阶段）
-      { id: 8, activity: '户外活动设计大赛', title: '户外体育循环活动方案', teacher: '周涛', className: '大一班', type: '课件', size: '18.2MB', status: '评审中', check: '未检出重复', submitTime: '2026-08-10 09:30' },
+      { id: 8, activity: '户外活动设计大赛', title: '户外体育循环活动方案', teacher: '周涛', className: '大一班', type: '文档', size: '18.2MB', status: '评审中', check: '未检出重复', submitTime: '2026-08-10 09:30' },
       { id: 9, activity: '户外活动设计大赛', title: '沙水区自主游戏观察方案', teacher: '吴倩', className: '小一班', type: '文档', size: '2.1MB', status: '评审中', check: '未检出重复', submitTime: '2026-08-11 10:15' },
       { id: 10, activity: '户外活动设计大赛', title: '晨间户外体能大循环设计', teacher: '郑爽', className: '中一班', type: '压缩包', size: '35.6MB', status: '评审中', check: '相似度 5%', submitTime: '2026-08-12 14:40' },
       // 区域活动观察记录评比（归档阶段 · 待发布结果）
@@ -243,8 +272,14 @@ window.MDS = (function () {
       { id: 12, activity: '区域活动观察记录评比', title: '角色区语言发展观察记录', teacher: '李娜', className: '小一班', type: '文档', size: '1.4MB', status: '已评审', check: '未检出重复', submitTime: '2026-05-20 11:20' },
       // 2025 秋季论文大赛（归档阶段 · 已归档）
       { id: 13, activity: '2025 秋季论文大赛', title: '幼儿园户外自主游戏的教师支持策略', teacher: '张慧', className: '中一班', type: '文档', size: '1.9MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-12 09:30' },
-      { id: 14, activity: '2025 秋季论文大赛', title: '小班幼儿入园适应的家园协同路径', teacher: '李娜', className: '小一班', type: 'PDF', size: '2.4MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-15 14:05' },
+      { id: 14, activity: '2025 秋季论文大赛', title: '小班幼儿入园适应的家园协同路径', teacher: '李娜', className: '小一班', type: '文档', size: '2.4MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-15 14:05' },
       { id: 15, activity: '2025 秋季论文大赛', title: '基于游戏观察的大班学习品质培养', teacher: '王强', className: '大一班', type: '文档', size: '2.0MB', status: '已评审', check: '相似度 6%', submitTime: '2025-10-18 10:20' },
+      { id: 18, activity: '2025 秋季论文大赛', title: '小班幼儿入园焦虑的家庭支持策略', teacher: '赵敏', className: '小一班', type: '文档', size: '2.2MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-16 09:30' },
+      { id: 19, activity: '2025 秋季论文大赛', title: '中班幼儿情绪管理的实践研究', teacher: '陈晨', className: '中一班', type: '文档', size: '1.7MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-17 10:10' },
+      { id: 20, activity: '2025 秋季论文大赛', title: '大班户外游戏中的社会性发展观察', teacher: '刘洋', className: '大一班', type: '文档', size: '2.6MB', status: '已评审', check: '相似度 5%', submitTime: '2025-10-18 14:00' },
+      { id: 21, activity: '2025 秋季论文大赛', title: '家园协同促进幼儿习惯养成的路径', teacher: '周涛', className: '大一班', type: '文档', size: '1.9MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-19 09:40' },
+      { id: 22, activity: '2025 秋季论文大赛', title: '小班生活化课程的实践探索', teacher: '吴倩', className: '小一班', type: '文档', size: '2.1MB', status: '已评审', check: '未检出重复', submitTime: '2025-10-20 11:15' },
+      { id: 23, activity: '2025 秋季论文大赛', title: '区域活动材料投放的策略研究', teacher: '郑爽', className: '中一班', type: '文档', size: '2.4MB', status: '已评审', check: '相似度 7%', submitTime: '2025-10-21 15:20' },
       // 班级环创成果评比（归档阶段 · 已归档）
       { id: 16, activity: '班级环创成果评比', title: '小一班主题环创布置方案', teacher: '赵敏', className: '小一班', type: '压缩包', size: '28.5MB', status: '已评审', check: '未检出重复', submitTime: '2026-01-20 09:00' },
       { id: 17, activity: '班级环创成果评比', title: '中一班区域角环境创设', teacher: '陈晨', className: '中一班', type: '图片', size: '12.3MB', status: '已评审', check: '未检出重复', submitTime: '2026-01-21 11:30' },
@@ -296,6 +331,22 @@ window.MDS = (function () {
       // 班级环创成果评比（归档阶段 · 已归档）
       { id: 15, activity: '班级环创成果评比', work: '赵敏的作品', judge: '陈园长', scores: '88 / 90 / 87', comment: '环创主题鲜明，幼儿参与度高。', time: '2026-01-22 09:20' },
       { id: 16, activity: '班级环创成果评比', work: '陈晨的作品', judge: '陈园长', scores: '85 / 86 / 84', comment: '区域角布局合理。', time: '2026-01-22 09:45' },
+      // 2025 秋季论文大赛：补充其余参赛者评分（全员得奖报表展示完整排名）
+      { id: 17, activity: '2025 秋季论文大赛', work: '赵敏的作品', judge: '李教授', scores: '86 / 88 / 87', comment: '策略具体，可落地。', time: '2025-10-21 09:00' },
+      { id: 18, activity: '2025 秋季论文大赛', work: '赵敏的作品', judge: '周教授', scores: '87 / 86 / 88', comment: '案例充实。', time: '2025-10-23 10:00' },
+      { id: 19, activity: '2025 秋季论文大赛', work: '陈晨的作品', judge: '李教授', scores: '89 / 90 / 88', comment: '观察细致，建议可操作。', time: '2025-10-21 09:20' },
+      { id: 20, activity: '2025 秋季论文大赛', work: '陈晨的作品', judge: '周教授', scores: '90 / 88 / 89', comment: '一等奖候选。', time: '2025-10-23 10:20' },
+      { id: 21, activity: '2025 秋季论文大赛', work: '刘洋的作品', judge: '李教授', scores: '85 / 87 / 86', comment: '实践数据较完整。', time: '2025-10-21 09:40' },
+      { id: 22, activity: '2025 秋季论文大赛', work: '刘洋的作品', judge: '周教授', scores: '86 / 85 / 87', comment: '结构清晰。', time: '2025-10-23 10:40' },
+      { id: 23, activity: '2025 秋季论文大赛', work: '周涛的作品', judge: '李教授', scores: '84 / 85 / 83', comment: '可补量化支撑。', time: '2025-10-21 10:00' },
+      { id: 24, activity: '2025 秋季论文大赛', work: '周涛的作品', judge: '周教授', scores: '83 / 85 / 84', comment: '二等奖水平。', time: '2025-10-23 11:00' },
+      { id: 25, activity: '2025 秋季论文大赛', work: '吴倩的作品', judge: '李教授', scores: '88 / 89 / 87', comment: '课程设计贴近实际。', time: '2025-10-21 10:20' },
+      { id: 26, activity: '2025 秋季论文大赛', work: '吴倩的作品', judge: '周教授', scores: '88 / 87 / 89', comment: '二等奖候选。', time: '2025-10-23 11:20' },
+      { id: 27, activity: '2025 秋季论文大赛', work: '郑爽的作品', judge: '李教授', scores: '82 / 83 / 81', comment: '可加强策略提炼。', time: '2025-10-21 10:40' },
+      { id: 28, activity: '2025 秋季论文大赛', work: '郑爽的作品', judge: '周教授', scores: '81 / 83 / 82', comment: '三等奖水平。', time: '2025-10-23 11:40' },
+      // 亲子阅读打卡活动（归档阶段 · 已发布结果）
+      { id: 29, activity: '亲子阅读打卡活动', work: '孙悦的作品', judge: '王教授', scores: '86 / 88 / 90', comment: '打卡记录完整，方法有效。', time: '2026-05-02 09:10' },
+      { id: 30, activity: '亲子阅读打卡活动', work: '孙悦的作品', judge: '陈园长', scores: '84 / 87 / 89', comment: '二等奖候选。', time: '2026-05-03 10:00' },
     ],
 
     /* 评奖分批（活动 id → 批次列表；每批次：作品 ids + 分配评委 + 已评数量 done） */
@@ -442,6 +493,13 @@ window.MDS = (function () {
       { id: 1, name: '童蹊幼儿园' },
       { id: 2, name: '阳光幼儿园' },
       { id: 3, name: '蓝天幼儿园' },
+    ],
+
+    /* 园长（参赛对象角色维度：仅园长参赛 / 园长与教师参赛时进入活动范围，roleLabel 用于展示） */
+    principals: [
+      { id: 1, name: '李园长', kindergarten: '童蹊幼儿园', roleLabel: '园长', isActive: true },
+      { id: 2, name: '王园长', kindergarten: '阳光幼儿园', roleLabel: '园长', isActive: true },
+      { id: 3, name: '陈园长', kindergarten: '蓝天幼儿园', roleLabel: '园长', isActive: true },
     ],
 
     /* 教师信息（含离职状态字段 is_active，需求文档 5.3 离职判定依据；含所属幼儿园） */
@@ -903,7 +961,7 @@ window.MDS = (function () {
     ],
   };
 
-  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activityNotices', 'activitySchemes', 'bonusGradients', 'certTemplates', 'teacherSignups'];
+  var MUTABLE_KEYS = ['activities', 'medals', 'reviewRecords', 'reviewBatches', 'notices', 'activityNotices', 'activitySchemes', 'bonusGradients', 'certTemplates', 'teacherSignups', 'principalSignups', 'scoreStandards'];
 
   /* ────────────────────────── PC 端界面状态（可持久化，重置时恢复默认） ────────────────────────── */
   var UI_DEFAULTS = {
@@ -1047,7 +1105,7 @@ window.MDS = (function () {
       }
       // 只读 mock（不入库）：幼儿园/活动类型/作品/门槛/榜单/首页原始内容等演示数据
       // （activitySchemes / bonusGradients 已移入 MUTABLE_KEYS 持久化，奖金梯度与活动奖金规则可编辑保留）
-      ['kindergartens', 'activityTypes', 'works', 'judges', 'monthlyScheme', 'scoreLogs', 'medalThresholds', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'pointRecords', 'homeAttendance', 'homeGrid'].forEach(function (key) {
+      ['kindergartens', 'principals', 'activityTypes', 'works', 'judges', 'monthlyScheme', 'scoreLogs', 'medalThresholds', 'monthlyBonus', 'semesterBonus', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'pointRecords', 'homeAttendance', 'homeGrid'].forEach(function (key) {
         cache[key] = JSON.parse(JSON.stringify(MOCK[key]));
       });
       var role = lsGet('role');

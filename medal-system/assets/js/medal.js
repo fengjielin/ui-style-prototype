@@ -433,6 +433,7 @@ window.MedalDemo = (function () {
     'activity-notify': renderActivityNotify,
     'activity-manage': renderActivityManage,
     'activity-query': renderActivityQuery,
+    'score-standard': renderScoreStandardList,
     'rank-garden': renderRankGarden,
     'rank-garden-all': renderRankGardenAll,
     'rank-platform': renderRankPlatform,
@@ -539,23 +540,34 @@ window.MedalDemo = (function () {
     return 'st-' + status;
   }
 
-  /* 活动对象（幼儿园多选）展示：含「全部幼儿园」则显示全部，否则逐园展示 */
-  function actScopeHtml(kgList) {
-    var list = kgList || [];
-    if (!list.length) return '—';
-    if (list.indexOf('全部幼儿园') >= 0) return '<span class="act-scope-tag">全部幼儿园</span>';
-    return list
-      .map(function (k) {
-        return '<span class="act-scope-tag">' + esc(k) + '</span>';
-      })
-      .join('');
+  /* 参赛角色范围描述文本（活动对象展示：园长与教师 / 仅园长 / 仅教师 / 指定教师）。
+     指定教师仅展示字样，不在列表/表格中展示具体人选（人选见活动编辑表单回显） */
+  function actRoleText(activity) {
+    var role = (activity && activity.targetRole) || 'ALL';
+    return { ALL: '园长与教师', PRINCIPAL: '仅园长', TEACHER: '仅教师', SPECIFIED: '指定教师' }[role] || '园长与教师';
   }
 
-  /* 活动对象纯文本（移动端卡内描述用） */
-  function actScopeText(kgList) {
-    var list = kgList || [];
-    if (!list.length) return '—';
-    return list.join('、');
+  /* 活动对象展示（HTML）：幼儿园 tag + 参赛对象（角色）tag，含「全部幼儿园」则显示全部 */
+  function actScopeHtml(activity) {
+    var kgs = (activity && activity.targetKindergartens) || [];
+    if (!kgs.length) return '—';
+    var parts;
+    if (kgs.indexOf('全部幼儿园') >= 0) {
+      parts = ['<span class="act-scope-tag">全部幼儿园</span>'];
+    } else {
+      parts = kgs.map(function (k) {
+        return '<span class="act-scope-tag">' + esc(k) + '</span>';
+      });
+    }
+    parts.push('<span class="act-scope-tag act-scope-role">' + esc(actRoleText(activity)) + '</span>');
+    return parts.join('');
+  }
+
+  /* 活动对象纯文本（移动端卡内描述用）：'幼儿园A、幼儿园B · 仅教师' */
+  function actScopeText(activity) {
+    var kgs = (activity && activity.targetKindergartens) || [];
+    if (!kgs.length) return '—';
+    return kgs.join('、') + ' · ' + actRoleText(activity);
   }
 
   /* 读取表单内活动对象多选（checkbox 组，data-scope-group=prefix） */
@@ -585,15 +597,212 @@ window.MedalDemo = (function () {
     });
   }
 
-  /* 活动对象范围内的老师（不含已离职；含全部幼儿园=所有在职老师） */
-  function scopeTeachers(activity) {
-    var kgs = (activity && activity.targetKindergartens) || [];
-    var all = MDS.get('teachers') || [];
-    var active = all.filter(function (t) { return t.isActive !== false; });
-    if (kgs.indexOf('全部幼儿园') >= 0) return active;
-    return active.filter(function (t) {
-      return kgs.indexOf(t.kindergarten) >= 0;
+  /* 读取参赛对象角色（radio 组 name=prefix，缺省 ALL=园长与教师） */
+  function readTargetRole(prefix) {
+    var checked = document.querySelector('input[name="' + prefix + '"]:checked');
+    return (checked && checked.value) || 'ALL';
+  }
+
+  /* 回填参赛对象角色 radio */
+  function fillTargetRole(prefix, activity) {
+    var role = (activity && activity.targetRole) || 'ALL';
+    var radio = document.querySelector('input[name="' + prefix + '"][value="' + role + '"]');
+    if (radio) radio.checked = true;
+  }
+
+  /* 指定教师弹窗：按模式（add 新增弹窗 / edit 编辑弹窗）取元素配置 */
+  function specTeacherCfg(mode) {
+    var isAdd = mode === 'add';
+    return {
+      kgPrefix: isAdd ? 'kgScope' : 'eKgScope',
+      dialogId: isAdd ? 'actSpecTeacherDialog' : 'eActSpecTeacherDialog',
+      searchId: isAdd ? 'actSpecTeacherSearch' : 'eActSpecTeacherSearch',
+      listId: isAdd ? 'actSpecTeacherList' : 'eActSpecTeacherList',
+      boxId: isAdd ? 'actSpecTeacherBox' : 'eActSpecTeacherBox',
+      tagsId: isAdd ? 'actSpecTeacherTags' : 'eActSpecTeacherTags',
+      countId: isAdd ? 'actSpecTeacherCount' : 'eActSpecTeacherCount',
+    };
+  }
+
+  var specSelected = { add: {}, edit: {} };   // 指定教师已选集合（按弹窗模式 name→true）
+  var specSearchText = { add: '', edit: '' }; // 弹窗内教师姓名搜索关键字
+
+  /* 渲染「指定教师」弹窗内教师多选列表：按所选幼儿园范围 + 姓名关键字过滤在职教师 */
+  function renderSpecTeacherList(mode, selected) {
+    var cfg = specTeacherCfg(mode);
+    var box = document.getElementById(cfg.listId);
+    if (!box) return;
+    var sel = selected || specSelected[mode] || {};
+    var kgs = readScopeChecks(cfg.kgPrefix);
+    var isAll = kgs.indexOf('全部幼儿园') >= 0;
+    var kw = (specSearchText[mode] || '').trim();
+    var teachers = (MDS.get('teachers') || []).filter(function (t) {
+      if (t.isActive === false) return false;
+      if (!isAll && kgs.indexOf(t.kindergarten) < 0) return false;
+      if (kw && t.name.indexOf(kw) < 0) return false;
+      return true;
     });
+    if (!teachers.length) {
+      box.innerHTML = '<div class="pc-empty" style="padding:20px 0;"><div>' + (kw ? '无匹配教师' : '所选幼儿园范围内暂无在职教师') + '</div></div>';
+      return;
+    }
+    box.innerHTML = teachers
+      .map(function (t) {
+        return (
+          '<label class="notify-teacher-item">' +
+          '<input type="checkbox" class="spec-teacher" value="' + esc(t.name) + '"' + (sel[t.name] ? ' checked' : '') + '>' +
+          '<span class="nt-name">' + esc(t.name) + '</span>' +
+          '<span class="nt-sub">' + esc(t.kindergarten) + ' · ' + esc(t.className) + '</span>' +
+          '</label>'
+        );
+      })
+      .join('');
+  }
+
+  /* 打开「指定教师」选择弹窗：重置搜索并按当前幼儿园范围渲染列表 */
+  function openSpecTeacherDialog(mode) {
+    var cfg = specTeacherCfg(mode);
+    var search = document.getElementById(cfg.searchId);
+    if (search) search.value = '';
+    specSearchText[mode] = '';
+    renderSpecTeacherList(mode);
+    Proto.openDialog(cfg.dialogId);
+  }
+
+  /* 回显指定教师：在「参赛对象」下方展示已选教师 tag + 已选数量 */
+  function renderSpecTeacherEcho(mode) {
+    var cfg = specTeacherCfg(mode);
+    var countEl = document.getElementById(cfg.countId);
+    var tags = document.getElementById(cfg.tagsId);
+    var names = Object.keys(specSelected[mode] || {});
+    if (countEl) countEl.textContent = String(names.length);
+    if (!tags) return;
+    tags.innerHTML = names.length
+      ? names.map(function (n) { return '<span class="spec-teacher-tag">' + esc(n) + '</span>'; }).join('')
+      : '';
+  }
+
+  /* 读取指定教师已选集合（返回选中教师姓名数组） */
+  function readSpecTeachers(mode) {
+    return Object.keys(specSelected[mode] || {});
+  }
+
+  /* 回填指定教师：从活动读取已选集合，并刷新表单下方回显 */
+  function fillSpecTeachers(activity, mode) {
+    specSelected[mode] = {};
+    ((activity && activity.targetTeachers) || []).filter(Boolean).forEach(function (n) {
+      specSelected[mode][n] = true;
+    });
+    renderSpecTeacherEcho(mode);
+  }
+
+  /* 绑定「参赛对象」联动事件（admin 端一次性绑定）：
+     选择按钮 → 打开弹窗；弹窗内搜索 → 刷新列表；确定 → 收集勾选并回显；
+     参赛对象 radio → 切换指定教师回显区显隐 */
+  function bindSpecTeacherEvents() {
+    // 打开指定教师弹窗（「选择指定教师」按钮）
+    document.querySelectorAll('[data-action="open-spec-teacher"]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        openSpecTeacherDialog(btn.getAttribute('data-mode') || 'add');
+      });
+    });
+    // 弹窗「确定」：收集勾选 → 回显 → 关闭
+    document.querySelectorAll('[data-action="spec-teacher-confirm"]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var mode = btn.getAttribute('data-mode') || 'add';
+        var cfg = specTeacherCfg(mode);
+        var box = document.getElementById(cfg.listId);
+        var next = {};
+        if (box) {
+          box.querySelectorAll('input.spec-teacher:checked').forEach(function (c) {
+            next[c.value] = true;
+          });
+        }
+        specSelected[mode] = next;
+        renderSpecTeacherEcho(mode);
+        Proto.closeDialog(cfg.dialogId);
+      });
+    });
+    // 弹窗内姓名搜索：刷新列表（保留已勾选）
+    [['actSpecTeacherSearch', 'add'], ['eActSpecTeacherSearch', 'edit']].forEach(function (pair) {
+      var search = document.getElementById(pair[0]);
+      if (search) {
+        search.addEventListener('input', function () {
+          specSearchText[pair[1]] = search.value;
+          renderSpecTeacherList(pair[1]);
+        });
+      }
+    });
+    // 参赛对象 radio：勾选「指定教师」时显示回显区，否则隐藏
+    [['actTargetRole', 'actSpecTeacherBox', 'add'], ['eActTargetRole', 'eActSpecTeacherBox', 'edit']].forEach(function (cfgArr) {
+      document.querySelectorAll('input[name="' + cfgArr[0] + '"]').forEach(function (r) {
+        r.addEventListener('change', function () {
+          var show = r.value === 'SPECIFIED' && r.checked;
+          var box = document.getElementById(cfgArr[1]);
+          if (box) box.hidden = !show;
+          if (show) renderSpecTeacherEcho(cfgArr[2]);
+        });
+      });
+    });
+    // 评分标准仅在「需要专家评审」时显示并允许关联（=否 时隐藏并清空已选）
+    [['actExpertReview', 'actScoreStandardField', 'actScoreStandard'], ['eActExpertReview', 'eActScoreStandardField', 'eActScoreStandard']].forEach(function (pair) {
+      document.querySelectorAll('input[name="' + pair[0] + '"]').forEach(function (r) {
+        r.addEventListener('change', function () {
+          var enabled = r.value === '1' && r.checked;
+          var field = document.getElementById(pair[1]);
+          var sel = document.getElementById(pair[2]);
+          if (field) field.hidden = !enabled;
+          if (sel) {
+            sel.disabled = !enabled;
+            if (!enabled) sel.value = '';
+          }
+        });
+      });
+    });
+  }
+
+  /* 同步评分标准字段显隐：仅「需要专家评审」时显示并允许关联（=否 时隐藏并清空已选） */
+  function syncScoreStandardByReview(scope) {
+    var isAdd = scope === 'add';
+    var expert = document.querySelector('input[name="' + (isAdd ? 'actExpertReview' : 'eActExpertReview') + '"]:checked');
+    var field = document.getElementById(isAdd ? 'actScoreStandardField' : 'eActScoreStandardField');
+    var sel = document.getElementById(isAdd ? 'actScoreStandard' : 'eActScoreStandard');
+    if (!field) return;
+    var enabled = !!expert && expert.value === '1';
+    field.hidden = !enabled;
+    if (sel) {
+      sel.disabled = !enabled;
+      if (!enabled) sel.value = '';
+    }
+  }
+
+  /* 活动对象范围内的参赛人员（不含已离职；按参赛对象角色派生：
+     ALL=园长+教师 / PRINCIPAL=仅园长 / TEACHER=仅教师 / SPECIFIED=指定教师）
+     返回对象统一含 { name, kindergarten, className, roleLabel }，园长 roleLabel=园长、className='—' */
+  function scopeParticipants(activity) {
+    var role = (activity && activity.targetRole) || 'ALL';
+    var kgs = (activity && activity.targetKindergartens) || [];
+    var isAll = kgs.indexOf('全部幼儿园') >= 0;
+    var inKg = function (p) {
+      return isAll || kgs.indexOf(p.kindergarten) >= 0;
+    };
+    var principals = (MDS.get('principals') || [])
+      .filter(function (p) { return p.isActive !== false && inKg(p); })
+      .map(function (p) {
+        return { name: p.name, kindergarten: p.kindergarten, className: '—', roleLabel: p.roleLabel || '园长' };
+      });
+    var teachers = (MDS.get('teachers') || [])
+      .filter(function (t) { return t.isActive !== false && inKg(t); })
+      .map(function (t) {
+        return { name: t.name, kindergarten: t.kindergarten, className: t.className, roleLabel: '教师' };
+      });
+    if (role === 'PRINCIPAL') return principals;
+    if (role === 'TEACHER') return teachers;
+    if (role === 'SPECIFIED') {
+      var names = ((activity && activity.targetTeachers) || []).filter(Boolean);
+      return teachers.filter(function (t) { return names.indexOf(t.name) >= 0; });
+    }
+    return principals.concat(teachers);
   }
 
   /* ═══════════════════════ PC：活动通知（通知状态 + 已读回执） ═══════════════════════ */
@@ -671,23 +880,69 @@ window.MedalDemo = (function () {
 
   /* 通知弹窗：默认发送给活动对象范围内全体老师，可取消个别老师，并支持按幼儿园/姓名筛选 */
   var notifyActivityId = null;
-  var notifyTeachers = [];   // 当前活动范围内全部在职老师（主数据）
+  var notifyTeachers = [];   // 当前活动范围内全部在职参赛人员（主数据，含园长，见 scopeParticipants）
   var notifySelected = {};   // 已选老师 name → true（跨筛选保持选中）
   var notifyKgFilter = '';   // 幼儿园筛选值
   var notifyNameFilter = ''; // 姓名筛选关键字
+  var notifyRecordKgFilter = ''; // 通知记录回执表：幼儿园筛选值
+
+  /* 各园区通知统计：通知已读率（该活动既有通知收件人已读/总数）+ 活动参与率（报名/参赛范围内人数） */
+  function notifyKgStats(activity) {
+    var byKg = {};
+    // 参赛范围内人数（含园长）
+    scopeParticipants(activity).forEach(function (p) {
+      var kg = p.kindergarten || '未知园区';
+      if (!byKg[kg]) byKg[kg] = { kg: kg, eligible: 0, signed: 0, read: 0, total: 0 };
+      byKg[kg].eligible++;
+    });
+    // 参与率：按报名名单（signupListForActivity 模拟）统计各园报名人数
+    signupListForActivity(activity).forEach(function (s) {
+      var kg = s.kindergarten || '未知园区';
+      if (byKg[kg]) byKg[kg].signed++;
+    });
+    // 通知已读率：该活动既有通知按收件人园区汇总已读/总数
+    activityNoticesFor(activity).forEach(function (n) {
+      (n.recipients || []).forEach(function (r) {
+        var kg = r.kindergarten || '未知园区';
+        if (!byKg[kg]) byKg[kg] = { kg: kg, eligible: 0, signed: 0, read: 0, total: 0 };
+        byKg[kg].total++;
+        if (r.read) byKg[kg].read++;
+      });
+    });
+    return Object.keys(byKg).map(function (k) { return byKg[k]; });
+  }
+
+  /* 渲染通知弹窗顶部各园区统计（各园区一张小卡：通知已读率 + 活动参与率） */
+  function renderNotifyKgStats(activity) {
+    var box = document.getElementById('notifyKgStats');
+    if (!box) return;
+    var stats = notifyKgStats(activity);
+    if (!stats.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="notify-stats">' + stats.map(function (s) {
+      var readPct = s.total ? Math.round((s.read / s.total) * 100) + '%' : '—';
+      var joinPct = s.eligible ? Math.round((s.signed / s.eligible) * 100) + '%' : '—';
+      return (
+        '<div class="notify-stat-card">' +
+        '<div class="ns-kg">' + esc(s.kg) + '</div>' +
+        '<div class="ns-cell"><span class="ns-label">通知已读率</span><span class="ns-val">' + readPct + '</span></div>' +
+        '<div class="ns-cell"><span class="ns-label">活动参与率</span><span class="ns-val">' + joinPct + '</span></div>' +
+        '</div>'
+      );
+    }).join('') + '</div>';
+  }
 
   function fillNotifyDialog(activity) {
     notifyActivityId = activity.id;
     var title = document.getElementById('notifyActTitle');
     if (title) title.textContent = '「' + activity.title + '」通知';
     var scope = document.getElementById('notifyScopeText');
-    if (scope) scope.textContent = '发送对象：' + (actScopeHtml(activity.targetKindergartens).replace(/<[^>]+>/g, ''));
+    if (scope) scope.textContent = '发送对象：' + actScopeText(activity);
     // 清空标题/内容输入（每次发送重新填写）
     var nt = document.getElementById('notifyTitle');
     if (nt) nt.value = '';
     var nc = document.getElementById('notifyContent');
     if (nc) nc.value = '';
-    notifyTeachers = scopeTeachers(activity);
+    notifyTeachers = scopeParticipants(activity);
 
     // 重置筛选并默认全选（发送给全体范围老师，可取消个别）
     notifyKgFilter = '';
@@ -712,12 +967,14 @@ window.MedalDemo = (function () {
     var nameInput = document.getElementById('notifyNameFilter');
     if (nameInput) nameInput.value = '';
 
+    // 各园区统计（通知已读率 + 活动参与率）
+    renderNotifyKgStats(activity);
     renderNotifyList();
     updateNotifyCount();
     Proto.openDialog('notifyDialog');
   }
 
-  /* 渲染老师列表：按幼儿园 + 姓名筛选当前主数据 */
+  /* 渲染老师列表：按幼儿园区域分组 + 姓名筛选（分层展示，保留原筛选与勾选） */
   function renderNotifyList() {
     var box = document.getElementById('notifyTeacherList');
     if (!box) return;
@@ -730,17 +987,29 @@ window.MedalDemo = (function () {
       box.innerHTML = '<div class="pc-empty" style="padding:30px 0;"><div>' + (notifyKgFilter || notifyNameFilter ? '无匹配老师' : '活动对象范围内暂无在职教师') + '</div></div>';
       return;
     }
-    box.innerHTML = list
-      .map(function (t) {
-        return (
-          '<label class="notify-teacher-item">' +
-          '<input type="checkbox" class="notify-teacher" value="' + esc(t.name) + '"' + (notifySelected[t.name] ? ' checked' : '') + '>' +
-          '<span class="nt-name">' + esc(t.name) + '</span>' +
-          '<span class="nt-sub">' + esc(t.kindergarten) + ' · ' + esc(t.className) + '</span>' +
-          '</label>'
-        );
+    // 按幼儿园分组，每园一个分区标题 + 该园教师勾选项
+    var groups = {};
+    list.forEach(function (t) {
+      var kg = t.kindergarten || '未知园区';
+      (groups[kg] = groups[kg] || []).push(t);
+    });
+    var html = Object.keys(groups)
+      .map(function (kg) {
+        var rows = groups[kg]
+          .map(function (t) {
+            return (
+              '<label class="notify-teacher-item">' +
+              '<input type="checkbox" class="notify-teacher" value="' + esc(t.name) + '"' + (notifySelected[t.name] ? ' checked' : '') + '>' +
+              '<span class="nt-name">' + esc(t.name) + '</span>' +
+              '<span class="nt-sub">' + esc(t.roleLabel === '园长' ? '园长' : t.className) + '</span>' +
+              '</label>'
+            );
+          })
+          .join('');
+        return '<div class="notify-kg-title">' + esc(kg) + '</div>' + rows;
       })
       .join('');
+    box.innerHTML = html;
   }
 
   /* 更新已选人数：按范围内全部老师统计（跨筛选累计，不受当前筛选影响） */
@@ -766,6 +1035,13 @@ window.MedalDemo = (function () {
         renderNotifyList();
       });
     }
+    // 通知记录回执表：幼儿园筛选（元素由 renderActivityNotify 动态渲染，用事件委托绑定）
+    document.addEventListener('change', function (e) {
+      if (e.target && e.target.id === 'notifyRecordKgFilter') {
+        notifyRecordKgFilter = e.target.value;
+        renderActivityNotify();
+      }
+    });
     // 勾选/取消老师（事件委托，兼容列表重绘）
     document.addEventListener('change', function (e) {
       if (e.target && e.target.classList && e.target.classList.contains('notify-teacher')) {
@@ -780,24 +1056,28 @@ window.MedalDemo = (function () {
   }
 
   /* 单条通知记录卡片（通知标题/内容/发送信息 + 接收老师已读回执表格） */
-  function noticeRecordHtml(n) {
-    var recipients = n.recipients || [];
+  function noticeRecordHtml(n, kgFilter) {
+    // 按幼儿园筛选回执表（kgFilter 为空=全部园区）
+    var allRecipients = n.recipients || [];
+    var recipients = kgFilter ? allRecipients.filter(function (r) { return r.kindergarten === kgFilter; }) : allRecipients;
     var total = recipients.length;
-    var read = noticeReadCount(n);
-    var rows = recipients.map(function (r) {
-      var statusTag = r.read
-        ? '<span class="status-tag status-success">已读</span>'
-        : '<span class="status-tag status-warning">未读</span>';
-      return (
-        '<tr>' +
-        '<td><span class="cell-avatar">' + esc((r.name || '').charAt(0)) + '</span>' + esc(r.name) + '</td>' +
-        '<td>' + esc(r.kindergarten || '—') + '</td>' +
-        '<td>' + esc(r.className || '—') + '</td>' +
-        '<td>' + statusTag + '</td>' +
-        '<td style="color:' + (r.read ? '#606266' : '#c0c4cc') + ';">' + (r.read ? esc(r.readTime || '—') : '—') + '</td>' +
-        '</tr>'
-      );
-    }).join('');
+    var read = recipients.filter(function (r) { return r.read; }).length;
+    var rows = recipients.length
+      ? recipients.map(function (r) {
+          var statusTag = r.read
+            ? '<span class="status-tag status-success">已读</span>'
+            : '<span class="status-tag status-warning">未读</span>';
+          return (
+            '<tr>' +
+            '<td><span class="cell-avatar">' + esc((r.name || '').charAt(0)) + '</span>' + esc(r.name) + '</td>' +
+            '<td>' + esc(r.kindergarten || '—') + '</td>' +
+            '<td>' + esc(r.className || '—') + '</td>' +
+            '<td>' + statusTag + '</td>' +
+            '<td style="color:' + (r.read ? '#606266' : '#c0c4cc') + ';">' + (r.read ? esc(r.readTime || '—') : '—') + '</td>' +
+            '</tr>'
+          );
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:#c0c4cc;padding:20px 0;">该园区暂无收件人</td></tr>';
     return (
       '<div class="notify-record">' +
       '<div class="nr-head">' +
@@ -826,18 +1106,54 @@ window.MedalDemo = (function () {
     var html = '';
     // 顶部工具条：返回活动发起 + 发送通知
     html += '<section class="pc-card">' +
-      '<div class="card-head"><span class="card-title">通知管理 · ' + esc(act.title) + '</span><span class="table-count">活动对象：' + esc(actScopeText(act.targetKindergartens)) + '</span></div>' +
+      '<div class="card-head"><span class="card-title">通知管理 · ' + esc(act.title) + '</span><span class="table-count">活动对象：' + esc(actScopeText(act)) + '</span></div>' +
       '<div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
       '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="notify-back">← 返回活动发起</button>' +
       '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="notify-open-send">＋ 发送通知</button>' +
       '<span style="font-size:12px;color:#909399;">向该活动参与对象（范围内老师）发送通知，并查看已读回执状态。</span>' +
       '</div></section>';
-    // 通知记录列表
+    // 各园区统计（通知已读率 + 活动参与率）
+    var kgStats = notifyKgStats(act);
+    if (kgStats.length) {
+      html += '<section class="pc-card">' +
+        '<div class="card-head"><span class="card-title">园区统计</span><span class="table-count">通知已读率 · 活动参与率</span></div>' +
+        '<div class="card-body"><div class="notify-stats">' +
+        kgStats.map(function (s) {
+          var readPct = s.total ? Math.round((s.read / s.total) * 100) + '%' : '—';
+          var joinPct = s.eligible ? Math.round((s.signed / s.eligible) * 100) + '%' : '—';
+          return (
+            '<div class="notify-stat-card">' +
+            '<div class="ns-kg">' + esc(s.kg) + '</div>' +
+            '<div class="ns-cell"><span class="ns-label">通知已读率</span><span class="ns-val">' + readPct + '</span></div>' +
+            '<div class="ns-cell"><span class="ns-label">活动参与率</span><span class="ns-val">' + joinPct + '</span></div>' +
+            '</div>'
+          );
+        }).join('') +
+        '</div></div></section>';
+    }
+    // 通知记录列表（顶部提供幼儿园筛选，回执表按所选园区过滤）
+    var kgOpts = ['<option value="">全部幼儿园</option>'];
+    var seenKg = {};
+    scopeParticipants(act).forEach(function (p) {
+      if (p.kindergarten && !seenKg[p.kindergarten]) { seenKg[p.kindergarten] = true; }
+    });
+    notices.forEach(function (n) {
+      (n.recipients || []).forEach(function (r) {
+        if (r.kindergarten && !seenKg[r.kindergarten]) { seenKg[r.kindergarten] = true; }
+      });
+    });
+    Object.keys(seenKg).forEach(function (kg) {
+      kgOpts.push('<option value="' + esc(kg) + '"' + (notifyRecordKgFilter === kg ? ' selected' : '') + '>' + esc(kg) + '</option>');
+    });
     html += '<section class="pc-card">' +
       '<div class="card-head"><span class="card-title">通知记录</span><span class="table-count">共 ' + notices.length + ' 条通知</span></div>' +
-      '<div class="card-body" style="display:flex;flex-direction:column;gap:14px;">' +
+      '<div class="card-body" style="padding-bottom:6px;">' +
+      '<div class="search-form"><div class="search-item"><label>幼儿园筛选</label>' +
+      '<select class="pc-select" id="notifyRecordKgFilter" style="width:180px;">' + kgOpts.join('') + '</select></div></div>' +
+      '</div>' +
+      '<div class="card-body" style="display:flex;flex-direction:column;gap:14px;padding-top:0;">' +
       (notices.length
-        ? notices.map(noticeRecordHtml).join('')
+        ? notices.map(function (n) { return noticeRecordHtml(n, notifyRecordKgFilter); }).join('')
         : '<div class="pc-empty"><div class="empty-icon">📭</div><div>暂无通知记录，点击「发送通知」向参与老师发送</div></div>') +
       '</div></section>';
     box.innerHTML = html;
@@ -909,7 +1225,7 @@ window.MedalDemo = (function () {
           '<td><strong>' + esc(a.title) + '</strong></td>' +
           '<td>' + esc(a.type) + '</td>' +
           '<td>' + esc(a.signupStart || '—') + ' ~ ' + esc(a.signupEnd || '—') + '</td>' +
-          '<td>' + actScopeHtml(a.targetKindergartens) + '</td>' +
+          '<td>' + actScopeHtml(a) + '</td>' +
           '<td>' + esc(a.publishTime || '—') + '</td>' +
           '<td>' + statusHtml + '</td>' +
           '<td>' + noticeCell + '</td>' +
@@ -978,25 +1294,10 @@ window.MedalDemo = (function () {
 
   /* ═══════════════════════ PC：活动管理（阶段筛选 + 统一活动列表表格：报名 / 审核 / 归档） ═══════════════════════ */
 
-  // 评委分配方式：auto 自动分配 / manual 手动分配（弹窗内可切换）
-  var judgeAssignMode = 'auto';
-  // 评委自动分配：分组抽取结果（judge-draw 后暂存，确定分配时写入）
-  var judgeDrawResult = null;
   // 评委手动分配状态：分组数 + 每组已选评委 id（key: groupNo → [judgeId]，确定分配时写入）
+  // （已取消系统随机抽评，仅保留手动分配专家，详见需求调整）
   var judgeGroupCount = 2;
   var judgeAssignSel = {};
-
-  /* 切换分配方式（自动 / 手动）：显示对应面板并同步 tab 高亮 */
-  function setJudgeAssignMode(mode) {
-    judgeAssignMode = mode;
-    var autoPanel = document.getElementById('judgeAutoPanel');
-    var manualPanel = document.getElementById('judgeManualPanel');
-    if (autoPanel) autoPanel.hidden = (mode !== 'auto');
-    if (manualPanel) manualPanel.hidden = (mode !== 'manual');
-    document.querySelectorAll('#judgeModeTabs .pc-filter-tab').forEach(function (t) {
-      t.classList.toggle('is-active', t.getAttribute('data-mode') === mode);
-    });
-  }
 
   /* 渲染手动分配分组（每组一个卡片：已选评委表格 + 「选择评委」按钮，不在页面直接铺开勾选框） */
   function renderJudgeAssignGroups() {
@@ -1106,12 +1407,12 @@ window.MedalDemo = (function () {
 
   /* 报名名单：由活动对象范围内在职老师派生（模拟报名数据，取活动 participants 人） */
   function signupListForActivity(act) {
-    var teachers = scopeTeachers(act) || [];
+    var teachers = scopeParticipants(act) || [];
     var count = Math.min(act.participants || 0, teachers.length);
     var rows = [];
     for (var i = 0; i < count; i++) {
       var t = teachers[i];
-      rows.push({ name: t.name, className: t.className, kindergarten: t.kindergarten, signupTime: amMockSignupTime(act, i) });
+      rows.push({ name: t.name, className: t.className || t.roleLabel, kindergarten: t.kindergarten, signupTime: amMockSignupTime(act, i) });
     }
     return rows;
   }
@@ -1171,11 +1472,26 @@ window.MedalDemo = (function () {
     if (tbody) {
       tbody.innerHTML = records.length
         ? records.map(function (r) {
+            // 各指标分数与评语按关联评分标准对齐展示（兼容旧记录仅有总评 comment）
+            var indicators = judgeIndicatorsFor(act.title);
+            var parts = (r.scores || '').split('/').map(function (s) { return s.trim(); });
+            var comments = r.comments || [];
+            var scoreCell = indicators.length === parts.length
+              ? indicators.map(function (ind, i) {
+                  return '<div>' + esc(ind.name) + '：<b>' + esc(parts[i]) + '</b></div>';
+                }).join('')
+              : esc(r.scores);
+            var commentCell = comments.length
+              ? (comments.map(function (c, i) {
+                  var name = indicators[i] ? indicators[i].name : ('指标' + (i + 1));
+                  return c ? '<div><b>' + esc(name) + '</b>：' + esc(c) + '</div>' : '';
+                }).filter(Boolean).join('') || '<span style="color:#c0c4cc;">未填写</span>')
+              : esc(r.comment || '—');
             return (
               '<tr>' +
               '<td><strong>' + esc(r.judge) + '</strong></td>' +
-              '<td>' + esc(r.scores) + '</td>' +
-              '<td style="font-size:12px;color:#606266;">' + esc(r.comment) + '</td>' +
+              '<td>' + scoreCell + '</td>' +
+              '<td style="font-size:12px;color:#606266;">' + commentCell + '</td>' +
               '<td>' + esc(r.time) + '</td>' +
               '</tr>'
             );
@@ -1341,13 +1657,19 @@ window.MedalDemo = (function () {
     } else {
       stageCtrl = '<button type="button" class="pc-btn pc-btn-import pc-btn-sm" data-action="review-start">开始评审</button>';
     }
+    // 该活动关联的评分标准（评审按关联标准打分，可查看指标明细）
+    var std = scoreStandardById(act.scoreStandardId);
+    var stdHtml = std
+      ? '<span style="font-size:12px;color:#606266;">评分标准：' + esc(std.name) + '</span>' +
+        '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="score-standard-view">查看</button>'
+      : '<span style="font-size:12px;color:#909399;">未关联评分标准</span>';
     return (
       '<section class="pc-card">' +
       '<div class="card-head"><span class="card-title">活动评审 · ' + esc(act.title) + '</span><span class="table-count">' + (curStatus === 'reviewing' ? '评审中' : curStatus === 'finished' ? '已结束' : '未开始') + '</span></div>' +
       '<div class="card-body">' +
       '<div class="search-form">' +
       '<div class="search-item">' +
-      '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="wc-open">打分权重配置</button>' +
+      stdHtml +
       '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="judge-open-assign">' + (groups.length ? '重新分配' : '评委分配') + '</button>' +
       stageCtrl +
       '</div>' +
@@ -1487,40 +1809,86 @@ window.MedalDemo = (function () {
     }).join('');
   }
 
-  /* ── 打分权重配置：填充指标项列表 / 渲染行 / 权重合计 ── */
-  function fillWeightConfigDialog(act) {
-    var title = document.getElementById('weightConfigTitle');
-    if (title) title.textContent = '打分权重配置 · ' + act.title;
-    var configs = ((MDS.get('scoreConfigs') || {})[act.id]) || [
-      { name: '创新性', weight: 40 },
-      { name: '实用性', weight: 30 },
-      { name: '完整性', weight: 30 },
-    ];
-    renderWeightConfigRows(configs);
-    updateWeightTotal();
-    Proto.openDialog('weightConfigDialog');
+  /* ── 评分标准：按 id 查标准 / 渲染列表 / 指标行 / 权重合计 / 下拉选项 ── */
+  function scoreStandardById(id) {
+    return (MDS.get('scoreStandards') || []).filter(function (s) { return s.id === id; })[0];
   }
 
-  function renderWeightConfigRows(configs) {
-    var tbody = document.getElementById('weightConfigTbody');
-    if (!tbody) return;
-    tbody.innerHTML = (configs.length ? configs : [{}]).map(function (c) {
+  /* 评分标准列表页：每张标准一张卡片（名称/备注/指标摘要/编辑/删除） */
+  function renderScoreStandardList() {
+    var box = document.getElementById('scoreStandardList');
+    if (!box) return;
+    var standards = MDS.get('scoreStandards') || [];
+    if (!standards.length) {
+      box.innerHTML = '<section class="pc-card"><div class="pc-empty"><div class="empty-icon">📋</div><div>暂无评分标准，点击「新增评分标准」创建</div></div></section>';
+      return;
+    }
+    var rows = standards.map(function (s) {
+      var indicators = (s.indicators || []).map(function (ind) {
+        return '<span class="score-standard-indicator">' + esc(ind.name) + ' · ' + ind.maxScore + '分 · ' + ind.weight + '%</span>';
+      }).join('');
       return (
         '<tr>' +
-        '<td><input class="pc-input wc-name" placeholder="指标名称" value="' + esc(c.name || '') + '"></td>' +
-        '<td><input class="pc-input wc-weight" type="number" min="0" max="100" placeholder="权重" value="' + (c.weight != null ? c.weight : '') + '" style="width:100px;"></td>' +
-        '<td><span class="action-btn action-delete" data-action="wc-del">删除</span></td>' +
+        '<td><strong>' + esc(s.name) + '</strong></td>' +
+        '<td style="color:#909399;">' + esc(s.remark || '—') + '</td>' +
+        '<td class="op-col">' +
+        '<button type="button" class="pc-btn pc-btn-edit pc-btn-sm" data-action="score-standard-edit" data-id="' + s.id + '">编辑</button>' +
+        '<button type="button" class="pc-btn pc-btn-delete pc-btn-sm" data-action="score-standard-del" data-id="' + s.id + '">删除</button>' +
+        '</td>' +
         '</tr>'
       );
     }).join('');
+    box.innerHTML =
+      '<section class="pc-card">' +
+      '<div class="card-head"><span class="card-title">评分标准列表</span><span class="table-count">共 ' + standards.length + ' 套</span></div>' +
+      '<div class="card-body no-padding">' +
+      '<table class="pc-table"><thead><tr>' +
+      '<th style="width:180px;">标准名称</th><th style="width:220px;">备注</th><th style="width:130px;">操作</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></section>';
   }
 
-  function updateWeightTotal() {
-    var tbody = document.getElementById('weightConfigTbody');
-    var hint = document.getElementById('weightConfigHint');
+  /* 打开评分标准弹窗：standard 为空=新增，否则编辑回填 */
+  function fillScoreStandardDialog(standard) {
+    var title = document.getElementById('scoreStandardTitle');
+    if (title) title.textContent = standard ? '编辑评分标准' : '新增评分标准';
+    var idEl = document.getElementById('ssId');
+    if (idEl) idEl.value = standard ? String(standard.id) : '';
+    var nameEl = document.getElementById('ssName');
+    if (nameEl) nameEl.value = standard ? (standard.name || '') : '';
+    var remarkEl = document.getElementById('ssRemark');
+    if (remarkEl) remarkEl.value = standard ? (standard.remark || '') : '';
+    var tbody = document.getElementById('ssIndicatorTbody');
+    if (tbody) {
+      var indicators = (standard && standard.indicators && standard.indicators.length)
+        ? standard.indicators
+        : [{ name: '', maxScore: 100, weight: 100 }];
+      tbody.innerHTML = indicators.map(ssIndicatorRowHtml).join('');
+    }
+    updateSSWeightHint();
+    Proto.openDialog('scoreStandardDialog');
+  }
+
+  /* 指标行 HTML（ss-name 指标名 / ss-max 满分 / ss-weight 权重） */
+  function ssIndicatorRowHtml(ind) {
+    ind = ind || {};
+    return (
+      '<tr>' +
+      '<td><input class="pc-input ss-name" placeholder="指标名称" value="' + esc(ind.name || '') + '"></td>' +
+      '<td><input class="pc-input ss-max" type="number" min="0" placeholder="满分" value="' + (ind.maxScore != null ? ind.maxScore : '') + '" style="width:100px;"></td>' +
+      '<td><input class="pc-input ss-weight" type="number" min="0" max="100" placeholder="权重" value="' + (ind.weight != null ? ind.weight : '') + '" style="width:100px;"></td>' +
+      '<td><span class="action-btn action-delete" data-action="ss-indicator-del">删除</span></td>' +
+      '</tr>'
+    );
+  }
+
+  /* 权重合计提示（满分/权重实时校验） */
+  function updateSSWeightHint() {
+    var tbody = document.getElementById('ssIndicatorTbody');
+    var hint = document.getElementById('ssWeightHint');
     if (!tbody || !hint) return;
     var total = 0;
-    tbody.querySelectorAll('.wc-weight').forEach(function (el) {
+    tbody.querySelectorAll('.ss-weight').forEach(function (el) {
       total += parseInt(el.value, 10) || 0;
     });
     var ok = total === 100;
@@ -1528,6 +1896,16 @@ window.MedalDemo = (function () {
       (ok
         ? ' <span style="color:#67c23a;">✓ 合计 100%，可保存</span>'
         : ' <span style="color:#e6a23c;">应合计 100%（当前 ' + total + '%）</span>');
+  }
+
+  /* 评分标准下拉选项（活动发起/编辑弹窗）：含「不关联」 */
+  function scoreStandardOptions(selectedId) {
+    var opts = ['<option value="">不关联评分标准</option>'];
+    (MDS.get('scoreStandards') || []).forEach(function (s) {
+      var sel = s.id === selectedId ? ' selected' : '';
+      opts.push('<option value="' + s.id + '"' + sel + '>' + esc(s.name) + '</option>');
+    });
+    return opts.join('');
   }
 
   /* 归档结果组装：报名 + 作品 + 综合评分 → 排序 → 名次 → 奖项（结果页与电子奖状共用的单一数据源） */
@@ -1720,7 +2098,7 @@ window.MedalDemo = (function () {
             '<td><strong>' + esc(a.title) + '</strong></td>' +
             '<td>' + esc(a.type) + '</td>' +
             '<td>' + esc(a.signupStart || '—') + ' ~ ' + esc(a.signupEnd || '—') + '</td>' +
-            '<td>' + actScopeHtml(a.targetKindergartens) + '</td>' +
+            '<td>' + actScopeHtml(a) + '</td>' +
             '<td>' + (a.participants || 0) + ' 人</td>' +
             '<td>' + (a.worksCount || 0) + ' 份</td>' +
             '<td>' + esc(a.publishTime || '—') + '</td>' +
@@ -1783,7 +2161,7 @@ window.MedalDemo = (function () {
       '<div class="card-body" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">' +
       '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="aq-back">← 返回列表</button>' +
       '<button type="button" class="pc-btn pc-btn-export pc-btn-sm" data-action="aq-export" data-id="' + act.id + '">⇩ 导出全量数据</button>' +
-      '<span style="font-size:12px;color:#909399;">活动类型：' + esc(act.type) + ' · 报名时间：' + esc(act.signupStart || '—') + ' ~ ' + esc(act.signupEnd || '—') + ' · 活动对象：' + esc(actScopeText(act.targetKindergartens)) + '</span>' +
+      '<span style="font-size:12px;color:#909399;">活动类型：' + esc(act.type) + ' · 报名时间：' + esc(act.signupStart || '—') + ' ~ ' + esc(act.signupEnd || '—') + ' · 活动对象：' + esc(actScopeText(act)) + '</span>' +
       '</div></section>' +
       '<section class="pc-card">' +
       '<div class="card-head"><span class="card-title">报名与评审数据</span><span class="table-count">共 ' + items.length + ' 人</span></div>' +
@@ -1928,12 +2306,12 @@ window.MedalDemo = (function () {
         return;
       }
     });
-    // 打分权重配置弹窗：指标权重输入实时刷新合计
+    // 评分标准弹窗：指标输入实时刷新权重合计
     document.addEventListener('input', function (e) {
       var t = e.target;
       if (!t || !t.classList) return;
-      if (t.classList.contains('wc-name') || t.classList.contains('wc-weight')) {
-        updateWeightTotal();
+      if (t.classList.contains('ss-name') || t.classList.contains('ss-max') || t.classList.contains('ss-weight')) {
+        updateSSWeightHint();
       }
     });
     // 选择评委弹窗：按姓名筛选评委（实时过滤列表）
@@ -3409,13 +3787,15 @@ window.MedalDemo = (function () {
     return html;
   }
 
-  /* 园长「童蹊社区」专区：仅排行榜/家长进度入口宫格（对齐教师端结构，无激励卡） */
+  /* 园长「童蹊社区」专区：活动中心 + 排行榜 + 家长进度入口宫格（对齐教师端结构，无激励卡） */
   function renderPrincipalCommunity() {
     var html = '';
-    html += '<div class="mb-section-title"><span class="title">童蹊社区</span><span class="subtitle">园内排行 · 家长进度</span></div>';
+    html += '<div class="mb-section-title"><span class="title">童蹊社区</span><span class="subtitle">活动中心 · 园内排行 · 家长进度</span></div>';
     html += '<div class="mb-card community-card">';
     html += '<div class="mb-grid community-grid">';
     var items = [
+      // 活动中心：园长可报名参赛（角色感知渲染，?role=principal 保证园长视角）
+      { name: '活动中心', icon: '📋', color: '#4facfe', bg: '#e6f4ff', path: 'activity.html?role=principal' },
       { name: '排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'principal.html' },
       { name: '家长进度', icon: '👪', color: '#66cc99', bg: '#e6f9f0', path: 'principal.html?view=parent' },
     ];
@@ -3467,13 +3847,59 @@ window.MedalDemo = (function () {
     );
   }
 
-  /* ═══════════════════════ 移动端：活动中心（教师端完整流程：查看 → 报名 → 上传 → 结果） ═══════════════════════ */
+  /* ═══════════════════════ 移动端：活动中心（教师/园长端完整流程：查看 → 报名 → 上传 → 结果） ═══════════════════════ */
 
   var mobileActTab = 'all';      // 分段：all 全部 / signup 待报名 / doing 进行中 / done 已出结果
   var uploadActivityId = null;   // 当前上传作品对应的活动 id（upload-sheet 时写入）
   var signupActivityId = null;   // 当前报名对应的活动 id（activity-signup 时写入）
 
-  /* 当前教师（张慧）在某活动的参与状态（teacherSignups 按活动 id 键控；无则 null） */
+  /* 当前端侧参与者（活动中心按角色区分：教师=张慧 / 园长=userProfile（李园长），无对应角色返回 null） */
+  function currentParticipant() {
+    var role = currentRole();
+    if (role === 'teacher') return { role: 'teacher', name: TEACHER_NAME, kindergarten: '童蹊幼儿园' };
+    if (role === 'principal') {
+      var p = MDS.get('userProfile') || {};
+      return { role: 'principal', name: p.name || '李园长', kindergarten: '童蹊幼儿园' };
+    }
+    return null;
+  }
+
+  /* 当前参与者在某活动的报名记录（教师读 teacherSignups、园长读 principalSignups，按活动 id 键控） */
+  function participantSignupFor(act) {
+    var p = currentParticipant();
+    if (!p) return null;
+    var store = p.role === 'principal' ? 'principalSignups' : 'teacherSignups';
+    return (MDS.get(store) || {})[act.id] || null;
+  }
+
+  /* 写入当前参与者的报名/作品状态（教师写 teacherSignups、园长写 principalSignups） */
+  function setParticipantSignup(id, data) {
+    var p = currentParticipant();
+    if (!p) return;
+    var store = p.role === 'principal' ? 'principalSignups' : 'teacherSignups';
+    MDS.update(store, function (map) {
+      var next = Object.assign({}, map || {});
+      next[id] = Object.assign({}, next[id] || {}, data);
+      return next;
+    });
+  }
+
+  /* 当前参与者是否在某活动参赛范围内（由 scopeParticipants 派生，控制可见性与报名资格） */
+  function participantInScope(act) {
+    var p = currentParticipant();
+    if (!p) return false;
+    return scopeParticipants(act).some(function (x) { return x.name === p.name; });
+  }
+
+  /* 当前参与者是否参与某活动（已报名 或 已提交作品，作品按参与者姓名匹配） */
+  function participantMyActivity(act) {
+    if (participantSignupFor(act)) return true;
+    var p = currentParticipant();
+    if (!p) return false;
+    return worksForActivityId(act.id).some(function (w) { return w.teacher === p.name; });
+  }
+
+  /* 当前教师（张慧）在某活动的参与状态（teacherSignups 按活动 id 键控；无则 null，PC 教师工作台专用） */
   function teacherSignupFor(act) {
     return (MDS.get('teacherSignups') || {})[act.id] || null;
   }
@@ -3505,36 +3931,34 @@ window.MedalDemo = (function () {
     return '<span class="act-status st-PUBLISHED">已发布</span>';
   }
 
-  /* 活动卡片（教师视角）：整体点击看详情，底部按状态给操作按钮 */
-  function activityCardHtml(a, isTeacher) {
-    var mine = isTeacher ? teacherSignupFor(a) : null;
+  /* 活动卡片（参与者视角：教师/园长）：整体点击看详情，底部按状态给操作按钮 */
+  function activityCardHtml(a) {
+    var mine = participantSignupFor(a);
     var done = a.resultStatus === 'published' || a.resultStatus === 'archived';
 
     var ops = '';
     var myLine = '';
-    if (isTeacher) {
-      if (done && isMyActivity(a)) {
-        // 已出结果且本人参与：查看结果
-        ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="activity-result" data-id="' + a.id + '">查看结果</button>';
-      } else if (a.stage === 'signup' && !mine) {
-        // 报名中且未报名：报名
-        ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="activity-signup" data-id="' + a.id + '">报名</button>';
-      } else if (mine && !mine.workSubmitted) {
-        // 已报名未上传：上传作品
-        ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="upload-sheet" data-id="' + a.id + '">上传作品</button>';
-      }
-      // 我的参与信息行
-      if (mine) {
-        myLine = mine.workSubmitted
-          ? '<div class="ac-my">我的作品：' + esc(mine.workTitle || '已提交') + '</div>'
-          : '<div class="ac-my">已报名 · 待上传作品</div>';
-      }
+    if (done && participantMyActivity(a)) {
+      // 已出结果且本人参与：查看结果
+      ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="activity-result" data-id="' + a.id + '">查看结果</button>';
+    } else if (a.stage === 'signup' && !mine) {
+      // 报名中且未报名：报名
+      ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="activity-signup" data-id="' + a.id + '">报名</button>';
+    } else if (mine && !mine.workSubmitted) {
+      // 已报名未上传：上传作品
+      ops = '<button type="button" class="mb-btn" style="height:34px;padding:0 18px;font-size:13px;" data-action="upload-sheet" data-id="' + a.id + '">上传作品</button>';
+    }
+    // 我的参与信息行
+    if (mine) {
+      myLine = mine.workSubmitted
+        ? '<div class="ac-my">我的作品：' + esc(mine.workTitle || '已提交') + '</div>'
+        : '<div class="ac-my">已报名 · 待上传作品</div>';
     }
 
     return (
       '<div class="mb-activity-card" data-action="activity-detail" data-id="' + a.id + '">' +
       '<div class="ac-title">' + esc(a.title) + activityStatusTag(a) + '</div>' +
-      '<div class="ac-desc">活动对象：' + esc(actScopeText(a.targetKindergartens)) + ' · 作品格式：' + esc(a.format) + '</div>' +
+      '<div class="ac-desc">活动对象：' + esc(actScopeText(a)) + ' · 作品格式：' + esc(a.format) + '</div>' +
       myLine +
       '<div class="ac-meta">' +
       '<span>报名：' + esc(a.signupStart || '—') + ' ~ ' + esc(a.signupEnd || '—') + '</span>' +
@@ -3544,26 +3968,27 @@ window.MedalDemo = (function () {
     );
   }
 
-  /* 活动列表主渲染：按教师视角分段（全部 / 待报名 / 进行中 / 已出结果） */
+  /* 活动列表主渲染：按参与者视角分段（全部 / 待报名 / 进行中 / 已出结果），仅展示本人参赛范围内活动 */
   function renderMobileActivity() {
     var list = document.getElementById('activityList');
     if (!list) return;
     var flowBar = document.getElementById('actFlowBar');
     if (flowBar) flowBar.innerHTML = renderActivityFlowBar();
-    var isTeacher = currentRole() === 'teacher';
-    var activities = (MDS.get('activities') || []).filter(function (a) { return a.status === 'PUBLISHED'; });
+    // 仅展示已发布且当前参与者在参赛范围内的活动（教师/园长同理）
+    var activities = (MDS.get('activities') || []).filter(function (a) {
+      return a.status === 'PUBLISHED' && participantInScope(a);
+    });
 
     var filtered = activities.filter(function (a) {
-      var mine = teacherSignupFor(a);
+      var mine = participantSignupFor(a);
       switch (mobileActTab) {
         case 'signup':
-          return isTeacher && a.stage === 'signup' && !mine;
+          return a.stage === 'signup' && !mine;
         case 'doing':
-          if (!isTeacher) return false;
           if (mine) return !(a.resultStatus === 'published' || a.resultStatus === 'archived');
-          return a.stage === 'review' && isMyActivity(a);
+          return a.stage === 'review' && participantMyActivity(a);
         case 'done':
-          return isTeacher && (a.resultStatus === 'published' || a.resultStatus === 'archived') && isMyActivity(a);
+          return (a.resultStatus === 'published' || a.resultStatus === 'archived') && participantMyActivity(a);
         default:
           return true;
       }
@@ -3573,7 +3998,7 @@ window.MedalDemo = (function () {
       list.innerHTML = '<div class="mb-empty-tip">暂无活动</div>';
       return;
     }
-    list.innerHTML = filtered.map(function (a) { return activityCardHtml(a, isTeacher); }).join('');
+    list.innerHTML = filtered.map(function (a) { return activityCardHtml(a); }).join('');
   }
 
   /* ═══════════════════════ 移动端：消息页（活动通知） ═══════════════════════ */
@@ -3582,11 +4007,12 @@ window.MedalDemo = (function () {
   function renderMobileNotice() {
     var root = document.getElementById('mobileNoticeList');
     if (!root) return;
+    var p = currentParticipant();
     var activityNotices = MDS.get('activityNotices') || {};
     var list = [];
     Object.keys(activityNotices).forEach(function (actId) {
       (activityNotices[actId] || []).forEach(function (n) {
-        var me = (n.recipients || []).filter(function (r) { return r.name === TEACHER_NAME; })[0];
+        var me = (n.recipients || []).filter(function (r) { return p && r.name === p.name; })[0];
         if (!me) return;
         var act = activityById(Number(actId));
         list.push({
@@ -3624,7 +4050,7 @@ window.MedalDemo = (function () {
       root.innerHTML = '<div class="mb-empty-tip">活动不存在</div>';
       return;
     }
-    var mine = teacherSignupFor(act);
+    var mine = participantSignupFor(act);
     var done = act.resultStatus === 'published' || act.resultStatus === 'archived';
     var awards = (act.awards || []).map(function (aw) { return aw.name + '×' + aw.count; }).join(' / ');
     var statusText = done ? '已出结果' : act.stage === 'signup' ? '报名中' : act.stage === 'review' ? '评审中' : '已发布';
@@ -3642,14 +4068,16 @@ window.MedalDemo = (function () {
     html += '<div class="act-detail-rows">';
     html += '<div class="adr"><span class="label">报名时间</span><span class="value">' + esc(act.signupStart || '—') + ' ~ ' + esc(act.signupEnd || '—') + '</span></div>';
     html += '<div class="adr"><span class="label">作品格式</span><span class="value">' + esc(act.format || '—') + '</span></div>';
-    html += '<div class="adr"><span class="label">活动对象</span><span class="value">' + esc(actScopeText(act.targetKindergartens)) + '</span></div>';
+    html += '<div class="adr"><span class="label">活动对象</span><span class="value">' + esc(actScopeText(act)) + '</span></div>';
     html += '<div class="adr"><span class="label">奖项设置</span><span class="value">' + esc(awards || '—') + '</span></div>';
     html += '</div>';
     html += '</div>';
 
-    // 底部操作区
+    // 底部操作区（非参赛范围则禁止报名）
     var btn = '';
-    if (done && isMyActivity(act)) {
+    if (!participantInScope(act)) {
+      btn = '<button type="button" class="mb-btn act-detail-btn" disabled>非参赛对象</button>';
+    } else if (done && participantMyActivity(act)) {
       btn = '<button type="button" class="mb-btn act-detail-btn" disabled>已出结果</button>';
     } else if (act.stage === 'signup' && !mine) {
       btn = '<button type="button" class="mb-btn act-detail-btn act-detail-primary" data-action="activity-detail-signup" data-id="' + act.id + '">立即报名</button>';
@@ -3676,7 +4104,7 @@ window.MedalDemo = (function () {
         '<div class="sheet-desc">' + esc(act.desc || '—') + '</div>' +
         '<div class="sub-row"><span class="label">报名时间</span><span class="value">' + esc(act.signupStart || '—') + ' ~ ' + esc(act.signupEnd || '—') + '</span></div>' +
         '<div class="sub-row"><span class="label">作品格式</span><span class="value">' + esc(act.format || '—') + '</span></div>' +
-        '<div class="sub-row"><span class="label">活动对象</span><span class="value">' + esc(actScopeText(act.targetKindergartens)) + '</span></div>' +
+        '<div class="sub-row"><span class="label">活动对象</span><span class="value">' + esc(actScopeText(act)) + '</span></div>' +
         '<div class="sub-row"><span class="label">奖项设置</span><span class="value">' + esc(awards || '—') + '</span></div>' +
         '</div>';
     }
@@ -3686,10 +4114,13 @@ window.MedalDemo = (function () {
   /* 结果弹层：展示当前教师（张慧）的名次/奖项/评分 + 电子奖状（管理端生成后） */
   function openMyResult(act) {
     var title = document.getElementById('resultTitle');
-    if (title) title.textContent = '「' + act.title + '」结果';
+    if (title) title.textContent = '「' + act.title + '」获奖公示';
     var body = document.getElementById('resultBody');
     if (body) {
-      var item = buildArchiveItems(act).filter(function (it) { return it.s.name === TEACHER_NAME; })[0];
+      // 当前参与者（教师/园长）的获奖结果 + 全员得奖报表（完整获奖名单公示）
+      var p = currentParticipant();
+      var meName = p ? p.name : '';
+      var item = meName ? buildArchiveItems(act).filter(function (it) { return it.s.name === meName; })[0] : null;
       var html = '';
       if (!item) {
         html = '<div class="mb-empty-tip">未参与该活动</div>';
@@ -3708,7 +4139,7 @@ window.MedalDemo = (function () {
         html += '<div class="sub-row"><span class="label">奖项等级</span><span class="value">' + esc(item.awardName || '—') + '</span></div>';
         html += '</div>';
         var certStatus = ((MDS.get('certStatus') || {})[act.id]) || {};
-        if (certStatus[TEACHER_NAME]) {
+        if (p && certStatus[p.name]) {
           var tpl = certTemplateById(act.certTemplateId);
           html += '<div class="cert-card" style="margin-top:12px;">' + buildCertPreviewHtml(tpl, certVarMap(act, {
             name: item.s.name,
@@ -3721,9 +4152,46 @@ window.MedalDemo = (function () {
           html += '<div style="margin-top:12px;font-size:12px;color:#9ca3af;text-align:center;">电子奖状由管理端发布后生成</div>';
         }
       }
+      // 全员得奖报表：公示完整获奖名单（含未获奖，本人行高亮）
+      html += resultFullTableHtml(act, meName);
       body.innerHTML = html;
     }
     Proto.openDialog('resultSheet');
+  }
+
+  /* 全员得奖报表：活动结果发布后，参赛者可查看完整获奖名单（含未获奖，本人行高亮） */
+  function resultFullTableHtml(act, meName) {
+    var items = buildArchiveItems(act);
+    // 有名次者按名次在前，未获奖（无评分/名次）排后
+    var ranked = items.filter(function (it) { return it.rank !== null; });
+    var unranked = items.filter(function (it) { return it.rank === null; });
+    var rows = ranked.concat(unranked).map(function (it) {
+      var isMe = it.s.name === meName;
+      var cls = (it.rank === null ? 'result-row-nonwin ' : '') + (isMe ? 'result-row-me' : '');
+      var rankCell = it.rank !== null ? '<strong>' + it.rank + '</strong>' : '<span style="color:#c0c4cc;">—</span>';
+      var scoreCell = it.score !== null ? it.score : '<span style="color:#c0c4cc;">—</span>';
+      var awardCell = it.awardName
+        ? '<span class="status-tag status-primary">' + esc(it.awardName) + '</span>'
+        : '<span style="color:#c0c4cc;">未获奖</span>';
+      return (
+        '<tr class="' + cls + '">' +
+        '<td>' + rankCell + '</td>' +
+        '<td>' + (isMe ? '<strong>' + esc(it.s.name) + '</strong><span class="result-me-tag">我</span>' : esc(it.s.name)) + '</td>' +
+        '<td>' + esc(it.s.kindergarten) + '</td>' +
+        '<td>' + scoreCell + '</td>' +
+        '<td>' + awardCell + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+    return (
+      '<div class="result-full-block" style="margin-top:16px;">' +
+      '<div class="result-full-title">🏆 全员得奖报表</div>' +
+      '<div style="font-size:12px;color:#9ca3af;margin:6px 0 10px;">共 ' + items.length + ' 位参赛者，完整获奖名单公示如下</div>' +
+      '<table class="result-full-table">' +
+      '<thead><tr><th>名次</th><th>姓名</th><th>幼儿园</th><th>综合评分</th><th>奖项</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table>' +
+      '</div>'
+    );
   }
 
   /* ═══════════════════════ 移动端：排行榜 ═══════════════════════ */
@@ -4080,10 +4548,10 @@ window.MedalDemo = (function () {
     box.innerHTML = html;
   }
 
-  /* PC 端「我的活动」结果弹窗：复用 buildArchiveItems 取本人评分/名次/奖项 */
+  /* PC 端「我的活动」结果弹窗：复用 buildArchiveItems 取本人评分/名次/奖项 + 全员得奖报表 */
   function openTeacherResult(act) {
     var title = document.getElementById('teacherResultTitle');
-    if (title) title.textContent = '「' + act.title + '」我的结果';
+    if (title) title.textContent = '「' + act.title + '」获奖公示';
     var body = document.getElementById('teacherResultBody');
     if (body) {
       var item = buildArchiveItems(act).filter(function (it) { return it.s.name === TEACHER_NAME; })[0];
@@ -4105,6 +4573,8 @@ window.MedalDemo = (function () {
         html += '<tr><td style="color:#909399;">奖项等级</td><td>' + esc(item.awardName || '—') + '</td></tr>';
         html += '</tbody></table>';
       }
+      // 全员得奖报表：公示完整获奖名单（含未获奖，本人行高亮）
+      html += resultFullTableHtml(act, TEACHER_NAME);
       body.innerHTML = html;
     }
     Proto.openDialog('teacherResultDialog');
@@ -4968,6 +5438,18 @@ window.MedalDemo = (function () {
       // 奖状模板下拉：动态填充（含「不绑定」）
       var actCertSel = document.getElementById('actCertTemplate');
       if (actCertSel) { actCertSel.innerHTML = certTemplateOptions(); actCertSel.value = ''; }
+      // 评分标准下拉：动态填充（含「不关联」）
+      var actScoreSel = document.getElementById('actScoreStandard');
+      if (actScoreSel) { actScoreSel.innerHTML = scoreStandardOptions(); actScoreSel.value = ''; }
+      // 评分标准仅「需要专家评审」时可关联
+      syncScoreStandardByReview('add');
+      // 参赛对象：默认「园长与教师」，隐藏指定教师回显区并清空已选
+      var allRole = document.querySelector('input[name="actTargetRole"][value="ALL"]');
+      if (allRole) allRole.checked = true;
+      var specBox = document.getElementById('actSpecTeacherBox');
+      if (specBox) specBox.hidden = true;
+      specSelected.add = {};
+      renderSpecTeacherEcho('add');
       Proto.openDialog('actAddDialog');
     });
 
@@ -4975,6 +5457,12 @@ window.MedalDemo = (function () {
       var title = (document.getElementById('actTitle') || {}).value || '';
       if (!title) {
         Proto.showToast('请填写活动名称');
+        return;
+      }
+      // 参赛对象为「指定教师」时，必须至少勾选一位教师
+      var role = readTargetRole('actTargetRole');
+      if (role === 'SPECIFIED' && !readSpecTeachers('add').length) {
+        Proto.showToast('请至少选择一位指定教师');
         return;
       }
       // 是否需要专家评审（radio）：是=1 / 否=0
@@ -4988,9 +5476,16 @@ window.MedalDemo = (function () {
         signupStart: (document.getElementById('actStart') || {}).value || '',
         signupEnd: (document.getElementById('actEnd') || {}).value || '',
         targetKindergartens: readScopeChecks('kgScope').length ? readScopeChecks('kgScope') : ['全部幼儿园'],
+        // 参赛对象（角色控制）：角色 + 指定教师（仅 SPECIFIED 时取勾选）
+        targetRole: role,
+        targetTeachers: role === 'SPECIFIED' ? readSpecTeachers('add') : [],
         format: (document.getElementById('actFormat') || {}).value || '文档',
         // 是否专家评审
         expertReview: expertChecked ? expertChecked.value === '1' : true,
+        // 关联评分标准（仅「需要专家评审」时可关联）
+        scoreStandardId: (expertChecked && expertChecked.value === '1')
+          ? (function () { var v = (document.getElementById('actScoreStandard') || {}).value; return v ? Number(v) : null; })()
+          : null,
         awards: readAwardRows('actAwardTbody'),
         desc: (document.getElementById('actDesc') || {}).value || '',
         certTemplateId: (function () { var v = (document.getElementById('actCertTemplate') || {}).value; return v ? Number(v) : null; })(),
@@ -5018,18 +5513,34 @@ window.MedalDemo = (function () {
         if (input) input.value = fields[fid];
       });
       fillScopeChecks('eKgScope', a.targetKindergartens);
+      // 回填参赛对象角色 + 指定教师（并同步指定教师区显隐）
+      fillTargetRole('eActTargetRole', a);
+      fillSpecTeachers(a, 'edit');
+      var eSpecBox = document.getElementById('eActSpecTeacherBox');
+      if (eSpecBox) eSpecBox.hidden = (a.targetRole || 'ALL') !== 'SPECIFIED';
       var expertRadio = document.querySelector('input[name="eActExpertReview"][value="' + (a.expertReview === false ? '0' : '1') + '"]');
       if (expertRadio) expertRadio.checked = true;
+      // 评分标准仅「需要专家评审」时可关联
+      syncScoreStandardByReview('edit');
       renderAwardRows('eActAwardTbody', a.awards);
       // 奖状模板下拉：回填绑定
       var eCertSel = document.getElementById('eActCertTemplate');
       if (eCertSel) { eCertSel.innerHTML = certTemplateOptions(); eCertSel.value = a.certTemplateId ? String(a.certTemplateId) : ''; }
+      // 评分标准下拉：动态填充并回填关联
+      var eScoreSel = document.getElementById('eActScoreStandard');
+      if (eScoreSel) { eScoreSel.innerHTML = scoreStandardOptions(a.scoreStandardId); }
       document.getElementById('eActId').value = id;
       Proto.openDialog('actEditDialog');
     });
 
     Proto.registerAction('act-save-edit', function () {
       var id = Number((document.getElementById('eActId') || {}).value);
+      // 参赛对象为「指定教师」时，必须至少勾选一位教师
+      var role = readTargetRole('eActTargetRole');
+      if (role === 'SPECIFIED' && !readSpecTeachers('edit').length) {
+        Proto.showToast('请至少选择一位指定教师');
+        return;
+      }
       MDS.update('activities', function (arr) {
         return arr.map(function (a) {
           if (a.id !== id) return a;
@@ -5039,10 +5550,21 @@ window.MedalDemo = (function () {
             signupStart: (document.getElementById('eActStart') || {}).value || a.signupStart,
             signupEnd: (document.getElementById('eActEnd') || {}).value || a.signupEnd,
             targetKindergartens: readScopeChecks('eKgScope').length ? readScopeChecks('eKgScope') : a.targetKindergartens,
+            // 参赛对象（角色控制）：角色 + 指定教师（仅 SPECIFIED 时取勾选）
+            targetRole: role,
+            targetTeachers: role === 'SPECIFIED' ? readSpecTeachers('edit') : [],
             format: (document.getElementById('eActFormat') || {}).value || a.format,
             expertReview: (function () {
               var checked = document.querySelector('input[name="eActExpertReview"]:checked');
               return checked ? checked.value === '1' : (a.expertReview !== false);
+            })(),
+            // 关联评分标准（仅「需要专家评审」时可关联）
+            scoreStandardId: (function () {
+              var checked = document.querySelector('input[name="eActExpertReview"]:checked');
+              var expertOn = checked ? checked.value === '1' : (a.expertReview !== false);
+              if (!expertOn) return null;
+              var v = (document.getElementById('eActScoreStandard') || {}).value;
+              return v ? Number(v) : null;
             })(),
             awards: readAwardRows('eActAwardTbody'),
             desc: (document.getElementById('eActDesc') || {}).value || a.desc,
@@ -5557,15 +6079,11 @@ window.MedalDemo = (function () {
       if (id) location.href = 'activity-detail.html?activityId=' + id;
     });
 
-    // 活动详情页报名：写入 teacherSignups 并回显
+    // 活动详情页报名：写入当前参与者（教师/园长）报名状态并回显
     Proto.registerAction('activity-detail-signup', function (el) {
       var id = Number(el.getAttribute('data-id'));
       if (!id) return;
-      MDS.update('teacherSignups', function (map) {
-        var next = Object.assign({}, map || {});
-        next[id] = { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false, workTitle: '' };
-        return next;
-      });
+      setParticipantSignup(id, { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false, workTitle: '' });
       renderActivityDetail();
       Proto.showToast('报名成功，请及时上传参赛作品');
     });
@@ -5579,14 +6097,10 @@ window.MedalDemo = (function () {
       Proto.openDialog('signupSheet');
     });
 
-    // 确认报名：写入当前教师 teacherSignups
+    // 确认报名：写入当前参与者（教师/园长）报名状态
     Proto.registerAction('activity-signup-confirm', function () {
       if (!signupActivityId) return;
-      MDS.update('teacherSignups', function (map) {
-        var next = Object.assign({}, map || {});
-        next[signupActivityId] = { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false, workTitle: '' };
-        return next;
-      });
+      setParticipantSignup(signupActivityId, { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false, workTitle: '' });
       Proto.closeDialog('signupSheet');
       renderMobileActivity();
       Proto.showToast('报名成功，请上传参赛作品');
@@ -5599,7 +6113,7 @@ window.MedalDemo = (function () {
       if (mask) mask.hidden = false;
     });
 
-    // 提交作品：更新当前教师的 teacherSignups（workSubmitted + workTitle）
+    // 提交作品：更新当前参与者（教师/园长）的作品状态（workSubmitted + workTitle）
     Proto.registerAction('upload-confirm', function () {
       var file = document.getElementById('uploadFileName');
       if (file && !file.value.trim()) {
@@ -5608,12 +6122,7 @@ window.MedalDemo = (function () {
       }
       var workTitle = (document.getElementById('uploadFileName') || {}).value.trim();
       if (uploadActivityId) {
-        MDS.update('teacherSignups', function (map) {
-          var next = Object.assign({}, map || {});
-          var cur = next[uploadActivityId] || { signedUp: true, signupTime: nowTimeStr(), workSubmitted: false };
-          next[uploadActivityId] = Object.assign({}, cur, { workSubmitted: true, workTitle: workTitle });
-          return next;
-        });
+        setParticipantSignup(uploadActivityId, { workSubmitted: true, workTitle: workTitle });
       }
       Proto.closeDialog('uploadSheet');
       renderMobileActivity();
@@ -6021,73 +6530,125 @@ window.MedalDemo = (function () {
       Proto.showToast('评审已结束');
     });
 
-    // ── 打分权重配置弹窗（评审阶段：添加指标项并设置权重） ──
-    Proto.registerAction('wc-open', function () {
-      var a = activityById(amActivityId);
-      if (!a) return;
-      fillWeightConfigDialog(a);
+    // ── 评分标准弹窗（score-standard：新增/编辑，配置指标名称/满分上限/权重） ──
+    // 打开新增弹窗
+    Proto.registerAction('score-standard-add', function () {
+      fillScoreStandardDialog(null);
     });
 
-    // 添加指标项
-    Proto.registerAction('wc-add', function () {
-      var tbody = document.getElementById('weightConfigTbody');
-      if (tbody) {
-        tbody.insertAdjacentHTML('beforeend',
-          '<tr>' +
-          '<td><input class="pc-input wc-name" placeholder="指标名称"></td>' +
-          '<td><input class="pc-input wc-weight" type="number" min="0" max="100" placeholder="权重" style="width:100px;"></td>' +
-          '<td><span class="action-btn action-delete" data-action="wc-del">删除</span></td>' +
-          '</tr>'
-        );
-      }
-      updateWeightTotal();
+    // 打开编辑弹窗
+    Proto.registerAction('score-standard-edit', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      var s = scoreStandardById(id);
+      if (!s) return;
+      fillScoreStandardDialog(s);
     });
 
-    // 删除指标项
-    Proto.registerAction('wc-del', function (el) {
+    // 删除评分标准（需确认）
+    Proto.registerAction('score-standard-del', function (el) {
+      var id = Number(el.getAttribute('data-id'));
+      var s = scoreStandardById(id);
+      if (!confirm('确定删除评分标准「' + (s ? s.name : '') + '」吗？删除后已关联该标准的活动需重新选择。')) return;
+      MDS.update('scoreStandards', function (arr) {
+        return (arr || []).filter(function (x) { return x.id !== id; });
+      });
+      renderScoreStandardList();
+      Proto.showToast('已删除评分标准');
+    });
+
+    // 添加指标行
+    Proto.registerAction('ss-indicator-add', function () {
+      var tbody = document.getElementById('ssIndicatorTbody');
+      if (tbody) tbody.insertAdjacentHTML('beforeend', ssIndicatorRowHtml({}));
+      updateSSWeightHint();
+    });
+
+    // 删除指标行
+    Proto.registerAction('ss-indicator-del', function (el) {
       var tr = el.closest('tr');
       if (tr) tr.remove();
-      updateWeightTotal();
+      updateSSWeightHint();
     });
 
-    // 保存打分权重配置
-    Proto.registerAction('wc-save', function () {
-      var tbody = document.getElementById('weightConfigTbody');
-      var rows = [];
-      tbody.querySelectorAll('tr').forEach(function (tr) {
-        var name = ((tr.querySelector('.wc-name') || {}).value || '').trim();
-        var weight = parseInt((tr.querySelector('.wc-weight') || {}).value, 10);
-        if (!name) return;
-        rows.push({ name: name, weight: isNaN(weight) ? 0 : weight });
-      });
-      if (!rows.length) {
-        Proto.showToast('请至少添加一个指标项');
+    // 保存评分标准（新增/编辑）
+    Proto.registerAction('ss-save', function () {
+      var name = ((document.getElementById('ssName') || {}).value || '').trim();
+      if (!name) {
+        Proto.showToast('请填写标准名称');
         return;
       }
-      var total = rows.reduce(function (s, r) { return s + (r.weight || 0); }, 0);
+      var tbody = document.getElementById('ssIndicatorTbody');
+      var indicators = [];
+      tbody.querySelectorAll('tr').forEach(function (tr) {
+        var iname = ((tr.querySelector('.ss-name') || {}).value || '').trim();
+        if (!iname) return;
+        var maxScore = parseInt((tr.querySelector('.ss-max') || {}).value, 10);
+        var weight = parseInt((tr.querySelector('.ss-weight') || {}).value, 10);
+        indicators.push({
+          name: iname,
+          maxScore: isNaN(maxScore) || maxScore < 0 ? 100 : maxScore,
+          weight: isNaN(weight) || weight < 0 ? 0 : weight,
+        });
+      });
+      if (!indicators.length) {
+        Proto.showToast('请至少添加一个评分指标');
+        return;
+      }
+      var total = indicators.reduce(function (s, r) { return s + (r.weight || 0); }, 0);
       if (total !== 100) {
         Proto.showToast('权重合计应为 100%，当前 ' + total + '%');
         return;
       }
-      MDS.update('scoreConfigs', function (map) {
-        var next = Object.assign({}, map || {});
-        next[amActivityId] = rows;
-        return next;
-      });
-      Proto.closeDialog('weightConfigDialog');
-      Proto.showToast('打分权重配置已保存');
+      var remark = ((document.getElementById('ssRemark') || {}).value || '').trim();
+      var id = Number((document.getElementById('ssId') || {}).value);
+      if (id) {
+        // 编辑：按 id 更新
+        MDS.update('scoreStandards', function (arr) {
+          return (arr || []).map(function (s) {
+            return s.id === id ? Object.assign({}, s, { name: name, remark: remark, indicators: indicators }) : s;
+          });
+        });
+      } else {
+        // 新增：取当前最大 id + 1
+        var nextId = (MDS.get('scoreStandards') || []).reduce(function (m, s) { return Math.max(m, s.id || 0); }, 0) + 1;
+        MDS.update('scoreStandards', function (arr) {
+          return (arr || []).concat([{ id: nextId, name: name, remark: remark, indicators: indicators }]);
+        });
+      }
+      Proto.closeDialog('scoreStandardDialog');
+      renderScoreStandardList();
+      Proto.showToast(id ? '评分标准已更新' : '已新增评分标准');
     });
 
-    // ── 评委分配弹窗（评审阶段「评委分配」：自动分配 / 手动分配 两种方式） ──
-    // 打开弹窗：预填已有分配（重新分配时展示当前分组与评委），默认自动分配
+    // 评审阶段：查看该活动关联的评分标准（只读弹窗）
+    Proto.registerAction('score-standard-view', function () {
+      var a = activityById(amActivityId);
+      var title = document.getElementById('ssViewTitle');
+      var body = document.getElementById('ssViewBody');
+      if (!body) return;
+      var s = a ? scoreStandardById(a.scoreStandardId) : null;
+      if (!s) {
+        if (title) title.textContent = '评分标准';
+        body.innerHTML = '<div class="pc-empty" style="padding:24px 0;"><div>该活动未关联评分标准</div></div>';
+      } else {
+        if (title) title.textContent = '评分标准 · ' + s.name;
+        body.innerHTML =
+          (s.remark ? '<div style="font-size:12px;color:#909399;margin-bottom:10px;">' + esc(s.remark) + '</div>' : '') +
+          '<table class="pc-table"><thead><tr><th>指标名称</th><th>满分上限</th><th>权重</th></tr></thead><tbody>' +
+          (s.indicators || []).map(function (ind) {
+            return '<tr><td>' + esc(ind.name) + '</td><td>' + ind.maxScore + ' 分</td><td>' + ind.weight + '%</td></tr>';
+          }).join('') +
+          '</tbody></table>';
+      }
+      Proto.openDialog('scoreStandardViewDialog');
+    });
+
+    // ── 评委分配弹窗（评审阶段「评委分配」：仅手动分配专家，已取消系统随机抽评） ──
+    // 打开弹窗：预填已有分配（重新分配时展示当前分组与评委）
     Proto.registerAction('judge-open-assign', function () {
       var a = activityById(amActivityId);
       var title = document.getElementById('judgeAssignTitle');
       if (title) title.textContent = '评委分配 · ' + (a ? a.title : '');
-      // 自动分配：清空上次抽取结果
-      judgeDrawResult = null;
-      var autoPreview = document.getElementById('judgeAutoDrawPreview');
-      if (autoPreview) autoPreview.innerHTML = '';
       // 手动分配：预填已有分配（按 groupNo 聚合评委 id，供重新分配时回显）
       var existing = ((MDS.get('reviewGroups') || {})[amActivityId]) || [];
       var groupMap = {};
@@ -6101,76 +6662,7 @@ window.MedalDemo = (function () {
       var gc = document.getElementById('judgeGroupCount');
       if (gc) gc.value = judgeGroupCount;
       renderJudgeAssignGroups();
-      setJudgeAssignMode('auto');
       Proto.openDialog('judgeAssignDialog');
-    });
-
-    // 评委分配弹窗：切换分配方式（自动 / 手动）
-    Proto.registerAction('judge-mode', function (el) {
-      setJudgeAssignMode(el.getAttribute('data-mode'));
-    });
-
-    // 评委分配弹窗（自动分配）：进行分组抽取（系统随机抽取评委并分配需评作品数）
-    Proto.registerAction('judge-draw', function () {
-      var btn = document.querySelector('[data-action="judge-draw"]');
-      var groupCount = parseInt((qs('#judgeAutoGroupCount') || {}).value, 10) || 2;
-      var perGroup = parseInt((qs('#judgeAutoPerGroup') || {}).value, 10) || 1;
-      var needed = groupCount * perGroup;
-      var judges = MDS.get('judges') || [];
-      if (needed > judges.length) {
-        Proto.showToast('评委不足：需要 ' + needed + ' 位评委，当前共 ' + judges.length + ' 位');
-        return;
-      }
-      var preview = document.getElementById('judgeAutoDrawPreview');
-      // 抽签反馈：先显示抽取中动画，再出结果
-      if (preview) preview.innerHTML = '<div class="draw-loading">🎯 正在从 ' + judges.length + ' 位评委中抽取 ' + needed + ' 位…</div>';
-      if (btn) btn.setAttribute('disabled', 'disabled');
-      setTimeout(function () {
-        // 从评委池随机抽签（洗牌取前 needed 位）
-        var pool = judges.slice();
-        for (var i = pool.length - 1; i > 0; i--) {
-          var k = Math.floor(Math.random() * (i + 1));
-          var tmp = pool[i]; pool[i] = pool[k]; pool[k] = tmp;
-        }
-        var picked = pool.slice(0, needed);
-        // 每组需评作品数：均匀分配（前几组可稍多），总和与实际作品数一致
-        var curAct = activityById(amActivityId);
-        var totalWorks = curAct ? (curAct.worksCount || 0) : 0;
-        var base = Math.floor(totalWorks / groupCount);
-        var remainder = totalWorks % groupCount;
-        // 分组：每组 perGroup 位评委，共 groupCount 组
-        var groups = [];
-        for (var g = 0; g < groupCount; g++) {
-          var groupJudges = picked.slice(g * perGroup, g * perGroup + perGroup);
-          groups.push({
-            groupNo: g + 1,
-            workCount: base + (g < remainder ? 1 : 0),
-            judges: groupJudges.map(function (j) {
-              return { judgeId: j.id, judgeName: j.name, judgeAccount: j.account || '' };
-            }),
-          });
-        }
-        judgeDrawResult = groups;
-        // 渲染分组结果卡片（成员徽章）
-        if (preview) {
-          preview.innerHTML =
-            '<div style="font-weight:600;color:#606266;margin-bottom:8px;">分组抽取结果 · 共 ' + totalWorks + ' 份作品：</div>' +
-            groups.map(function (gr) {
-              return (
-                '<div class="draw-group-card" style="margin-bottom:10px;">' +
-                '<div class="draw-group-head">第 ' + gr.groupNo + ' 组 · 需评 ' + gr.workCount + ' 份作品</div>' +
-                '<div>' +
-                gr.judges.map(function (j) {
-                  return '<span class="draw-judge-tag">' + esc(j.judgeName) + ' · ' + esc(j.judgeAccount || '—') + '</span>';
-                }).join(' ') +
-                '</div>' +
-                '</div>'
-              );
-            }).join('');
-        }
-        if (btn) btn.removeAttribute('disabled');
-        Proto.showToast('已完成分组抽取，点击「确定分配」生效');
-      }, 600);
     });
 
     // 评委分配弹窗（手动分配）：生成/重置分组（读取分组数，清空勾选后重新选择）
@@ -6216,52 +6708,33 @@ window.MedalDemo = (function () {
       renderJudgeAssignGroups();
     });
 
-    // 评委分配弹窗：确定分配（按分配方式校验后写入 reviewGroups[actId]，每行一个评委）
+    // 评委分配弹窗：确定分配（手动分配校验后写入 reviewGroups[actId]，每行一个评委）
     Proto.registerAction('judge-confirm', function () {
       var rows = [];
-      if (judgeAssignMode === 'manual') {
-        // 手动分配：校验每组均选择评委，作品数均匀分配
-        var judges = MDS.get('judges') || [];
-        var judgeById = {};
-        judges.forEach(function (j) { judgeById[j.id] = j; });
-        var curAct = activityById(amActivityId);
-        var totalWorks = curAct ? (curAct.worksCount || 0) : 0;
-        // 每组需评作品数：均匀分配（前几组可稍多），总和与实际作品数一致
-        var base = Math.floor(totalWorks / judgeGroupCount);
-        var remainder = totalWorks % judgeGroupCount;
-        for (var g = 1; g <= judgeGroupCount; g++) {
-          var ids = judgeAssignSel[g] || [];
-          if (!ids.length) {
-            Proto.showToast('请为第 ' + g + ' 组选择至少一位评委');
-            return;
-          }
-          var workCount = base + (g <= remainder ? 1 : 0);
-          ids.forEach(function (id) {
-            var j = judgeById[id];
-            rows.push({
-              groupNo: g,
-              judgeId: Number(id),
-              judgeName: j ? j.name : '',
-              judgeAccount: j ? (j.account || '') : '',
-              workCount: workCount,
-            });
-          });
-        }
-      } else {
-        // 自动分配：使用分组抽取结果
-        if (!judgeDrawResult || !judgeDrawResult.length) {
-          Proto.showToast('请先点击「进行分组抽取」');
+      // 手动分配：校验每组均选择评委，作品数均匀分配（已取消系统随机抽评）
+      var judges = MDS.get('judges') || [];
+      var judgeById = {};
+      judges.forEach(function (j) { judgeById[j.id] = j; });
+      var curAct = activityById(amActivityId);
+      var totalWorks = curAct ? (curAct.worksCount || 0) : 0;
+      // 每组需评作品数：均匀分配（前几组可稍多），总和与实际作品数一致
+      var base = Math.floor(totalWorks / judgeGroupCount);
+      var remainder = totalWorks % judgeGroupCount;
+      for (var g = 1; g <= judgeGroupCount; g++) {
+        var ids = judgeAssignSel[g] || [];
+        if (!ids.length) {
+          Proto.showToast('请为第 ' + g + ' 组选择至少一位评委');
           return;
         }
-        judgeDrawResult.forEach(function (g) {
-          g.judges.forEach(function (j) {
-            rows.push({
-              groupNo: g.groupNo,
-              judgeId: j.judgeId,
-              judgeName: j.judgeName,
-              judgeAccount: j.judgeAccount,
-              workCount: g.workCount,
-            });
+        var workCount = base + (g <= remainder ? 1 : 0);
+        ids.forEach(function (id) {
+          var j = judgeById[id];
+          rows.push({
+            groupNo: g,
+            judgeId: Number(id),
+            judgeName: j ? j.name : '',
+            judgeAccount: j ? (j.account || '') : '',
+            workCount: workCount,
           });
         });
       }
@@ -6438,14 +6911,24 @@ window.MedalDemo = (function () {
 
     Proto.registerAction('judge-save', function () {
       var taskId = Number((document.getElementById('judgeTaskId') || {}).value);
-      var score1 = (document.getElementById('judgeScore1') || {}).value;
-      var score2 = (document.getElementById('judgeScore2') || {}).value;
-      var score3 = (document.getElementById('judgeScore3') || {}).value;
-      if (!score1 || !score2 || !score3) {
-        Proto.showToast('请填写各维度评分');
+      // 按活动关联评分标准动态生成的评分指标逐项取值（每个指标：分数 + 该指标评语，无总评）
+      var fields = document.getElementById('judgeScoreFields');
+      var rows = fields ? fields.querySelectorAll('.judge-score-row') : [];
+      var values = [];
+      var comments = [];
+      var allFilled = rows.length > 0;
+      rows.forEach(function (row) {
+        var inp = row.querySelector('input.judge-score');
+        var ta = row.querySelector('textarea.judge-comment');
+        var v = ((inp && inp.value) || '').trim();
+        if (!v) allFilled = false;
+        values.push(v);
+        comments.push(((ta && ta.value) || '').trim());
+      });
+      if (!allFilled) {
+        Proto.showToast('请填写各指标评分');
         return;
       }
-      var comment = (document.getElementById('judgeComment') || {}).value || '';
       var tasks = window.__judgeTasks || [];
       var w = tasks.filter(function (x) { return x.id === taskId; })[0];
       if (w) {
@@ -6456,8 +6939,8 @@ window.MedalDemo = (function () {
             activity: w.activity,
             work: w.work,
             judge: '王教授',
-            scores: score1 + ' / ' + score2 + ' / ' + score3,
-            comment: comment,
+            scores: values.join(' / '),
+            comments: comments,
             time: '刚刚',
           }]);
         });
@@ -6495,20 +6978,57 @@ window.MedalDemo = (function () {
         '<div class="m-item"><div class="m-label">提交教师</div><div class="m-value">' + esc(w.teacher) + '</div></div>' +
         '<div class="m-item"><div class="m-label">作品类型</div><div class="m-value">' + esc(w.type) + '</div></div>';
     }
-    // 已打分作品回填分数与评语（留痕可追溯）
+    // 按作品所属活动关联评分标准动态渲染评分指标（无关联回退默认三维度）
+    var indicators = judgeIndicatorsFor(w.activity);
+    var hint = document.getElementById('judgeScoreHint');
+    if (hint) hint.textContent = '评分指标 · ' + indicators.map(function (i) { return i.name + '（满分 ' + i.maxScore + '）'; }).join('、');
+    var fields = document.getElementById('judgeScoreFields');
+    if (fields) {
+      // 每个评分指标：指标名称 + 满分上限 + 分数输入 + 该指标评语（无总评）
+      fields.innerHTML = indicators.map(function (ind, idx) {
+        return (
+          '<div class="judge-score-row">' +
+          '<div class="js-head">' +
+          '<span class="js-name">' + esc(ind.name) + '</span>' +
+          '<span class="js-max">满分 ' + ind.maxScore + '</span>' +
+          '<input class="pc-input judge-score" type="number" min="0" max="' + ind.maxScore + '" placeholder="0-' + ind.maxScore + '">' +
+          '</div>' +
+          '<textarea class="judge-comment" rows="2" placeholder="该指标评语（选填）"></textarea>' +
+          '</div>'
+        );
+      }).join('');
+    }
+    // 已打分作品回填分数与各指标评语（留痕可追溯）
     var record = (MDS.get('reviewRecords') || []).filter(function (r) { return r.work === w.work; })[0];
     if (record) {
       var parts = (record.scores || '').split('/');
-      var s1 = document.getElementById('judgeScore1');
-      var s2 = document.getElementById('judgeScore2');
-      var s3 = document.getElementById('judgeScore3');
-      if (s1) s1.value = (parts[0] || '').trim();
-      if (s2) s2.value = (parts[1] || '').trim();
-      if (s3) s3.value = (parts[2] || '').trim();
-      var cm = document.getElementById('judgeComment');
-      if (cm) cm.value = record.comment || '';
+      var comments = record.comments || [];
+      if (fields) {
+        fields.querySelectorAll('.judge-score-row').forEach(function (row, idx) {
+          var inp = row.querySelector('input.judge-score');
+          var ta = row.querySelector('textarea.judge-comment');
+          if (inp) inp.value = (parts[idx] || '').trim();
+          if (ta) ta.value = (comments[idx] || '');
+        });
+      }
     }
     Proto.openDialog('judgeDialog');
+  }
+
+  /* 评委打分指标：按作品所属活动关联的评分标准动态生成（无关联时回退默认三维度） */
+  function judgeIndicatorsFor(activityTitle) {
+    var act = (MDS.get('activities') || []).filter(function (a) { return a.title === activityTitle; })[0];
+    var std = act ? scoreStandardById(act.scoreStandardId) : null;
+    if (std && std.indicators && std.indicators.length) {
+      return std.indicators.map(function (ind) {
+        return { name: ind.name, maxScore: ind.maxScore || 100 };
+      });
+    }
+    return [
+      { name: '内容质量', maxScore: 100 },
+      { name: '创新创意', maxScore: 100 },
+      { name: '呈现效果', maxScore: 100 },
+    ];
   }
 
   /* ═══════════════════════ 评委端：打分任务渲染 ═══════════════════════ */
@@ -6543,23 +7063,40 @@ window.MedalDemo = (function () {
     return tasks;
   }
 
+  var judgeActFilter = ''; // 评委打分：活动筛选值（先按活动筛选，再按具体活动评分）
+
   function renderJudgeTasks() {
     var root = document.getElementById('judgeTaskList');
     if (!root) return;
     // 评委端为完整 PC 后台外壳，顶栏用户信息由 renderPcHeader 统一渲染
     var tasks = buildJudgeTasks();
     window.__judgeTasks = tasks;
-    var total = tasks.length;
-    var done = tasks.filter(function (t) { return t.done; }).length;
+    // 活动筛选下拉：按任务所属活动去重填充（保留当前选择）
+    var actSel = document.getElementById('judgeActFilter');
+    if (actSel) {
+      var seen = {};
+      var opts = ['<option value="">全部活动</option>'];
+      tasks.forEach(function (t) {
+        if (t.activity && !seen[t.activity]) {
+          seen[t.activity] = true;
+          opts.push('<option value="' + esc(t.activity) + '"' + (judgeActFilter === t.activity ? ' selected' : '') + '>' + esc(t.activity) + '</option>');
+        }
+      });
+      actSel.innerHTML = opts.join('');
+    }
+    // 按所选活动过滤任务
+    var filtered = judgeActFilter ? tasks.filter(function (t) { return t.activity === judgeActFilter; }) : tasks;
+    var total = filtered.length;
+    var done = filtered.filter(function (t) { return t.done; }).length;
     var count = document.getElementById('judgeTaskCount');
     if (count) count.textContent = '已评 ' + done + ' / 共 ' + total + ' 份';
     var progress = document.getElementById('judgeTaskProgress');
     if (progress) progress.style.width = (total ? Math.round((done / total) * 100) : 0) + '%';
-    if (!tasks.length) {
-      root.innerHTML = '<div class="pc-empty"><div class="empty-icon">📋</div><div>暂无打分任务</div></div>';
+    if (!filtered.length) {
+      root.innerHTML = '<div class="pc-empty"><div class="empty-icon">📋</div><div>' + (judgeActFilter ? '该活动暂无打分任务' : '暂无打分任务') + '</div></div>';
       return;
     }
-    root.innerHTML = tasks
+    root.innerHTML = filtered
       .map(function (t) {
         return (
           '<div class="scheme-card' + (t.done ? '' : ' is-active') + '">' +
@@ -6667,6 +7204,7 @@ window.MedalDemo = (function () {
     injectRoleFab();
     bindNotifyEvents();
     bindManageEvents();
+    bindSpecTeacherEvents();
 
     // 入口页：显示当前角色 + 重置按钮
     var curRoleEl = document.getElementById('curRole');
@@ -6715,6 +7253,13 @@ window.MedalDemo = (function () {
     // 评委端
     if (document.getElementById('judgeTaskList')) {
       renderJudgeTasks();
+      // 活动筛选下拉由 renderJudgeTasks 动态重绘，用事件委托绑定变更
+      document.addEventListener('change', function (e) {
+        if (e.target && e.target.id === 'judgeActFilter') {
+          judgeActFilter = e.target.value;
+          renderJudgeTasks();
+        }
+      });
     }
 
     // 移动端：首页为角色化首页（hero + 勋章卡 + 宫格 + tabBar），二级页无 tabBar
