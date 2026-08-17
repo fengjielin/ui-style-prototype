@@ -1065,6 +1065,17 @@
   color: var(--pc-text-secondary);
 }
 
+/* 评委打分：指标说明（来自关联评分标准，辅助评委理解打分口径） */
+.judge-score-row .js-desc {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--pc-text-secondary);
+  background: var(--pc-bg-table-head);
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
 .judge-score-row .judge-score {
   width: 110px;
 }
@@ -1300,36 +1311,9 @@ tr.row-excluded td {
 
 /* ═══════════════════════ 移动端：首页数据卡 ═══════════════════════ */
 
-/* 教师勋章激励卡（角色首页卡片）：渐变底 + 圆角 */
-.medal-home-hero {
-  background: linear-gradient(135deg, #fff9f2, #fff4e6);
-  border: 1px solid var(--mb-primary-border, #ffe8cc);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.medal-home-hero:active {
-  transform: scale(0.99);
-}
-
-/* ── 教师「童蹊社区」专区：合并勋章激励卡 + 勋章功能宫格 ── */
+/* ── 教师/园长「童蹊社区」专区：社区内勋章功能宫格 ── */
 .community-card {
   padding: 12px;
-}
-
-/* 社区内激励卡（今日积分 + 指标 + 进度 + 快捷按钮） */
-.community-hero {
-  background: linear-gradient(135deg, #fff9f2, #fff4e6);
-  border: 1px solid var(--mb-primary-border, #ffe8cc);
-  border-radius: var(--mb-radius-card);
-  padding: 16px;
-}
-
-/* 激励卡与功能宫格之间的分隔线 */
-.community-divider {
-  height: 1px;
-  background: var(--mb-border-divider, #f5f5f5);
-  margin: 14px 2px 10px;
 }
 
 /* 社区内勋章功能宫格（去掉卡片自身的外边距，贴合外层容器） */
@@ -1373,52 +1357,6 @@ tr.row-excluded td {
   border-radius: var(--mb-radius-hero);
   padding: 18px 16px;
   box-shadow: var(--mb-shadow-hero);
-}
-
-/* 今日积分大数字 */
-.mb-point-today {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-}
-
-.mb-point-today .num {
-  font-size: 40px;
-  font-weight: 800;
-  line-height: 1;
-  color: var(--mb-primary);
-}
-
-.mb-point-today .unit {
-  font-size: var(--mb-font-mini);
-  color: var(--mb-text-secondary);
-  padding-bottom: 4px;
-}
-
-.mb-point-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.mb-point-cell {
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: var(--mb-radius-card);
-  padding: 10px 0;
-  text-align: center;
-}
-
-.mb-point-cell .num {
-  font-size: var(--mb-font-lg);
-  font-weight: 700;
-  color: var(--mb-text-primary);
-}
-
-.mb-point-cell .label {
-  font-size: var(--mb-font-tiny);
-  color: var(--mb-text-muted);
-  margin-top: 2px;
 }
 
 /* 距下一级进度条（我的勋章） */
@@ -2401,7 +2339,7 @@ tr.row-excluded td {
   font-size: 16px;
 }
 
-/* ═══════════════════════ PC：积分获取明细（全平台教师榜「查看明细」弹窗） ═══════════════════════ */
+/* ═══════════════════════ PC：积分获取明细（园内教师榜「查看明细」弹窗） ═══════════════════════ */
 
 /* 维度汇总条（4 维度 + 合计） */
 .point-dim-chips {

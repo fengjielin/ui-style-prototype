@@ -224,16 +224,6 @@
           <div id="rankGardenAllRoot"></div>
         </div>
 
-        <!-- ═════════ ⑧ 全平台排行榜（rank-platform，管理员端）：KPI + 跨园对比 + 全平台教师榜 ═════════ -->
-        <div class="pc-page-block" data-page-key="rank-platform">
-          <div id="rankPlatformRoot"></div>
-        </div>
-
-        <!-- ═════════ ⑧½ 全平台教师榜（全部）（rank-platform-all，管理员端）：全平台榜「查看全部」二级页 → 点击教师查看积分获取明细 ═════════ -->
-        <div class="pc-page-block" data-page-key="rank-platform-all">
-          <div id="rankPlatformAllRoot"></div>
-        </div>
-
         <!-- ═════════ ⑤ 家长进度看板（rank-parent） ═════════ -->
         <div class="pc-page-block" data-page-key="rank-parent">
           <section class="pc-card">
@@ -245,24 +235,24 @@
           </section>
         </div>
 
-        <!-- ═════════ ⑥ 积分方案管理（score-scheme）：临时专项活动积分方案（月度常规方案已移除） ═════════ -->
+        <!-- ═════════ ⑥ 积分方案管理（score-scheme）：专项积分方案（已与活动解耦，月度常规方案已移除） ═════════ -->
         <div class="pc-page-block" data-page-key="score-scheme">
           <section class="pc-card">
             <div class="card-body" style="display:flex;align-items:center;gap:12px;">
-              <button type="button" class="pc-btn pc-btn-add" data-action="as-add">＋ 新增活动方案</button>
-              <span style="font-size:12px;color:#909399;">活动方案对应所选活动，参与对象由关联活动界定；可一键复制复用</span>
+              <button type="button" class="pc-btn pc-btn-add" data-action="as-add">＋ 新增积分方案</button>
+              <span style="font-size:12px;color:#909399;">积分方案与活动独立，参与对象为所选幼儿园的全部在职教师；可一键复制复用</span>
             </div>
           </section>
           <section class="pc-card">
             <div class="card-head">
-              <span class="card-title">临时专项活动积分方案</span>
-              <span class="table-count" id="activitySchemeCount">共 0 条</span>
+              <span class="card-title">专项积分方案</span>
+              <span class="table-count" id="scoreSchemeCount">共 0 条</span>
             </div>
-            <div class="card-body" id="activitySchemeList" style="display:flex;flex-direction:column;gap:14px;"></div>
+            <div class="card-body" id="scoreSchemeList" style="display:flex;flex-direction:column;gap:14px;"></div>
           </section>
         </div>
 
-        <!-- ═════════ ⑥½ 积分获得情况（score-obtained）：按活动方案查看参与对象四维度积分 + 总积分 + 排位分 + 可编辑奖金 + 发布公告 ═════════ -->
+        <!-- ═════════ ⑥½ 积分获得情况（score-obtained）：按积分方案查看参与对象四维度积分 + 总积分 + 排位分 + 可编辑奖金 + 发布公告 ═════════ -->
         <div class="pc-page-block" data-page-key="score-obtained">
           <div id="scoreObtainedRoot"></div>
         </div>
@@ -359,7 +349,7 @@
           <section class="pc-card">
             <div class="card-body" style="display:flex;align-items:center;gap:12px;">
               <button type="button" class="pc-btn pc-btn-add" data-action="score-standard-add">＋ 新增评分标准</button>
-              <span style="font-size:12px;color:#909399;">配置评审打分指标项（指标名称/满分上限/权重，权重合计 100%）；活动发起时关联评分标准，评委按关联标准的指标打分。</span>
+              <span style="font-size:12px;color:#909399;">配置评审打分指标项（指标名称/指标说明/满分上限/权重，权重合计 100%）；活动发起时关联评分标准，评委按关联标准的指标打分。</span>
             </div>
           </section>
           <div id="scoreStandardList"></div>
@@ -428,15 +418,6 @@
               <!-- 回显已选教师 -->
               <div class="spec-teacher-tags" id="actSpecTeacherTags"></div>
             </div>
-          </div>
-          <div class="pc-form-item">
-            <label>作品格式</label>
-            <select class="pc-select" id="actFormat">
-              <option value="文档(docx、xlsx、pdf)">文档(docx、xlsx、pdf)</option>
-              <option value="图片(png、jpg)">图片(png、jpg)</option>
-              <option value="视频(mp4)">视频(mp4)</option>
-              <option value="压缩包(zip、rar)">压缩包(zip、rar)</option>
-            </select>
           </div>
           <div class="pc-form-item full-width">
             <label>是否需要专家评审</label>
@@ -509,15 +490,6 @@
           <div class="pc-form-item">
             <label>报名截止</label>
             <input class="pc-input" type="date" id="eActEnd">
-          </div>
-          <div class="pc-form-item">
-            <label>作品格式</label>
-            <select class="pc-select" id="eActFormat">
-              <option value="文档(docx、xlsx、pdf)">文档(docx、xlsx、pdf)</option>
-              <option value="图片(png、jpg)">图片(png、jpg)</option>
-              <option value="视频(mp4)">视频(mp4)</option>
-              <option value="压缩包(zip、rar)">压缩包(zip、rar)</option>
-            </select>
           </div>
           <div class="pc-form-item full-width">
             <label>活动对象</label>
@@ -794,7 +766,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════ 评分标准弹窗（score-standard：新增/编辑评分标准，配置指标名称/满分上限/权重） ══════════════════ -->
+  <!-- ══════════════════ 评分标准弹窗（score-standard：新增/编辑评分标准，配置指标名称/指标说明/满分上限/权重） ══════════════════ -->
   <div class="mask-layer" id="scoreStandardDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
       <div class="dialog-head" id="scoreStandardTitle">新增评分标准</div>
@@ -812,7 +784,7 @@
           <div class="pc-form-item full-width">
             <label>评分指标</label>
             <table class="pc-table">
-              <thead><tr><th>指标名称</th><th style="width:150px;">满分上限</th><th style="width:150px;">权重 %</th><th style="width:90px;">操作</th></tr></thead>
+              <thead><tr><th>指标名称</th><th style="width:220px;">指标说明</th><th style="width:150px;">满分上限</th><th style="width:150px;">权重 %</th><th style="width:90px;">操作</th></tr></thead>
               <tbody id="ssIndicatorTbody"></tbody>
             </table>
             <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="ss-indicator-add" style="margin-top:8px;">＋ 添加指标</button>
@@ -851,10 +823,10 @@
   </div>
 
 
-  <!-- ══════════════════ 新增/编辑活动方案弹窗 ══════════════════ -->
+  <!-- ══════════════════ 新增/编辑积分方案弹窗 ══════════════════ -->
   <div class="mask-layer" id="asDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
-      <div class="dialog-head" id="asDialogTitle">新增活动方案</div>
+      <div class="dialog-head" id="asDialogTitle">新增积分方案</div>
       <input type="hidden" id="asId">
       <div class="dialog-body">
         <form class="pc-form" onsubmit="return false">
@@ -863,35 +835,21 @@
             <input class="pc-input" id="asName" placeholder="请输入方案名称">
           </div>
           <div class="pc-form-item">
-            <label>关联活动<span class="required">*</span></label>
-            <select class="pc-select" id="asActivity" style="width:100%;">
-              <option value="">请选择活动</option>
-            </select>
-          </div>
-          <div class="pc-form-item">
-            <label>活动周期<span class="required">*</span></label>
+            <label>积分周期<span class="required">*</span></label>
             <div style="display:flex;align-items:center;gap:8px;width:100%;">
               <input class="pc-input" type="date" id="asCycleStart" style="flex:1;"> <span>~</span> <input class="pc-input" type="date" id="asCycleEnd" style="flex:1;">
             </div>
           </div>
           <div class="pc-form-item full-width">
-            <label>参与对象</label>
-            <div id="asParticipants" style="font-size:12px;color:#909399;">选择关联活动后自动带出（该活动报名教师）</div>
-          </div>
-          <div class="pc-form-item full-width">
-            <label>奖励折算标准<span class="required">*</span></label>
-            <table class="pc-table award-crud-table">
-              <thead>
-                <tr>
-                  <th style="width:60px;">序号</th>
-                  <th>奖项等级</th>
-                  <th style="width:140px;">积分</th>
-                  <th style="width:90px;">操作</th>
-                </tr>
-              </thead>
-              <tbody id="asAwardTbody"></tbody>
-            </table>
-            <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="as-award-add" style="margin-top:8px;">＋ 添加奖项</button>
+            <label>参与对象<span class="required">*</span></label>
+            <!-- 参与对象：参考活动发起中「活动对象」的设计，按幼儿园范围勾选；参与对象即所选幼儿园的全部在职教师 -->
+            <div class="scope-checks">
+              <label class="scope-check"><input type="checkbox" value="全部幼儿园" data-scope-group="asKgScope" checked>全部幼儿园</label>
+              <label class="scope-check"><input type="checkbox" value="童蹊幼儿园" data-scope-group="asKgScope">童蹊幼儿园</label>
+              <label class="scope-check"><input type="checkbox" value="阳光幼儿园" data-scope-group="asKgScope">阳光幼儿园</label>
+              <label class="scope-check"><input type="checkbox" value="蓝天幼儿园" data-scope-group="asKgScope">蓝天幼儿园</label>
+            </div>
+            <div style="margin-top:6px;font-size:12px;color:#909399;">参与对象为所选幼儿园的全部在职教师</div>
           </div>
         </form>
       </div>
@@ -929,7 +887,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════ 积分获取明细弹窗（全平台教师榜「查看明细」：获得方式 / 积分 / 时间） ══════════════════ -->
+  <!-- ══════════════════ 积分获取明细弹窗（园内教师榜「查看明细」：获得方式 / 积分 / 时间） ══════════════════ -->
   <div class="mask-layer" id="pointDetailDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog" style="width:640px;max-width:92vw;">
       <div class="dialog-head" id="pointDetailTitle">积分获取明细</div>

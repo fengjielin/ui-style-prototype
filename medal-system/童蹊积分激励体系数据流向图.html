@@ -4,10 +4,12 @@
   ============================================================
   童蹊积分激励体系 · 数据流向图（重构版）
   用途：面向业务说明两条主线数据流向，不展示系统字段名
-  流程一：活动组织与评审（发起 → 报名上传 → 评委打分 → 公示 / 奖状 / 归档）
+  流程一：活动组织与评审（评分标准维护 → 发起 → 报名上传 → 评委打分 → 公示 / 奖状 / 归档）
   流程二：积分激励闭环（行为数据 → 积分 → 排行 → 积分获得情况 → 积分公告 / 奖金）
-  说明：对齐 2026-08-17 积分体系重构——已移除勋章体系与奖金管理，
-        新增「积分获得情况」与「发布积分公告 / 独立公告详情页」
+  说明：对齐 2026-08-17 积分体系重构——已移除勋章体系与独立奖金管理模块，
+        新增「积分获得情况」与「发布积分公告 / 独立公告详情页」（奖金仅保留可编辑奖金列随公告发布）；
+        评分标准为独立维护模块（指标 / 满分上限 / 权重），活动发起时关联；
+        评委分配仅保留手动分配（已取消系统随机抽取与打分权重设置）
   对应文档：2026-08-11-01 需求拆解 / 积分体系重构提交 4f459a6
   ============================================================
 -->
@@ -227,7 +229,7 @@
     }
 
     .panel[data-panel="activity"] .timeline::before {
-      background: linear-gradient(180deg, var(--activity), var(--judge), var(--result), var(--data));
+      background: linear-gradient(180deg, var(--activity), var(--judge), var(--judge), var(--result), var(--data));
     }
 
     .panel[data-panel="incentive"] .timeline::before {
@@ -667,10 +669,10 @@
       <div class="eyebrow">童蹊社区 · 数据流向</div>
       <h1>童蹊积分激励体系数据流向</h1>
       <p class="subtitle">
-        两条主线分页签查看：活动组织与评审（发起 → 报名上传 → 评委打分 → 公示 / 奖状 / 归档）、
+        两条主线分页签查看：活动组织与评审（评分标准维护 → 发起 → 报名上传 → 评委打分 → 公示 / 奖状 / 归档）、
         积分激励闭环（行为数据 → 积分 → 排行 → 积分获得情况 → 积分公告 / 奖金）。
-        两者在「专项活动积分方案」处交汇：活动获奖结果作为方案折算标准输入（奖项 → 积分），
-        注入激励闭环的积分获得情况与积分公告。
+        评分标准为独立维护模块，活动发起时关联；两者相互独立：积分方案不再关联活动，
+        参与对象为所选幼儿园的全部在职教师，在「积分获得情况」中查看参与对象积分与排位分，并发布积分公告。
       </p>
     </header>
 
@@ -678,7 +680,7 @@
       <button type="button" class="tab-btn active" data-tab="activity" role="tab" aria-selected="true">
         <span class="kicker">流程一</span>
         <span class="label">活动组织与评审</span>
-        <span class="desc">发起 → 报名上传 → 评委打分 → 公示 / 奖状 / 归档</span>
+        <span class="desc">评分标准维护 → 发起 → 报名上传 → 评委打分 → 公示 / 奖状 / 归档</span>
       </button>
       <button type="button" class="tab-btn" data-tab="incentive" role="tab" aria-selected="false">
         <span class="kicker">流程二</span>
@@ -691,7 +693,7 @@
     <div class="panel active" data-panel="activity" id="panel-activity">
       <div class="panel-intro">
         <h2>活动组织与评审</h2>
-        <p>平台管理员 / 园长发起活动，教师报名并上传作品，评委按评分标准打分（单次评审）或管理员直接审核，最终公示获奖、生成电子奖状并归档。评审结果同时作为专项活动积分方案的折算标准输入，汇入激励闭环。</p>
+        <p>评分标准为独立维护模块（指标 / 满分上限 / 权重），管理员发起活动时下拉关联（可不关联）；教师报名并上传作品，评委按关联评分标准打分（单次评审）或管理员逐条直接审核，最终公示获奖、生成电子奖状并归档。积分方案与活动相互独立，不再以活动获奖结果折算积分。</p>
       </div>
 
       <div class="timeline">
@@ -700,32 +702,38 @@
           <div class="stage-head">
             <span class="stage-tag">一 · 发起</span>
             <h2 class="stage-title">活动从发起到发布</h2>
-            <p class="stage-desc">活动全生命周期仅保留两态：未发布 / 已发布。草稿可反复编辑，发布后教师即可报名上传作品。</p>
+            <p class="stage-desc">活动全生命周期仅保留两态：未发布 / 已发布。草稿可反复编辑，发布后教师即可报名上传作品。发起时可配置活动对象、参赛对象与评审方式，并关联独立维护的评分标准。</p>
           </div>
 
           <div class="flow">
             <article class="node">
               <span class="idx">01</span>
               <h3>新建活动</h3>
-              <p>选择活动类型：论文 / 课件 / 朋友圈点赞，可自定义多层级分类</p>
+              <p>选择活动类型：论文 / 课件</p>
             </article>
             <div class="arrow">→</div>
             <article class="node">
               <span class="idx">02</span>
               <h3>配置表单</h3>
-              <p>报名时间、活动对象、作品格式、奖项设置；选择是否专家评审 + 关联评分标准 + 绑定奖状模板</p>
+              <p>报名时间、奖项设置（名称 + 数量）；活动对象按幼儿园范围勾选（全部 / 指定园）；活动不单独设置作品格式</p>
             </article>
             <div class="arrow">→</div>
             <article class="node">
               <span class="idx">03</span>
-              <h3>草稿保存</h3>
-              <p>未发布态，可随时编辑、暂存</p>
+              <h3>评审与关联</h3>
+              <p>选择是否专家评审；关联评分标准（独立模块，可不关联）+ 绑定奖状模板</p>
             </article>
             <div class="arrow">→</div>
             <article class="node">
               <span class="idx">04</span>
-              <h3>发布上线</h3>
-              <p>进入已发布，等待报名开始时间生效</p>
+              <h3>参赛对象</h3>
+              <p>角色控制：园长与教师均可 / 仅园长 / 仅教师 / 指定教师参赛</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">05</span>
+              <h3>草稿保存 / 发布上线</h3>
+              <p>未发布态可随时编辑暂存；发布后进入已发布，教师即可报名上传</p>
             </article>
           </div>
 
@@ -739,9 +747,46 @@
         <section class="stage" data-tone="judge">
           <div class="stage-dot" aria-hidden="true"></div>
           <div class="stage-head">
+            <span class="stage-tag">一 · 标准</span>
+            <h2 class="stage-title">评分标准（独立维护模块）</h2>
+            <p class="stage-desc">评分标准独立于活动配置，可维护多套模板；活动发起时下拉关联（可不关联），评委按关联标准的指标打分。</p>
+          </div>
+
+          <div class="flow">
+            <article class="node">
+              <span class="idx">01</span>
+              <h3>新增评分标准</h3>
+              <p>独立菜单维护，模板 CRUD 可多套；标准名称 + 备注（适用范围）</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">02</span>
+              <h3>配置评分指标</h3>
+              <p>逐项配置指标名称 / 指标说明 / 满分上限 / 权重，权重合计 100% 方可保存</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">03</span>
+              <h3>活动发起时关联</h3>
+              <p>下拉选择关联评分标准；不关联则评委打分回退默认三维度</p>
+            </article>
+            <div class="arrow">→</div>
+            <article class="node">
+              <span class="idx">04</span>
+              <h3>评审按标准打分</h3>
+              <p>评委按关联标准指标逐项打分（各指标 ≤ 满分上限）；评审阶段可只读查看标准明细</p>
+            </article>
+          </div>
+
+          <p class="note">打分权重设置统一落在评分标准模块（指标权重合计 100%）；活动配置与评委分配环节不再设置打分权重。</p>
+        </section>
+
+        <section class="stage" data-tone="judge">
+          <div class="stage-dot" aria-hidden="true"></div>
+          <div class="stage-head">
             <span class="stage-tag">一 · 收评</span>
             <h2 class="stage-title">报名 · 上传 · 评审</h2>
-            <p class="stage-desc">活动管理按步骤条流转：报名 → 评审 → 结果。评审分两种模式：专家评审（评委分配 → 按评分标准打分，单次评审）或管理员直接审核（可退回标注原因）。</p>
+            <p class="stage-desc">活动管理按步骤条流转：报名 → 评审 → 结果。评审分两种模式：专家评审（评委手动分配 → 按关联评分标准打分，单次评审）或管理员直接审核（逐条审核通过 / 退回标注原因）。</p>
           </div>
 
           <div class="lanes cols-3">
@@ -749,7 +794,7 @@
               <div class="lane-head">
                 <div class="lane-badge">管</div>
                 <div>
-                  <h3>平台管理员 / 园长</h3>
+                  <h3>平台管理员</h3>
                   <small>通知 · 分配 · 结果</small>
                 </div>
               </div>
@@ -761,8 +806,8 @@
                 </article>
                 <article class="node">
                   <span class="idx">02</span>
-                  <h3>评委分配 / 打分权重</h3>
-                  <p>自动分配（分组数 + 每组评委数，系统随机抽取）或手动分配（生成分组，按组勾选评委）；评分标准指标权重合计 100%</p>
+                  <h3>评委分配（仅手动）</h3>
+                  <p>输入分组数 → 生成分组，按组勾选评委（每位评委仅可分配至一组）；作品按组均匀分配</p>
                 </article>
                 <article class="node">
                   <span class="idx">03</span>
@@ -789,7 +834,7 @@
                 <article class="node">
                   <span class="idx">02</span>
                   <h3>上传作品</h3>
-                  <p>文档 / 课件 / 图片 / 压缩包；作品管理支持查重与导出</p>
+                  <p>支持常见格式（文档 / 图片 / 视频 / 压缩包），活动不限制作品格式；作品管理支持批量查重与导出</p>
                 </article>
                 <article class="node">
                   <span class="idx">03</span>
@@ -816,7 +861,7 @@
                 <article class="node">
                   <span class="idx">02</span>
                   <h3>按评分标准打分</h3>
-                  <p>指标项（如内容质量 / 创新创意 / 呈现效果），各按满分上限打分，权重合计 100%</p>
+                  <p>按关联标准的指标项逐项打分，可查看各指标说明（各指标 ≤ 满分上限，附该指标评语）；未关联时回退默认三维度</p>
                 </article>
                 <article class="node">
                   <span class="idx">03</span>
@@ -848,7 +893,7 @@
             <article class="node">
               <span class="idx">01</span>
               <h3>评审完成</h3>
-              <p>评分标准指标项加权汇总 → 综合评分 → 名次</p>
+              <p>各评委按评分标准指标打分 → 综合评分汇总 → 定名次（名次可手动调整）</p>
             </article>
             <div class="arrow">→</div>
             <article class="node">
@@ -876,7 +921,7 @@
             <span class="state-pill">已发布</span>
             <span class="state-pill">已归档</span>
           </div>
-          <p class="note">获奖结果同时作为「专项活动积分方案」折算标准的输入（奖项 → 积分），注入流程二的积分获得情况与积分公告。</p>
+          <p class="note">积分方案与活动解耦：不依赖活动获奖结果折算积分，参与对象由所选幼儿园范围界定（见流程二）。</p>
         </section>
 
         <section class="stage" data-tone="data">
@@ -887,7 +932,7 @@
           </div>
           <div class="sink-card">
             <table class="table-mini">
-              <tr><th>待评审作品角标</th><td>待评审 / 待打分的作品数量（管理员、园长）</td></tr>
+              <tr><th>待评审作品角标</th><td>待评审 / 待打分的作品数量（管理员）</td></tr>
               <tr><th>评委待办角标</th><td>分配给当前评委的待打分数量</td></tr>
               <tr><th>教师活动角标</th><td>我报名的活动、作品提交状态</td></tr>
               <tr><th>结果待发布角标</th><td>评审已完成、待发布结果的活动数</td></tr>
@@ -909,10 +954,10 @@
       <div class="panel-intro">
         <h2>积分激励闭环</h2>
         <p>
-          教师四大维度行为数据形成排行榜；平台管理员按「临时专项活动积分方案」在「积分获得情况」中查看
+          教师四大维度行为数据形成排行榜；平台管理员按「专项积分方案」在「积分获得情况」中查看
           参与对象的四维度积分 / 总积分 / 排位分 / 名次与可编辑奖金，并可一键发布积分公告——
-          参与对象在消息中心收到、在独立公告详情页查看积分汇总。活动获奖结果作为方案折算标准输入，离职教师自动剔除出参与对象。
-          （勋章体系与奖金管理已随重构移除）
+          参与对象在消息中心收到、在独立公告详情页查看积分汇总。方案参与对象由所选幼儿园范围界定（该幼儿园全部在职教师），离职教师自动剔除。
+          （勋章体系与独立奖金管理模块已随重构移除；奖金仅保留积分获得情况中的可编辑奖金列，随积分公告一并发布）
         </p>
       </div>
 
@@ -956,20 +1001,20 @@
           <div class="stage-dot" aria-hidden="true"></div>
           <div class="stage-head">
             <span class="stage-tag">二 · 方案与计算</span>
-            <h2 class="stage-title">专项活动积分方案 · 怎么算</h2>
-            <p class="stage-desc">积分体系重构后仅保留「临时专项活动积分方案」：关联活动、界定参与对象，获奖结果折算为积分，再按总积分定名次、换算排位分。</p>
+            <h2 class="stage-title">专项积分方案 · 怎么算</h2>
+            <p class="stage-desc">积分体系重构后仅保留「专项积分方案」（已与活动解耦）：按所选幼儿园范围界定参与对象，累计四维度积分，再按总积分定名次、换算排位分。</p>
           </div>
           <div class="flow">
             <article class="node">
               <span class="idx">01</span>
-              <h3>专项活动积分方案</h3>
-              <p>关联活动 + 活动周期；参与对象由关联活动的报名教师界定；可复制多套</p>
+              <h3>专项积分方案</h3>
+              <p>方案名称 + 积分周期；参与对象 = 所选幼儿园范围的全部在职教师；可复制多套</p>
             </article>
             <div class="arrow">→</div>
             <article class="node">
               <span class="idx">02</span>
-              <h3>奖项折算标准</h3>
-              <p>活动获奖结果 → 奖项等级对应积分（一等奖 / 二等奖 / 三等奖 / 参与奖）</p>
+              <h3>参与对象界定</h3>
+              <p>按幼儿园范围勾选（全部 / 指定园，参考活动发起「活动对象」设计），参与对象即该范围全部在职教师</p>
             </article>
             <div class="arrow">→</div>
             <article class="node">
@@ -985,8 +1030,8 @@
             </article>
           </div>
           <table class="table-mini">
-            <tr><th>奖项等级</th><td>一等奖</td><td>二等奖</td><td>三等奖</td><td>参与奖</td></tr>
-            <tr><th>折算积分（示例）</th><td>100 分</td><td>60 分</td><td>30 分</td><td>10 分</td></tr>
+            <tr><th>参与对象（示例）</th><td>勾选「童蹊幼儿园」</td><td>勾选「全部幼儿园」</td></tr>
+            <tr><th>参与范围</th><td>童蹊幼儿园全体在职教师</td><td>全部园区全体在职教师</td></tr>
           </table>
           <div class="calc-box">
             <strong>排位分规则：</strong>
@@ -1000,7 +1045,7 @@
           <div class="stage-head">
             <span class="stage-tag">二 · 排行</span>
             <h2 class="stage-title">排行榜与个人统计</h2>
-            <p class="stage-desc">园内 5 榜 + TOP10 高亮与本人定位；教师个人多维看板；管理员全平台跨园对比。排行榜实时刷新。</p>
+            <p class="stage-desc">园内 5 榜 + TOP10 高亮与本人定位；教师个人多维看板；管理员按园查看园内排行榜与家长进度。排行榜实时刷新。</p>
           </div>
 
           <div class="lanes cols-3">
@@ -1063,24 +1108,24 @@
                 <div class="lane-badge">管</div>
                 <div>
                   <h3>平台管理员</h3>
-                  <small>全平台排行</small>
+                  <small>园内排行 · 家长进度</small>
                 </div>
               </div>
               <div class="lane-steps">
                 <article class="node">
                   <span class="idx">01</span>
-                  <h3>全平台教师排位分榜</h3>
-                  <p>TOP 榜 + 跨园对比（平均总分 / 在职教师 / 家长转化）</p>
+                  <h3>园内排行榜（切换园）</h3>
+                  <p>KPI 总览 + 排位分综合榜 + 5 榜，管理员可切换园查看</p>
                 </article>
                 <article class="node">
                   <span class="idx">02</span>
-                  <h3>下钻明细</h3>
-                  <p>幼儿园 → 教师 → 个人多维看板，逐级下钻</p>
+                  <h3>家长进度看板</h3>
+                  <p>管理员按园分组，各园班级注册 / 会员激活三色对比</p>
                 </article>
                 <article class="node">
                   <span class="idx">03</span>
-                  <h3>全园家长进度</h3>
-                  <p>各园注册 / 会员转化横向对比</p>
+                  <h3>教师积分明细</h3>
+                  <p>园内榜「查看全部」→ 点击教师查看积分获取明细</p>
                 </article>
               </div>
             </div>
@@ -1102,12 +1147,12 @@
           <div class="stage-head">
             <span class="stage-tag">二 · 获得</span>
             <h2 class="stage-title">积分获得情况（按专项方案）</h2>
-            <p class="stage-desc">平台管理员按活动积分方案查看参与对象积分明细，名次与排位分自动计算，奖金列可编辑并持久化。</p>
+            <p class="stage-desc">平台管理员按积分方案查看参与对象积分明细，名次与排位分自动计算，奖金列可编辑并持久化。</p>
           </div>
           <div class="flow">
             <article class="node">
               <span class="idx">01</span>
-              <h3>选择活动积分方案</h3>
+              <h3>选择积分方案</h3>
               <p>方案下拉切换，逐套查看各方案参与对象</p>
             </article>
             <div class="arrow">→</div>
@@ -1194,7 +1239,7 @@
               <tr><th>排行榜角标</th><td>榜单更新、本人排名变动提示</td></tr>
               <tr><th>积分公告角标</th><td>收到新的积分公告（参与对象）</td></tr>
               <tr><th>评审通知角标</th><td>报名启动 / 作品截止 / 打分任务 / 获奖公示</td></tr>
-              <tr><th>通知回执角标</th><td>消息已读 / 未读状态追踪（管理员、园长）</td></tr>
+              <tr><th>通知回执角标</th><td>消息已读 / 未读状态追踪（管理员）</td></tr>
             </table>
             <div class="chips" style="margin-top:12px;">
               <span class="chip warn">发布公告 → 通知参与对象</span>
