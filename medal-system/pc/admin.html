@@ -702,6 +702,25 @@
     </div>
   </div>
 
+  <!-- ══════════════════ 评委评分详情弹窗（评审阶段评委行「查看详情」：该评委对各作品的评分） ══════════════════ -->
+  <div class="mask-layer" id="judgeScoreDetailDialog" hidden data-close-on-mask="true">
+    <div class="pc-dialog" style="width:1000px;">
+      <div class="dialog-head" id="judgeScoreDetailTitle">评委评分详情</div>
+      <div class="dialog-body">
+        <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="judgeScoreDetailMeta"></div>
+        <div style="max-height:360px;overflow-y:auto;border:1px solid var(--pc-border-card);border-radius:6px;">
+          <table class="pc-table">
+            <thead><tr><th>作品名称</th><th>报名教师</th><th>评分</th><th>评语</th><th>时间</th><th>状态</th></tr></thead>
+            <tbody id="judgeScoreDetailTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="judgeScoreDetailDialog">关 闭</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════════ 设置奖项等级弹窗（归档阶段「设置奖项等级」：自定义奖项名称及名次范围） ══════════════════ -->
   <div class="mask-layer" id="awardConfigDialog" hidden data-close-on-mask="true">
     <div class="pc-dialog">
@@ -850,6 +869,25 @@
               <label class="scope-check"><input type="checkbox" value="蓝天幼儿园" data-scope-group="asKgScope">蓝天幼儿园</label>
             </div>
             <div style="margin-top:6px;font-size:12px;color:#909399;">参与对象为所选幼儿园的全部在职教师</div>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>活动详情</label>
+            <textarea class="pc-input" id="asDesc" rows="3" placeholder="请输入活动详情（活动目的、积分规则说明、参赛要求等）" style="height:auto;min-height:72px;resize:vertical;"></textarea>
+          </div>
+          <div class="pc-form-item full-width">
+            <label>奖项设置</label>
+            <table class="pc-table award-crud-table">
+              <thead>
+                <tr>
+                  <th style="width:60px;">序号</th>
+                  <th>奖项名称</th>
+                  <th style="width:130px;">数量</th>
+                  <th style="width:90px;">操作</th>
+                </tr>
+              </thead>
+              <tbody id="asAwardTbody"></tbody>
+            </table>
+            <button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="award-row-add" data-target="asAwardTbody" style="margin-top:8px;">＋ 添加奖项</button>
           </div>
         </form>
       </div>

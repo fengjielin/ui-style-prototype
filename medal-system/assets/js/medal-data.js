@@ -5,7 +5,7 @@
  * 约束：纯静态、无后端、无依赖，file:// 下 localStorage 按目录生效
  * 说明：
  *   - 与通用平台原型（data-store.js）互相独立，localStorage 键前缀 demo.medal.
- *   - 可持久化键：role / activities / reviewRecords / notices / scoreSchemes / schemeScores
+ *   - 可持久化键：role / activities / reviewRecords / reviewGroups / reviewStageStatus / notices / scoreSchemes / schemeScores
  *   - 派生数据（不入库，由 role 即时计算）：userProfile / tabBar / pcMenus
  *   - 数据流单向：UI action → MDS.set/update → watch 通知 → 页面 render 重绘
  * 对应文档：2026-08-11-01 需求拆解 / 2026-08-11-02 菜单模块设计
@@ -342,7 +342,33 @@ window.MDS = (function () {
       // 亲子阅读打卡活动（归档阶段 · 已发布结果）
       { id: 29, activity: '亲子阅读打卡活动', work: '孙悦的作品', judge: '王教授', scores: '86 / 88 / 90', comment: '打卡记录完整，方法有效。', time: '2026-05-02 09:10' },
       { id: 30, activity: '亲子阅读打卡活动', work: '孙悦的作品', judge: '陈园长', scores: '84 / 87 / 89', comment: '二等奖候选。', time: '2026-05-03 10:00' },
+      // 课件制作技能大赛：同组评委进度对照（陈园长已评 1 份）
+      { id: 31, activity: '课件制作技能大赛', work: '赵敏的课件', judge: '陈园长', scores: '84 / 88 / 86', comment: '内容完整，交互可再加强。', time: '2026-08-06 11:20' },
+      // 2026 春季论文评选大赛（评审阶段 · 李教授已评 1 份）
+      { id: 32, activity: '2026 春季论文评选大赛', work: '张慧的作品', judge: '李教授', scores: '88 / 86 / 90', comment: '生活教育案例具体，建议可操作。', time: '2026-08-10 09:20' },
     ],
+
+    /* 评委分组（活动 id → 评委行；评审阶段「评委分配」写入，演示种子含评审中活动）
+       每行：groupNo 组号 / judgeId / judgeName / judgeAccount / workCount 需评份数 / workIds 该组作品 */
+    reviewGroups: {
+      // 2026 春季论文评选大赛（评审未开始，同组两位评委评审全部作品）
+      1: [
+        { groupNo: 1, judgeId: 5, judgeName: '李教授', judgeAccount: 'JS002', workCount: 3, workIds: [1, 2, 3] },
+        { groupNo: 1, judgeId: 8, judgeName: '周教授', judgeAccount: 'JS003', workCount: 3, workIds: [1, 2, 3] },
+      ],
+      // 课件制作技能大赛（评审中：第 1 组 3 份、第 2 组 2 份）
+      2: [
+        { groupNo: 1, judgeId: 1, judgeName: '王教授', judgeAccount: 'JS001', workCount: 3, workIds: [4, 5, 6] },
+        { groupNo: 1, judgeId: 2, judgeName: '陈园长', judgeAccount: 'YZ001', workCount: 3, workIds: [4, 5, 6] },
+        { groupNo: 2, judgeId: 3, judgeName: '刘教研员', judgeAccount: 'JYY001', workCount: 2, workIds: [24, 25] },
+      ],
+    },
+
+    /* 评审阶段状态（活动 id → notstarted / reviewing / finished） */
+    reviewStageStatus: {
+      1: 'notstarted',
+      2: 'reviewing',
+    },
 
     /* 评奖分批（活动 id → 批次列表；每批次：作品 ids + 分配评委 + 已评数量 done） */
     reviewBatches: {
@@ -380,6 +406,8 @@ window.MDS = (function () {
         targetKindergartens: ['童蹊幼儿园'],
         cycleStart: '2026-08-10',
         cycleEnd: '2026-09-20',
+        desc: '围绕家园共育优秀案例评选设置专项积分，鼓励教师沉淀可复制的家园协作经验，并按奖项等级核算专项积分与奖金。',
+        awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }],
         updatedAt: '2026-08-10 更新',
       },
       {
@@ -388,6 +416,8 @@ window.MDS = (function () {
         targetKindergartens: ['童蹊幼儿园'],
         cycleStart: '2026-03-01',
         cycleEnd: '2026-04-30',
+        desc: '配合亲子共读打卡活动，对周期内完成阅读打卡并获奖的教师发放专项积分，推动家园共读习惯养成。',
+        awards: [{ name: '一等奖', count: 5 }, { name: '二等奖', count: 8 }, { name: '三等奖', count: 12 }],
         updatedAt: '2026-04-28 更新',
       },
     ],
@@ -885,7 +915,7 @@ window.MDS = (function () {
     ],
   };
 
-  var MUTABLE_KEYS = ['activities', 'reviewRecords', 'reviewBatches', 'notices', 'activityNotices', 'scoreSchemes', 'schemeScores', 'certTemplates', 'teacherSignups', 'principalSignups', 'scoreStandards'];
+  var MUTABLE_KEYS = ['activities', 'reviewRecords', 'reviewBatches', 'reviewGroups', 'reviewStageStatus', 'notices', 'activityNotices', 'scoreSchemes', 'schemeScores', 'certTemplates', 'teacherSignups', 'principalSignups', 'scoreStandards'];
 
   /* ────────────────────────── PC 端界面状态（可持久化，重置时恢复默认） ────────────────────────── */
   var UI_DEFAULTS = {
@@ -997,10 +1027,39 @@ window.MDS = (function () {
           lsSet('activities', cache.activities);
         }
       }
+      // 评审阶段评委统计演示：旧缓存缺 id=31/32 的评分留痕时从种子补齐
+      if (Array.isArray(cache.reviewRecords)) {
+        var recIds = {};
+        cache.reviewRecords.forEach(function (r) { recIds[r.id] = true; });
+        var recAppended = false;
+        (MOCK.reviewRecords || []).forEach(function (seed) {
+          if ((seed.id === 31 || seed.id === 32) && !recIds[seed.id]) {
+            cache.reviewRecords.push(JSON.parse(JSON.stringify(seed)));
+            recAppended = true;
+          }
+        });
+        if (recAppended) lsSet('reviewRecords', cache.reviewRecords);
+      }
       // 积分方案重构：旧版「活动方案」键（关联活动 + 奖励折算标准）已废弃 → 移除残留，改由 scoreSchemes 键管理
       try {
         localStorage.removeItem(PREFIX + 'activitySchemes');
       } catch (e) { /* 忽略清理异常 */ }
+      // 专项积分方案：旧缓存缺活动详情 / 奖项设置时从种子补齐
+      if (Array.isArray(cache.scoreSchemes)) {
+        var schemeMigrated = false;
+        cache.scoreSchemes.forEach(function (s) {
+          var seed = (MOCK.scoreSchemes || []).filter(function (m) { return m.id === s.id; })[0];
+          if (s.desc == null) {
+            s.desc = seed && seed.desc ? seed.desc : '';
+            schemeMigrated = true;
+          }
+          if (!Array.isArray(s.awards)) {
+            s.awards = seed && seed.awards ? JSON.parse(JSON.stringify(seed.awards)) : [];
+            schemeMigrated = true;
+          }
+        });
+        if (schemeMigrated) lsSet('scoreSchemes', cache.scoreSchemes);
+      }
       // 只读 mock（不入库）：幼儿园/活动类型/作品/榜单/首页原始内容/默认评分指标等演示数据
       // （注：积分重构后已移除月度方案/勋章/奖金数据；schemeScores 归入 MUTABLE_KEYS 持久化，奖金列可编辑）
       ['kindergartens', 'principals', 'activityTypes', 'works', 'judges', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'pointRecords', 'homeAttendance', 'homeGrid', 'defaultIndicators'].forEach(function (key) {

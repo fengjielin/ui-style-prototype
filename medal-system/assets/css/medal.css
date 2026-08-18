@@ -517,6 +517,14 @@
   margin-top: 3px;
 }
 
+.scheme-card .scheme-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
 .scheme-card .scheme-ops {
   margin-left: auto;
   display: flex;
@@ -2703,5 +2711,47 @@ tr.row-excluded td {
   background: var(--mb-bg-tertiary);
   color: var(--mb-text-muted);
   cursor: not-allowed;
+}
+
+/* 活动评审工具栏：左侧操作 + 右侧简易统计 */
+.search-form.review-search-form {
+  align-items: center;
+  width: 100%;
+}
+
+.review-form-stats {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 4px 2px 4px 16px;
+}
+
+.review-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.review-stat em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--pc-text-secondary);
+}
+
+.review-stat b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--pc-text-table-cell);
+  font-variant-numeric: tabular-nums;
+}
+
+.review-stat.is-ing b {
+  color: #e6a23c;
+}
+
+.review-stat.is-done b {
+  color: #33c28a;
 }
 

@@ -1457,6 +1457,118 @@ window.MedalDemo = (function () {
     Proto.openDialog('signupDetailDialog');
   }
 
+  /* 单条评分记录折算总分（各指标取平均，保留 1 位小数） */
+  function reviewRecordTotal(r) {
+    var total = 0, n = 0;
+    (r.scores || '').split('/').forEach(function (s) {
+      var v = parseFloat(s.trim(), 10);
+      if (!isNaN(v)) { total += v; n++; }
+    });
+    return n ? Math.round((total / n) * 10) / 10 : null;
+  }
+
+  /* 评分单元格：按关联标准拆指标分数与评语（兼容旧记录仅有总评 comment） */
+  function formatReviewScoreCells(r, activityTitle) {
+    var indicators = judgeIndicatorsFor(activityTitle);
+    var parts = (r.scores || '').split('/').map(function (s) { return s.trim(); });
+    var comments = r.comments || [];
+    var scoreCell = indicators.length === parts.length
+      ? indicators.map(function (ind, i) {
+          return '<div>' + esc(ind.name) + '：<b>' + esc(parts[i]) + '</b></div>';
+        }).join('')
+      : esc(r.scores || '—');
+    var commentCell = comments.length
+      ? (comments.map(function (c, i) {
+          var name = indicators[i] ? indicators[i].name : ('指标' + (i + 1));
+          return c ? '<div><b>' + esc(name) + '</b>：' + esc(c) + '</div>' : '';
+        }).filter(Boolean).join('') || '<span style="color:#c0c4cc;">未填写</span>')
+      : esc(r.comment || '—');
+    return { scoreCell: scoreCell, commentCell: commentCell };
+  }
+
+  function reviewRecordMatchesWork(r, work) {
+    return !!(work && r && r.work && work.teacher && r.work.indexOf(work.teacher) >= 0);
+  }
+
+  /* 该组分配到的作品：优先 workIds；否则按组号把活动作品均匀切分 */
+  function assignedWorksForGroup(act, groupNo) {
+    var groups = ((MDS.get('reviewGroups') || {})[act.id]) || [];
+    var sample = groups.filter(function (g) { return g.groupNo === groupNo; })[0];
+    var works = worksForActivityId(act.id);
+    if (sample && sample.workIds && sample.workIds.length) {
+      var idSet = {};
+      sample.workIds.forEach(function (id) { idSet[id] = true; });
+      var matched = works.filter(function (w) { return idSet[w.id]; });
+      if (matched.length) return matched;
+    }
+    var groupNos = [];
+    groups.forEach(function (g) {
+      if (groupNos.indexOf(g.groupNo) < 0) groupNos.push(g.groupNo);
+    });
+    groupNos.sort(function (a, b) { return Number(a) - Number(b); });
+    if (!works.length || !groupNos.length) return [];
+    var idx = groupNos.indexOf(groupNo);
+    if (idx < 0) idx = 0;
+    var n = groupNos.length;
+    var base = Math.floor(works.length / n);
+    var rem = works.length % n;
+    var start = 0;
+    for (var i = 0; i < idx; i++) start += base + (i < rem ? 1 : 0);
+    return works.slice(start, start + base + (idx < rem ? 1 : 0));
+  }
+
+  function judgeRecordsFor(act, judgeName) {
+    return (MDS.get('reviewRecords') || []).filter(function (r) {
+      return r.activity === act.title && r.judge === judgeName;
+    });
+  }
+
+  /* 评委评分统计：需评 / 已评 / 待评 / 平均分 */
+  function judgeReviewStats(act, judgeRow) {
+    var assigned = assignedWorksForGroup(act, judgeRow.groupNo);
+    var records = judgeRecordsFor(act, judgeRow.judgeName);
+    var scoredIds = {};
+    assigned.forEach(function (w) {
+      if (records.some(function (r) { return reviewRecordMatchesWork(r, w); })) {
+        scoredIds[w.id] = true;
+      }
+    });
+    var scored = assigned.length ? Object.keys(scoredIds).length : records.length;
+    var need = assigned.length || (judgeRow.workCount || 0);
+    var sum = 0, n = 0;
+    records.forEach(function (r) {
+      var t = reviewRecordTotal(r);
+      if (t !== null) { sum += t; n++; }
+    });
+    return {
+      need: need,
+      scored: scored,
+      pending: Math.max(0, need - scored),
+      avg: n ? Math.round((sum / n) * 10) / 10 : null,
+      assigned: assigned,
+      records: records,
+    };
+  }
+
+  /* 评审阶段汇总：分组数 / 评分完成情况 / 完成率（按各评委需评·已评合计） */
+  function reviewStageSummary(act) {
+    var groups = ((MDS.get('reviewGroups') || {})[act.id]) || [];
+    var groupNos = [];
+    var need = 0, scored = 0;
+    groups.forEach(function (j) {
+      if (groupNos.indexOf(j.groupNo) < 0) groupNos.push(j.groupNo);
+      var st = judgeReviewStats(act, j);
+      need += st.need;
+      scored += st.scored;
+    });
+    return {
+      groupCount: groupNos.length,
+      need: need,
+      scored: scored,
+      rate: need ? Math.round((scored / need) * 100) : null,
+    };
+  }
+
   /* 评分详情弹窗：填充每位评委对该作品的评分情况 */
   function fillScoreDetailDialog(act, work) {
     var title = document.getElementById('scoreDetailTitle');
@@ -1470,26 +1582,12 @@ window.MedalDemo = (function () {
     if (tbody) {
       tbody.innerHTML = records.length
         ? records.map(function (r) {
-            // 各指标分数与评语按关联评分标准对齐展示（兼容旧记录仅有总评 comment）
-            var indicators = judgeIndicatorsFor(act.title);
-            var parts = (r.scores || '').split('/').map(function (s) { return s.trim(); });
-            var comments = r.comments || [];
-            var scoreCell = indicators.length === parts.length
-              ? indicators.map(function (ind, i) {
-                  return '<div>' + esc(ind.name) + '：<b>' + esc(parts[i]) + '</b></div>';
-                }).join('')
-              : esc(r.scores);
-            var commentCell = comments.length
-              ? (comments.map(function (c, i) {
-                  var name = indicators[i] ? indicators[i].name : ('指标' + (i + 1));
-                  return c ? '<div><b>' + esc(name) + '</b>：' + esc(c) + '</div>' : '';
-                }).filter(Boolean).join('') || '<span style="color:#c0c4cc;">未填写</span>')
-              : esc(r.comment || '—');
+            var cells = formatReviewScoreCells(r, act.title);
             return (
               '<tr>' +
               '<td><strong>' + esc(r.judge) + '</strong></td>' +
-              '<td>' + scoreCell + '</td>' +
-              '<td style="font-size:12px;color:#606266;">' + commentCell + '</td>' +
+              '<td>' + cells.scoreCell + '</td>' +
+              '<td style="font-size:12px;color:#606266;">' + cells.commentCell + '</td>' +
               '<td>' + esc(r.time) + '</td>' +
               '</tr>'
             );
@@ -1497,6 +1595,73 @@ window.MedalDemo = (function () {
         : '<tr><td colspan="4" style="text-align:center;color:#909399;padding:30px 0;">暂无评分记录</td></tr>';
     }
     Proto.openDialog('scoreDetailDialog');
+  }
+
+  /* 评委评分详情弹窗：该评委对各分配作品的评分情况 */
+  function fillJudgeScoreDetailDialog(act, judgeRow) {
+    var stats = judgeReviewStats(act, judgeRow);
+    var title = document.getElementById('judgeScoreDetailTitle');
+    if (title) title.textContent = '「' + (judgeRow.judgeName || '评委') + '」评分详情';
+    var meta = document.getElementById('judgeScoreDetailMeta');
+    if (meta) {
+      meta.textContent = '活动：' + act.title +
+        ' · 第 ' + judgeRow.groupNo + ' 组' +
+        ' · 账号 ' + (judgeRow.judgeAccount || '—') +
+        ' · 已评 ' + stats.scored + ' / 需评 ' + stats.need +
+        ' · 平均分 ' + (stats.avg === null ? '—' : stats.avg);
+    }
+    var tbody = document.getElementById('judgeScoreDetailTbody');
+    if (tbody) {
+      var used = {};
+      var rows = [];
+      stats.assigned.forEach(function (w) {
+        var rec = stats.records.filter(function (r) { return reviewRecordMatchesWork(r, w); })[0];
+        if (rec) used[rec.id] = true;
+        if (rec) {
+          var cells = formatReviewScoreCells(rec, act.title);
+          rows.push(
+            '<tr>' +
+            '<td>' + esc(w.title || (w.teacher + ' 的作品')) + '</td>' +
+            '<td>' + esc(w.teacher) + '</td>' +
+            '<td>' + cells.scoreCell + '</td>' +
+            '<td style="font-size:12px;color:#606266;">' + cells.commentCell + '</td>' +
+            '<td>' + esc(rec.time) + '</td>' +
+            '<td><span class="status-tag status-success">已评</span></td>' +
+            '</tr>'
+          );
+        } else {
+          rows.push(
+            '<tr>' +
+            '<td>' + esc(w.title || (w.teacher + ' 的作品')) + '</td>' +
+            '<td>' + esc(w.teacher) + '</td>' +
+            '<td><span style="color:#c0c4cc;">—</span></td>' +
+            '<td><span style="color:#c0c4cc;">—</span></td>' +
+            '<td><span style="color:#c0c4cc;">—</span></td>' +
+            '<td><span class="status-tag status-warning">待评</span></td>' +
+            '</tr>'
+          );
+        }
+      });
+      stats.records.forEach(function (r) {
+        if (used[r.id]) return;
+        var cells = formatReviewScoreCells(r, act.title);
+        var teacher = (r.work || '').replace('的作品', '').replace('的课件', '');
+        rows.push(
+          '<tr>' +
+          '<td>' + esc(r.work) + '</td>' +
+          '<td>' + esc(teacher) + '</td>' +
+          '<td>' + cells.scoreCell + '</td>' +
+          '<td style="font-size:12px;color:#606266;">' + cells.commentCell + '</td>' +
+          '<td>' + esc(r.time) + '</td>' +
+          '<td><span class="status-tag status-success">已评</span></td>' +
+          '</tr>'
+        );
+      });
+      tbody.innerHTML = rows.length
+        ? rows.join('')
+        : '<tr><td colspan="6" style="text-align:center;color:#909399;padding:30px 0;">暂无分配作品与评分记录</td></tr>';
+    }
+    Proto.openDialog('judgeScoreDetailDialog');
   }
 
   /* ── 主渲染：选择活动 → 步骤条（报名/评审/归档）→ 阶段内容 ── */
@@ -1661,16 +1826,26 @@ window.MedalDemo = (function () {
       ? '<span style="font-size:12px;color:#606266;">评分标准：' + esc(std.name) + '</span>' +
         '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="score-standard-view">查看</button>'
       : '<span style="font-size:12px;color:#909399;">未关联评分标准</span>';
+    var sum = reviewStageSummary(act);
+    var rateText = sum.rate === null ? '—' : (sum.rate + '%');
+    var rateTone = sum.rate === null ? '' : sum.rate >= 100 ? ' is-done' : sum.rate > 0 ? ' is-ing' : '';
+    var statsHtml =
+      '<div class="review-form-stats">' +
+      '<span class="review-stat"><em>分组数</em><b>' + sum.groupCount + '</b></span>' +
+      '<span class="review-stat"><em>完成情况</em><b>' + sum.scored + ' / ' + sum.need + '</b></span>' +
+      '<span class="review-stat' + rateTone + '"><em>完成率</em><b>' + rateText + '</b></span>' +
+      '</div>';
     return (
       '<section class="pc-card">' +
       '<div class="card-head"><span class="card-title">活动评审 · ' + esc(act.title) + '</span><span class="table-count">' + (curStatus === 'reviewing' ? '评审中' : curStatus === 'finished' ? '已结束' : '未开始') + '</span></div>' +
       '<div class="card-body">' +
-      '<div class="search-form">' +
+      '<div class="search-form review-search-form">' +
       '<div class="search-item">' +
       stdHtml +
       '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="judge-open-assign">' + (groups.length ? '重新分配' : '评委分配') + '</button>' +
       stageCtrl +
       '</div>' +
+      statsHtml +
       '</div>' +
       '</div></section>' +
       amRenderJudgeGroups(act)
@@ -1735,11 +1910,25 @@ window.MedalDemo = (function () {
       ? groupNos.map(function (no) {
           var gr = groupMap[no];
           var rows = gr.judges.map(function (j) {
+            var st = judgeReviewStats(act, j);
+            var progressTag = !st.need
+              ? '<span class="status-tag status-warning">未分配</span>'
+              : st.scored >= st.need
+                ? '<span class="status-tag status-success">已完成</span>'
+                : st.scored > 0
+                  ? '<span class="status-tag status-warning">进行中</span>'
+                  : '<span class="status-tag status-warning">未评</span>';
+            var viewAttrs = ' data-action="am-view-judge-scores" data-activity="' + act.id + '" data-judge-id="' + j.judgeId + '" title="查看评分详情"';
             return (
               '<tr>' +
               '<td><strong>' + esc(j.judgeName) + '</strong></td>' +
               '<td>' + esc(j.judgeAccount || '—') + '</td>' +
-              '<td>' + (j.workCount || 0) + '</td>' +
+              '<td>' + st.need + '</td>' +
+              '<td><span class="action-btn action-edit"' + viewAttrs + '>' + st.scored + '</span></td>' +
+              '<td>' + st.pending + '</td>' +
+              '<td>' + (st.avg === null ? '<span style="color:#c0c4cc;">—</span>' : '<strong>' + st.avg + '</strong>') + '</td>' +
+              '<td>' + progressTag + '</td>' +
+              '<td class="op-col"><button type="button" class="pc-btn pc-btn-edit pc-btn-sm"' + viewAttrs + '>查看详情</button></td>' +
               '</tr>'
             );
           }).join('');
@@ -1748,7 +1937,7 @@ window.MedalDemo = (function () {
             '<div class="card-head"><span class="card-title">第 ' + gr.groupNo + ' 组</span><span class="table-count">需评 ' + (gr.workCount || 0) + ' 份作品</span></div>' +
             '<div class="card-body no-padding">' +
             '<table class="pc-table"><thead><tr>' +
-            '<th>评委名称</th><th>评委账号</th><th>需评作品数</th>' +
+            '<th>评委名称</th><th>评委账号</th><th>需评</th><th>已评</th><th>待评</th><th>平均分</th><th>进度</th><th>操作</th>' +
             '</tr></thead><tbody>' + rows + '</tbody></table>' +
             '</div></section>'
           );
@@ -2640,6 +2829,10 @@ window.MedalDemo = (function () {
       return '<span class="act-scope-tag">' + esc(k) + '</span>';
     }).join('');
     var participants = scoreSchemeParticipants(s);
+    var awardsHtml = (s.awards || []).map(function (aw) {
+      return '<span class="act-scope-tag">' + esc(aw.name) + ' × ' + (aw.count || 0) + '</span>';
+    }).join('');
+    var desc = (s.desc || '').trim();
     return (
       '<div class="scheme-card">' +
       '<div class="scheme-head">' +
@@ -2653,6 +2846,8 @@ window.MedalDemo = (function () {
       '</div>' +
       '<div class="scheme-meta">参与对象：' + (scopeHtml || '<span style="color:#c0c4cc;">—</span>') + '（' + participants.length + ' 名在职教师）</div>' +
       '<div class="scheme-meta">积分周期：' + esc(s.cycleStart || '—') + ' ~ ' + esc(s.cycleEnd || '—') + '</div>' +
+      '<div class="scheme-meta scheme-desc">活动详情：' + (desc ? esc(desc) : '<span style="color:#c0c4cc;">—</span>') + '</div>' +
+      '<div class="scheme-meta">奖项设置：' + (awardsHtml || '<span style="color:#c0c4cc;">—</span>') + '</div>' +
       '</div>'
     );
   }
@@ -2666,7 +2861,28 @@ window.MedalDemo = (function () {
       .map(function (t) { return { name: t.name, className: t.className, kindergarten: t.kindergarten }; });
   }
 
-  /* ═══════════════════════ PC：积分获得情况（按积分方案查看参与对象四维度积分 + 总积分 + 排位分 + 可编辑奖金 + 发布公告） ═══════════════════════ */
+  /* 方案奖项 → 名次区间（与活动发起奖项设置相同：按数量依次占名次） */
+  function schemeAwardRanges(scheme) {
+    var out = [];
+    var from = 1;
+    ((scheme && scheme.awards) || []).forEach(function (aw) {
+      var count = aw.count || 1;
+      out.push({ name: aw.name, rankFrom: from, rankTo: from + count - 1 });
+      from += count;
+    });
+    return out;
+  }
+
+  function schemeAwardNameForRank(scheme, rank) {
+    if (rank == null) return '';
+    var name = '';
+    schemeAwardRanges(scheme).forEach(function (a) {
+      if (rank >= a.rankFrom && rank <= a.rankTo) name = a.name;
+    });
+    return name;
+  }
+
+  /* ═══════════════════════ PC：积分获得情况（按积分方案查看参与对象四维度积分 + 总积分 + 排位分 + 奖项等级 + 可编辑奖金 + 发布公告） ═══════════════════════ */
 
   var scoreObtainedSchemeId = null;
 
@@ -2706,6 +2922,9 @@ window.MedalDemo = (function () {
       r.rankPoints = Math.max(1, rows.length - rank + 1);
     });
     rows.sort(function (a, b) { return a.totalRank - b.totalRank || (a.name < b.name ? -1 : 1); });
+    rows.forEach(function (r) {
+      r.awardName = schemeAwardNameForRank(scheme, r.totalRank);
+    });
     return { rows: rows, N: rows.length };
   }
 
@@ -2728,7 +2947,8 @@ window.MedalDemo = (function () {
     data.rows.forEach(function (r, i) {
       // 前三名用奖牌标记，其余用序号，便于扫读
       var mark = r.totalRank <= 3 ? medalMarks[r.totalRank - 1] + ' ' : (i + 1) + '. ';
-      lines.push(mark + r.name + '（' + r.className + '）· 总积分 ' + r.total + ' 分 · 排位分 ' + r.rankPoints + ' · 奖金 ¥' + r.bonus);
+      lines.push(mark + r.name + '（' + r.className + '）· 总积分 ' + r.total + ' 分 · 排位分 ' + r.rankPoints +
+        (r.awardName ? ' · ' + r.awardName : '') + ' · 奖金 ¥' + r.bonus);
     });
     return lines.join('\n');
   }
@@ -2750,7 +2970,16 @@ window.MedalDemo = (function () {
       return '<option value="' + x.id + '"' + (x.id === scoreObtainedSchemeId ? ' selected' : '') + '>' + esc(x.name) + '</option>';
     }).join('');
     var data = buildSchemeRows(s);
+    var ranges = schemeAwardRanges(s);
+    var awardHint = ranges.length
+      ? ranges.map(function (a) {
+          return a.rankFrom === a.rankTo ? (a.name + ' 第' + a.rankFrom + '名') : (a.name + ' 第' + a.rankFrom + '-' + a.rankTo + '名');
+        }).join(' · ')
+      : '未设置奖项（可在积分方案中配置）';
     var trs = data.rows.map(function (r) {
+      var awardCell = r.awardName
+        ? '<span class="status-tag status-primary">' + esc(r.awardName) + '</span>'
+        : '<span style="color:#c0c4cc;">—</span>';
       return (
         '<tr>' +
         '<td>' + esc(r.name) + '</td>' +
@@ -2759,6 +2988,7 @@ window.MedalDemo = (function () {
         '<td><span class="total-cell">' + r.total + '</span> 分</td>' +
         '<td><span class="rank-cell">' + r.rankPoints + '</span> 分</td>' +
         '<td><span class="rank-cell' + (r.totalRank <= 3 ? ' rank-top' : '') + '">第 ' + r.totalRank + ' 名</span></td>' +
+        '<td>' + awardCell + '</td>' +
         '<td><input class="pc-input so-bonus-input" type="number" min="0" style="width:90px;" data-name="' + esc(r.name) + '" value="' + r.bonus + '"></td>' +
         '</tr>'
       );
@@ -2768,16 +2998,16 @@ window.MedalDemo = (function () {
       '<div class="card-head"><span class="card-title">筛选条件</span></div>' +
       '<div class="card-body"><div class="search-form">' +
       '<div class="search-item"><label>积分方案</label><select class="pc-select" id="soSchemeSelect" style="width:320px;">' + opts + '</select></div>' +
-      '<div class="search-item" style="color:#909399;font-size:12px;">奖金列可编辑，保存后持久化；「发布公告」自动附带积分汇总。</div>' +
+      '<div class="search-item" style="color:#909399;font-size:12px;">奖项按名次自动匹配；奖金列可编辑，保存后持久化；「发布公告」自动附带积分汇总。</div>' +
       '</div></div></section>' +
       '<section class="pc-card">' +
       '<div class="card-head">' +
       '<button type="button" class="pc-btn pc-btn-default pc-btn-sm" data-action="score-obtained-bonus-save">保存奖金</button>' +
       '<button type="button" class="pc-btn pc-btn-add pc-btn-sm" data-action="score-obtained-announce-open" style="margin-left: 12px;">📢 发布公告</button>' +
-      '<span class="table-count">' + esc(s.name) + ' · 参与对象 ' + data.N + ' 名 · 排位分：第 1 名 ' + data.N + ' 分 … 第 ' + data.N + ' 名 1 分，并列顺延</span>' +
+      '<span class="table-count">' + esc(s.name) + ' · 奖项：' + esc(awardHint) + '</span>' +
       '</div>' +
       '<div class="card-body no-padding"><table class="pc-table"><thead><tr>' +
-      '<th>参与对象</th><th>班级</th><th>平台使用</th><th>家园互动</th><th>外部推广</th><th>会员转化</th><th>总积分</th><th>排位分</th><th>名次</th><th>奖金（元）</th>' +
+      '<th>参与对象</th><th>班级</th><th>平台使用</th><th>家园互动</th><th>外部推广</th><th>会员转化</th><th>总积分</th><th>排位分</th><th>名次</th><th>奖项等级</th><th>奖金（元）</th>' +
       '</tr></thead><tbody>' + trs + '</tbody></table></div></section>';
   }
 
@@ -3338,6 +3568,7 @@ window.MedalDemo = (function () {
           '<div style="display:flex;align-items:baseline;gap:8px;margin-top:6px;padding-left:20px;">' +
           '<span style="font-size:12px;color:var(--mb-text-secondary,#6b7280);">总积分</span>' +
           '<span style="font-size:16px;font-weight:700;color:var(--mb-text-primary,#1f2937);">' + r.total + '<span style="font-size:11px;font-weight:400;color:var(--mb-text-muted,#9ca3af);"> 分</span></span>' +
+          (r.awardName ? '<span class="status-tag status-primary" style="margin-left:4px;">' + esc(r.awardName) + '</span>' : '') +
           '<span style="margin-left:auto;font-size:13px;color:#ff8a00;font-weight:600;">奖金 ¥' + r.bonus + '</span>' +
           '</div>' +
           '</div>'
@@ -4991,7 +5222,9 @@ window.MedalDemo = (function () {
       document.getElementById('asName').value = '';
       document.getElementById('asCycleStart').value = '';
       document.getElementById('asCycleEnd').value = '';
+      document.getElementById('asDesc').value = '';
       fillScopeChecks('asKgScope', ['全部幼儿园']);
+      renderAwardRows('asAwardTbody', [{ name: '一等奖', count: 1 }, { name: '二等奖', count: 2 }, { name: '三等奖', count: 3 }]);
       Proto.openDialog('asDialog');
     });
 
@@ -5005,7 +5238,9 @@ window.MedalDemo = (function () {
       document.getElementById('asName').value = s.name;
       document.getElementById('asCycleStart').value = s.cycleStart || '';
       document.getElementById('asCycleEnd').value = s.cycleEnd || '';
+      document.getElementById('asDesc').value = s.desc || '';
       fillScopeChecks('asKgScope', s.targetKindergartens || ['全部幼儿园']);
+      renderAwardRows('asAwardTbody', s.awards);
       Proto.openDialog('asDialog');
     });
 
@@ -5067,6 +5302,8 @@ window.MedalDemo = (function () {
         targetKindergartens: kgs,
         cycleStart: cycleStart,
         cycleEnd: cycleEnd,
+        desc: ((qs('#asDesc') || {}).value || '').trim(),
+        awards: readAwardRows('asAwardTbody'),
         updatedAt: '刚刚 更新',
       };
       MDS.update('scoreSchemes', function (arr) {
@@ -5128,7 +5365,7 @@ window.MedalDemo = (function () {
         sender: '管理员',
         sendTime: nowTimeStr(),
         recipients: recipients,
-        // 结构化积分汇总：供「积分公告详情页」渲染表格（name/className/total/totalRank/rankPoints/bonus）
+        // 结构化积分汇总：供「积分公告详情页」渲染表格（name/className/total/totalRank/rankPoints/awardName/bonus）
         scoreSummary: {
           schemeName: s.name,
           cycleStart: s.cycleStart || '',
@@ -5140,6 +5377,7 @@ window.MedalDemo = (function () {
               total: r.total,
               totalRank: r.totalRank,
               rankPoints: r.rankPoints,
+              awardName: r.awardName || '',
               bonus: r.bonus,
             };
           }),
@@ -5521,6 +5759,17 @@ window.MedalDemo = (function () {
       var work = (MDS.get('works') || []).filter(function (w) { return w.id === Number(el.getAttribute('data-work-id')); })[0];
       if (!act || !work) return;
       fillScoreDetailDialog(act, work);
+    });
+
+    // 评审阶段：查看某位评委对各作品的评分详情
+    Proto.registerAction('am-view-judge-scores', function (el) {
+      var act = activityById(Number(el.getAttribute('data-activity')));
+      var judgeId = Number(el.getAttribute('data-judge-id'));
+      if (!act) return;
+      var groups = ((MDS.get('reviewGroups') || {})[act.id]) || [];
+      var row = groups.filter(function (j) { return j.judgeId === judgeId; })[0];
+      if (!row) return;
+      fillJudgeScoreDetailDialog(act, row);
     });
 
     // ── 报名阶段：导出报名信息表格（提示导出成功） ──
@@ -5940,10 +6189,12 @@ window.MedalDemo = (function () {
       var judgeById = {};
       judges.forEach(function (j) { judgeById[j.id] = j; });
       var curAct = activityById(amActivityId);
-      var totalWorks = curAct ? (curAct.worksCount || 0) : 0;
+      var works = worksForActivityId(amActivityId);
+      var totalWorks = works.length || (curAct ? (curAct.worksCount || 0) : 0);
       // 每组需评作品数：均匀分配（前几组可稍多），总和与实际作品数一致
       var base = Math.floor(totalWorks / judgeGroupCount);
       var remainder = totalWorks % judgeGroupCount;
+      var cursor = 0;
       for (var g = 1; g <= judgeGroupCount; g++) {
         var ids = judgeAssignSel[g] || [];
         if (!ids.length) {
@@ -5951,6 +6202,8 @@ window.MedalDemo = (function () {
           return;
         }
         var workCount = base + (g <= remainder ? 1 : 0);
+        var workIds = works.slice(cursor, cursor + workCount).map(function (w) { return w.id; });
+        cursor += workCount;
         ids.forEach(function (id) {
           var j = judgeById[id];
           rows.push({
@@ -5959,6 +6212,7 @@ window.MedalDemo = (function () {
             judgeName: j ? j.name : '',
             judgeAccount: j ? (j.account || '') : '',
             workCount: workCount,
+            workIds: workIds.slice(),
           });
         });
       }
