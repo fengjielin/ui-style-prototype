@@ -2427,6 +2427,104 @@ tr.row-excluded td {
 
 /* ═══════════════════════ 移动端：统计排行（rank.html） ═══════════════════════ */
 
+/* 统计范围（对齐 mb-section-title + mb-card 结构） */
+.mb-rank-scope-head {
+  padding-bottom: 4px;
+}
+
+.mb-rank-scope-card {
+  padding: 12px 14px;
+  margin-bottom: var(--mb-card-gap);
+}
+
+.mb-rank-scope-card.is-activity {
+  border-left: 3px solid var(--mb-primary);
+}
+
+.mb-stat-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--mb-bg-filter);
+  border-radius: var(--mb-radius-md);
+}
+
+.mb-stat-filter-bar .filter-label {
+  flex: 0 0 auto;
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-secondary);
+}
+
+.mb-filter-select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--mb-border-light);
+  border-radius: var(--mb-radius-input);
+  font-size: var(--mb-font-body);
+  color: var(--mb-text-primary);
+  background: var(--mb-bg-card);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.mb-filter-select:focus {
+  outline: none;
+  border-color: var(--mb-primary);
+  box-shadow: 0 0 0 2px rgba(255, 138, 0, 0.12);
+}
+
+.mb-rank-scope-hint {
+  margin: 10px 0 0;
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-muted);
+  line-height: 1.5;
+}
+
+/* 维度详情内筛选条（复用 PC 类名，移动端 token 覆盖） */
+.mb-card .stat-filter-bar {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--mb-bg-filter);
+  border-radius: var(--mb-radius-md);
+}
+
+.mb-card .stat-filter-bar .filter-label {
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-secondary);
+}
+
+.mb-card .filter-select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--mb-border-light);
+  border-radius: var(--mb-radius-input);
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-primary);
+  background: var(--mb-bg-card);
+}
+
+.mb-card .filter-select:focus {
+  outline: none;
+  border-color: var(--mb-primary);
+  box-shadow: 0 0 0 2px rgba(255, 138, 0, 0.12);
+}
+
+.mb-card .stat-summary-row {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--mb-border-light);
+  border-radius: var(--mb-radius-md);
+  background: var(--mb-bg-light);
+}
+
+.mb-card .stat-summary-row .sum-item {
+  font-size: var(--mb-font-tiny);
+  color: var(--mb-text-secondary);
+}
+
 /* 数据总览 KPI 卡（2 列网格） */
 .mb-stat-kpi-grid {
   display: grid;

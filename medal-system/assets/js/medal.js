@@ -3285,7 +3285,7 @@ window.MedalDemo = (function () {
     html += '<div class="mb-grid community-grid">';
     var items = [
       { name: '活动中心', icon: '📋', color: '#4facfe', bg: '#e6f4ff', path: 'activity.html' },
-      { name: '排行榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'rank.html' },
+      { name: '活跃度榜', icon: '♛', color: '#f9ca24', bg: '#fffce8', path: 'rank.html' },
     ];
     items.forEach(function (it) {
       html += mbGridCell(it.name, it.icon, it.color, it.bg, it.path);
@@ -3864,7 +3864,8 @@ window.MedalDemo = (function () {
 
   /* 数据总览 KPI 卡（2 列网格） */
   function renderMobileKpi(meRow) {
-    var s = MDS.get('teacherScores') || {};
+    var s = activeTeacherScores();
+    var scoped = isMobileRankPage() ? getScopedStats() : null;
     var d = s.duration || {};
     var cd = s.conversionDetail || {};
     var me = meRow || null;
@@ -3888,13 +3889,49 @@ window.MedalDemo = (function () {
         );
       }).join('') +
       '</div>' +
-      '<div class="mb-stat-update">数据更新于 ' + RANK_UPDATE_TIME + '（精确到分钟）</div>'
+      '<div class="mb-stat-update">数据更新于 ' + RANK_UPDATE_TIME + '（精确到分钟）' +
+      (scoped && !isRankScopeActivity() ? ' · ' + esc(scoped.label) + ' ' + esc(scoped.rangeText) : '') +
+      '</div>'
     );
+  }
+
+  /* 移动端 · 统计范围筛选（mb-section-title + mb-card；默认学年；有活动时可选活动榜） */
+  function renderMobileRankScopeBar() {
+    var root = document.getElementById('rankScopeRoot');
+    if (!root) return;
+    if (!hasRankScopeActivities()) {
+      root.innerHTML = '';
+      rankScopeState = defaultRankScopeKey();
+      return;
+    }
+    var cur = currentRankScopeKey();
+    var ay = getAcademicYearRange();
+    var opts = ['<option value="' + esc(ay.key) + '"' + (cur === ay.key ? ' selected' : '') + '>' + esc(ay.label) + '（' + esc(ay.rangeText) + '）</option>'];
+    getRankScopeActivities().forEach(function (a) {
+      var key = 'act-' + a.id;
+      opts.push('<option value="' + esc(key) + '"' + (cur === key ? ' selected' : '') + '>' + esc(a.title) + '</option>');
+    });
+    root.innerHTML =
+      '<div class="mb-section-title mb-rank-scope-head">' +
+      '<span class="title">统计范围</span>' +
+      '<span class="subtitle">' + esc(ay.label) + ' · ' + esc(ay.rangeText) + '</span>' +
+      '</div>' +
+      '<div class="mb-card mb-rank-scope-card' + (isRankScopeActivity(cur) ? ' is-activity' : '') + '">' +
+      '<div class="mb-stat-filter-bar">' +
+      '<span class="filter-label">查看</span>' +
+      '<select class="mb-filter-select" id="rankScopeFilter" data-rank-scope-filter>' + opts.join('') + '</select>' +
+      '</div>' +
+      '<p class="mb-rank-scope-hint">' +
+      (isRankScopeActivity(cur)
+        ? '当前为活动专项排行榜 · 切换回「' + esc(ay.label) + '」可查看本学年累计统计'
+        : '默认展示本学年累计统计 · 选择上方活动可查看该活动专项排行榜') +
+      '</p>' +
+      '</div>';
   }
 
   /* 单个维度面板（摘要 + 筛选 + ECharts 图表容器；摘要/筛选复用 PC 端样式类） */
   function renderMobileStatDimPanel(dim) {
-    var s = MDS.get('teacherScores') || {};
+    var s = activeTeacherScores();
     var meta = STAT_DIM_META[dim] || [dim, ''];
     return (
       statSummaryRow(dim, s) +
@@ -3933,7 +3970,8 @@ window.MedalDemo = (function () {
   function renderMobileStat() {
     var root = document.getElementById('statRoot');
     if (!root) return;
-    var scoreData = buildRankScoreTable();
+    renderMobileRankScopeBar();
+    var scoreData = buildRankScoreTable(activeRankData());
     var meRow = null;
     scoreData.rows.forEach(function (r) { if (r.isMe) meRow = r; });
     root.innerHTML =
@@ -3966,7 +4004,8 @@ window.MedalDemo = (function () {
   function renderMobileRankScore() {
     var root = document.getElementById('rankScoreRoot');
     if (!root) return;
-    var data = buildRankScoreTable();
+    var scoped = isMobileRankPage() ? getScopedStats() : null;
+    var data = buildRankScoreTable(activeRankData());
     var me = null;
     data.rows.forEach(function (r) { if (r.isMe) me = r; });
 
@@ -3986,7 +4025,13 @@ window.MedalDemo = (function () {
     }
 
     // 综合榜卡片（tab 切换：综合榜 + 4 单项榜）
-    html += '<div class="mb-section-title"><span class="title">全园 TOP10 综合榜</span><span class="subtitle">四项排位分合计 · 点击切换单项榜</span></div>';
+    var rankTitle = scoped && isRankScopeActivity()
+      ? scoped.label + ' · 活动排行榜'
+      : '全园 TOP10 综合榜';
+    var rankSubtitle = scoped && isRankScopeActivity()
+      ? scoped.rangeText + ' · 活动周期内排位分合计'
+      : (scoped ? scoped.label + '累计 · 四项排位分合计' : '四项排位分合计') + ' · 点击切换单项榜';
+    html += '<div class="mb-section-title"><span class="title">' + esc(rankTitle) + '</span><span class="subtitle">' + esc(rankSubtitle) + '</span></div>';
     html += '<div class="mb-card" style="padding:4px 14px;">';
     html += mobileRankTabs('mobileRankTabs', 'total');
     var totalCardsHtml = '';
@@ -4194,6 +4239,110 @@ window.MedalDemo = (function () {
   /* 数据更新时间（精确到分钟，演示固定值） */
   var RANK_UPDATE_TIME = '2026-08-11 09:32';
 
+  /* ── 学年口径：9.1 至次年 8.31，8.31 清零上一学年 ── */
+  function getRankReferenceDate() {
+    var m = String(RANK_UPDATE_TIME || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    return new Date();
+  }
+
+  function getCurrentAcademicYearStart(refDate) {
+    var d = refDate || getRankReferenceDate();
+    var year = d.getFullYear();
+    return d.getMonth() >= 8 ? year : year - 1;
+  }
+
+  function getAcademicYearKey(startYear) {
+    return 'year-' + (startYear == null ? getCurrentAcademicYearStart() : startYear);
+  }
+
+  function getAcademicYearLabel(startYear) {
+    return (startYear == null ? getCurrentAcademicYearStart() : startYear) + '学年';
+  }
+
+  function getAcademicYearRange(startYear) {
+    var y = startYear == null ? getCurrentAcademicYearStart() : startYear;
+    return {
+      startYear: y,
+      key: getAcademicYearKey(y),
+      label: getAcademicYearLabel(y),
+      rangeText: y + '.9.1-' + (y + 1) + '.8.31',
+      start: y + '-09-01',
+      end: (y + 1) + '-08-31',
+    };
+  }
+
+  /* 移动端排行榜 · 统计范围（默认当前学年；选活动后切换为活动榜） */
+  var rankScopeState = null;
+
+  function defaultRankScopeKey() {
+    return getAcademicYearKey();
+  }
+
+  function currentRankScopeKey() {
+    return rankScopeState || defaultRankScopeKey();
+  }
+
+  function isMobileRankPage() {
+    return !!document.getElementById('rankScopeRoot');
+  }
+
+  function getScopedStats(scopeKey) {
+    var key = scopeKey || currentRankScopeKey();
+    var scopes = MDS.get('statsScopes') || {};
+    var scoped = scopes[key];
+    if (scoped && scoped.teacherScores && scoped.rankData) {
+      return { key: key, label: scoped.label, rangeText: scoped.rangeText, teacherScores: scoped.teacherScores, rankData: scoped.rankData };
+    }
+    if (scoped && key.indexOf('year-') === 0) {
+      return {
+        key: key,
+        label: scoped.label || getAcademicYearLabel(parseInt(key.slice(5), 10)),
+        rangeText: scoped.rangeText || getAcademicYearRange(parseInt(key.slice(5), 10)).rangeText,
+        teacherScores: MDS.get('teacherScores') || {},
+        rankData: MDS.get('rankData') || {},
+      };
+    }
+    var ay = getAcademicYearRange();
+    return {
+      key: ay.key,
+      label: ay.label,
+      rangeText: ay.rangeText,
+      teacherScores: MDS.get('teacherScores') || {},
+      rankData: MDS.get('rankData') || {},
+    };
+  }
+
+  function activeTeacherScores() {
+    return isMobileRankPage() ? getScopedStats().teacherScores : (MDS.get('teacherScores') || {});
+  }
+
+  function activeRankData() {
+    return isMobileRankPage() ? getScopedStats().rankData : (MDS.get('rankData') || {});
+  }
+
+  /* 当前学年内有活动榜数据的可选活动（有活动时展示统计范围筛选） */
+  function getRankScopeActivities() {
+    var scopes = MDS.get('statsScopes') || {};
+    var ay = getAcademicYearRange();
+    return (MDS.get('activities') || []).filter(function (a) {
+      if (a.status !== 'PUBLISHED') return false;
+      var scopeKey = 'act-' + a.id;
+      if (!scopes[scopeKey] || !scopes[scopeKey].rankData) return false;
+      var start = a.signupStart || a.publishTime || '';
+      if (!start) return false;
+      return start >= ay.start && start <= ay.end;
+    });
+  }
+
+  function hasRankScopeActivities() {
+    return getRankScopeActivities().length > 0;
+  }
+
+  function isRankScopeActivity(scopeKey) {
+    return String(scopeKey || currentRankScopeKey()).indexOf('act-') === 0;
+  }
+
   /* 分钟 → 「X 小时 Y 分」 */
   function fmtMinutes(min) {
     var h = Math.floor(min / 60);
@@ -4264,7 +4413,8 @@ window.MedalDemo = (function () {
 
     return (
       '<div class="rank-kpi-grid">' + cards.join('') + '</div>' +
-      '<div class="rank-update-note">数据更新于 ' + RANK_UPDATE_TIME + '（精确到分钟）</div>'
+      '<div class="rank-update-note">数据更新于 ' + RANK_UPDATE_TIME + '（精确到分钟） · ' +
+      esc(getAcademicYearLabel()) + ' ' + esc(getAcademicYearRange().rangeText) + ' · 每学年 8.31 清零</div>'
     );
   }
 
@@ -4313,9 +4463,15 @@ window.MedalDemo = (function () {
   /* 维度筛选条：使用次数/互动频次按「活动名称」，使用时长/会员转化按「时间范围」 */
   function statFilterBar(dim) {
     var isActivity = (dim === 'usage' || dim === 'interaction');
-    var cur = statFilterState[dim] || (isActivity ? 'all' : '7d');
+    var ay = getAcademicYearRange();
+    var yearKey = ay.key;
+    var cur = statFilterState[dim] || (isActivity ? yearKey : '7d');
     var options = isActivity
-      ? [{ v: 'all', t: '全部活动' }, { v: 'act8', t: '秋季家园共育案例评选' }, { v: 'act5', t: '亲子阅读打卡活动' }]
+      ? [{ v: yearKey, t: ay.label }].concat(
+        getRankScopeActivities().map(function (a) {
+          return { v: 'act-' + a.id, t: a.title };
+        })
+      )
       : [{ v: '7d', t: '近 7 天' }, { v: '3d', t: '近 3 天' }];
     var opts = options.map(function (o) {
       return '<option value="' + o.v + '"' + (o.v === cur ? ' selected' : '') + '>' + esc(o.t) + '</option>';
@@ -4328,14 +4484,14 @@ window.MedalDemo = (function () {
     );
   }
 
-  /* 取当前维度趋势并按筛选切片：活动筛选→尾部 4 天；时间筛选→近 3 天 */
+  /* 取当前维度趋势并按筛选切片：学年→尾部 7 天；活动→尾部 4 天；时间→近 3/7 天 */
   function currentTrend(dim) {
-    var s = MDS.get('teacherScores') || {};
+    var s = activeTeacherScores();
     var trend = s[dim + 'Trend'] || [];
     var val = statFilterState[dim] || '';
     var days = 7;
     if (dim === 'usage' || dim === 'interaction') {
-      days = (val === 'all' || val === '') ? 7 : 4;
+      days = (val.indexOf('year-') === 0 || val === 'all' || val === '') ? 7 : 4;
     } else {
       days = val === '3d' ? 3 : 7;
     }
@@ -4719,7 +4875,7 @@ window.MedalDemo = (function () {
   });
 
   /* 下拉 change 事件委托（data-action 为 click 委托，不适用于下拉）：
-     ① 切换园（管理员端园内排行榜）；② 维度筛选（活动/时间），仅 setOption 重绘该维度图表 */
+     ① 切换园（管理员端园内排行榜）；② 统计范围（移动端排行榜）；③ 维度筛选（活动/时间），仅 setOption 重绘该维度图表 */
   document.addEventListener('change', function (e) {
     var el = e && e.target;
     if (!el || !el.getAttribute) return;
@@ -4727,6 +4883,14 @@ window.MedalDemo = (function () {
     if (el.getAttribute('data-garden-filter') !== null) {
       gardenFilter = el.value;
       renderRankGarden();
+      return;
+    }
+    // 移动端 · 统计范围（学年 / 活动）
+    if (el.getAttribute('data-rank-scope-filter') !== null) {
+      rankScopeState = el.value;
+      statFilterState = {};
+      renderMobileStat();
+      renderMobileRankScore();
       return;
     }
     // 维度筛选
@@ -6931,10 +7095,8 @@ window.MedalDemo = (function () {
     if (document.getElementById('homeRoot')) renderMobileHome();
     if (document.getElementById('principalMiniRoot')) renderPrincipalMini();
     if (document.getElementById('activityList')) renderMobileActivity();
-    if (document.getElementById('rankScoreRoot')) {
-      renderMobileRankScore();
-    }
     if (document.getElementById('statRoot')) renderMobileStat();
+    if (document.getElementById('rankScoreRoot')) renderMobileRankScore();
     if (document.getElementById('noticeList')) renderNoticeList();
     if (document.getElementById('mobileNoticeList')) renderMobileNotice();
     if (document.getElementById('announceDetailRoot')) renderAnnounceDetail();
@@ -7060,11 +7222,12 @@ window.MedalDemo = (function () {
         });
       });
     }
+    if (document.getElementById('statRoot')) {
+      rankScopeState = defaultRankScopeKey();
+      renderMobileStat();
+    }
     if (document.getElementById('rankScoreRoot')) {
       renderMobileRankScore();
-    }
-    if (document.getElementById('statRoot')) {
-      renderMobileStat();
     }
     if (document.getElementById('noticeList')) {
       renderNoticeList();

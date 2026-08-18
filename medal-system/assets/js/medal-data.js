@@ -801,6 +801,145 @@ window.MDS = (function () {
       ],
     },
 
+    /* 统计排行 · 按范围分层数据（学年默认 / 活动专项）
+       key：year-{起始年} 如 year-2025 = 2025.9.1–2026.8.31；act-{活动id} = 该活动周期内统计 */
+    statsScopes: {
+      'year-2025': {
+        label: '2025学年',
+        rangeText: '2025.9.1-2026.8.31',
+        teacherScores: null,
+        rankData: null,
+      },
+      'act-8': {
+        label: '秋季家园共育案例评选',
+        rangeText: '2026.8.10-2026.9.20',
+        teacherScores: {
+          usage: { total: 86, today: 4, gap: 12, rank: 3 },
+          interaction: { total: 102, today: 6, gap: 18, rank: 2 },
+          promotion: { total: 45, today: 2, gap: 8, rank: 4 },
+          conversion: { total: 28, today: 1, gap: 6, rank: 3 },
+          duration: { total: 980, today: 42 },
+          conversionDetail: { registered: 4, members: 2, registeredToday: 0, membersToday: 1 },
+          usageTrend: [
+            { date: '08-08', me: 12, avg: 10, top: 15 },
+            { date: '08-09', me: 14, avg: 11, top: 16 },
+            { date: '08-10', me: 18, avg: 12, top: 18 },
+            { date: '08-11', me: 22, avg: 13, top: 20 },
+          ],
+          interactionTrend: [
+            { date: '08-08', me: 16, avg: 14, top: 20 },
+            { date: '08-09', me: 20, avg: 15, top: 22 },
+            { date: '08-10', me: 28, avg: 16, top: 24 },
+            { date: '08-11', me: 32, avg: 17, top: 26 },
+          ],
+          durationTrend: [
+            { date: '08-08', home: 8, work: 14 },
+            { date: '08-09', home: 10, work: 16 },
+            { date: '08-10', home: 12, work: 18 },
+            { date: '08-11', home: 14, work: 20 },
+          ],
+          conversionTrend: [
+            { date: '08-08', registered: 1, members: 0 },
+            { date: '08-09', registered: 2, members: 1 },
+            { date: '08-10', registered: 3, members: 1 },
+            { date: '08-11', registered: 4, members: 2 },
+          ],
+        },
+        rankData: {
+          total: [
+            { rank: 1, name: '李娜', className: '小一班', score: 186, trend: 'up', isMe: false },
+            { rank: 2, name: '张慧', className: '中一班', score: 168, trend: 'up', isMe: true },
+            { rank: 3, name: '赵敏', className: '小一班', score: 142, trend: 'flat', isMe: false },
+          ],
+          usage: [
+            { rank: 1, name: '李娜', className: '小一班', score: 52, trend: 'up', isMe: false },
+            { rank: 2, name: '张慧', className: '中一班', score: 48, trend: 'up', isMe: true },
+            { rank: 3, name: '赵敏', className: '小一班', score: 40, trend: 'flat', isMe: false },
+          ],
+          interaction: [
+            { rank: 1, name: '李娜', className: '小一班', score: 68, trend: 'up', isMe: false },
+            { rank: 2, name: '张慧', className: '中一班', score: 62, trend: 'up', isMe: true },
+            { rank: 3, name: '赵敏', className: '小一班', score: 55, trend: 'down', isMe: false },
+          ],
+          promotion: [
+            { rank: 1, name: '张慧', className: '中一班', score: 28, trend: 'up', isMe: true },
+            { rank: 2, name: '李娜', className: '小一班', score: 26, trend: 'flat', isMe: false },
+            { rank: 3, name: '赵敏', className: '小一班', score: 22, trend: 'up', isMe: false },
+          ],
+          conversion: [
+            { rank: 1, name: '李娜', className: '小一班', score: 18, trend: 'up', isMe: false },
+            { rank: 2, name: '张慧', className: '中一班', score: 14, trend: 'up', isMe: true },
+            { rank: 3, name: '赵敏', className: '小一班', score: 12, trend: 'flat', isMe: false },
+          ],
+        },
+      },
+      'act-1': {
+        label: '2026 春季论文评选大赛',
+        rangeText: '2026.7.1-2026.8.20',
+        teacherScores: {
+          usage: { total: 128, today: 3, gap: 22, rank: 4 },
+          interaction: { total: 95, today: 5, gap: 15, rank: 3 },
+          promotion: { total: 62, today: 1, gap: 10, rank: 3 },
+          conversion: { total: 18, today: 0, gap: 4, rank: 5 },
+          duration: { total: 1560, today: 38 },
+          conversionDetail: { registered: 2, members: 1, registeredToday: 0, membersToday: 0 },
+          usageTrend: [
+            { date: '08-05', me: 18, avg: 16, top: 22 },
+            { date: '08-06', me: 20, avg: 17, top: 24 },
+            { date: '08-07', me: 22, avg: 18, top: 25 },
+            { date: '08-08', me: 24, avg: 18, top: 26 },
+          ],
+          interactionTrend: [
+            { date: '08-05', me: 14, avg: 12, top: 18 },
+            { date: '08-06', me: 16, avg: 13, top: 19 },
+            { date: '08-07', me: 18, avg: 14, top: 20 },
+            { date: '08-08', me: 20, avg: 14, top: 21 },
+          ],
+          durationTrend: [
+            { date: '08-05', home: 10, work: 18 },
+            { date: '08-06', home: 12, work: 20 },
+            { date: '08-07', home: 11, work: 19 },
+            { date: '08-08', home: 13, work: 22 },
+          ],
+          conversionTrend: [
+            { date: '08-05', registered: 1, members: 0 },
+            { date: '08-06', registered: 1, members: 1 },
+            { date: '08-07', registered: 2, members: 1 },
+            { date: '08-08', registered: 2, members: 1 },
+          ],
+        },
+        rankData: {
+          total: [
+            { rank: 1, name: '郑爽', className: '中一班', score: 312, trend: 'up', isMe: false },
+            { rank: 2, name: '刘洋', className: '大一班', score: 286, trend: 'up', isMe: false },
+            { rank: 3, name: '张慧', className: '中一班', score: 268, trend: 'up', isMe: true },
+            { rank: 4, name: '李娜', className: '小一班', score: 245, trend: 'flat', isMe: false },
+            { rank: 5, name: '赵敏', className: '小一班', score: 220, trend: 'down', isMe: false },
+          ],
+          usage: [
+            { rank: 1, name: '郑爽', className: '中一班', score: 88, trend: 'up', isMe: false },
+            { rank: 2, name: '张慧', className: '中一班', score: 76, trend: 'up', isMe: true },
+            { rank: 3, name: '刘洋', className: '大一班', score: 72, trend: 'flat', isMe: false },
+          ],
+          interaction: [
+            { rank: 1, name: '刘洋', className: '大一班', score: 82, trend: 'up', isMe: false },
+            { rank: 2, name: '张慧', className: '中一班', score: 78, trend: 'up', isMe: true },
+            { rank: 3, name: '郑爽', className: '中一班', score: 75, trend: 'down', isMe: false },
+          ],
+          promotion: [
+            { rank: 1, name: '张慧', className: '中一班', score: 42, trend: 'up', isMe: true },
+            { rank: 2, name: '李娜', className: '小一班', score: 38, trend: 'flat', isMe: false },
+            { rank: 3, name: '赵敏', className: '小一班', score: 35, trend: 'up', isMe: false },
+          ],
+          conversion: [
+            { rank: 1, name: '郑爽', className: '中一班', score: 28, trend: 'up', isMe: false },
+            { rank: 2, name: '刘洋', className: '大一班', score: 24, trend: 'flat', isMe: false },
+            { rank: 3, name: '张慧', className: '中一班', score: 18, trend: 'down', isMe: true },
+          ],
+        },
+      },
+    },
+
     /* 首页原始内容（对齐通用平台原型：出勤横幅 + 教师/园长功能宫格；点击提示仅演示激励体系） */
     homeAttendance: {
       teacher: { title: '班级出勤', sub: '已到 32 人 · 共 35 人', tag: '已到 32', tagClass: 'tag-present' },
@@ -1155,9 +1294,14 @@ window.MDS = (function () {
       }
       // 只读 mock（不入库）：幼儿园/活动类型/作品/榜单/首页原始内容/默认评分指标等演示数据
       // （注：积分重构后已移除月度方案/勋章/奖金数据；schemeScores 归入 MUTABLE_KEYS 持久化，奖金列可编辑）
-      ['kindergartens', 'principals', 'activityTypes', 'works', 'judges', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'pointRecords', 'homeAttendance', 'homeGrid', 'defaultIndicators'].forEach(function (key) {
+      ['kindergartens', 'principals', 'activityTypes', 'works', 'judges', 'teachers', 'classes', 'sysConfig', 'sysLogs', 'rankData', 'gardenRanks', 'gardenSummary', 'parentProgress', 'teacherScores', 'statsScopes', 'pointRecords', 'homeAttendance', 'homeGrid', 'defaultIndicators'].forEach(function (key) {
         cache[key] = JSON.parse(JSON.stringify(MOCK[key]));
       });
+      // 学年范围默认复用 teacherScores / rankData 全量数据
+      if (cache.statsScopes && cache.statsScopes['year-2025']) {
+        cache.statsScopes['year-2025'].teacherScores = JSON.parse(JSON.stringify(cache.teacherScores));
+        cache.statsScopes['year-2025'].rankData = JSON.parse(JSON.stringify(cache.rankData));
+      }
       var role = lsGet('role');
       cache.role = ROLE_KEYS.indexOf(role) >= 0 ? role : 'admin';
       // PC 界面状态：缺失用默认值补齐并写回
