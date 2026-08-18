@@ -801,8 +801,8 @@ window.MDS = (function () {
       ],
     },
 
-    /* 统计排行 · 按范围分层数据（学年默认 / 活动专项）
-       key：year-{起始年} 如 year-2025 = 2025.9.1–2026.8.31；act-{活动id} = 该活动周期内统计 */
+    /* 统计排行 · 按范围分层数据（学年默认 / 积分方案专项）
+       key：year-{起始年} 如 year-2025 = 2025.9.1–2026.8.31；scheme-{方案id} = 积分方案周期内统计（与活动组织解耦） */
     statsScopes: {
       'year-2025': {
         label: '2025学年',
@@ -810,8 +810,8 @@ window.MDS = (function () {
         teacherScores: null,
         rankData: null,
       },
-      'act-8': {
-        label: '秋季家园共育案例评选',
+      'scheme-1': {
+        label: '秋季家园共育专项积分方案',
         rangeText: '2026.8.10-2026.9.20',
         teacherScores: {
           usage: { total: 86, today: 4, gap: 12, rank: 3 },
@@ -873,9 +873,9 @@ window.MDS = (function () {
           ],
         },
       },
-      'act-1': {
-        label: '2026 春季论文评选大赛',
-        rangeText: '2026.7.1-2026.8.20',
+      'scheme-2': {
+        label: '亲子阅读专项积分方案',
+        rangeText: '2026.3.1-2026.4.30',
         teacherScores: {
           usage: { total: 128, today: 3, gap: 22, rank: 4 },
           interaction: { total: 95, today: 5, gap: 15, rank: 3 },

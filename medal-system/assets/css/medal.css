@@ -2437,7 +2437,7 @@ tr.row-excluded td {
   margin-bottom: var(--mb-card-gap);
 }
 
-.mb-rank-scope-card.is-activity {
+.mb-rank-scope-card.is-scheme {
   border-left: 3px solid var(--mb-primary);
 }
 
@@ -2480,6 +2480,104 @@ tr.row-excluded td {
   font-size: var(--mb-font-tiny);
   color: var(--mb-text-muted);
   line-height: 1.5;
+}
+
+.mb-rank-scope-act-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 138, 0, 0.35);
+  border-radius: var(--mb-radius-md);
+  background: var(--mb-primary-lightest);
+  color: var(--mb-primary);
+  font-size: var(--mb-font-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.mb-rank-scope-act-link .link-icon {
+  flex: 0 0 auto;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.mb-rank-scope-act-link .link-text {
+  flex: 1;
+  text-align: left;
+}
+
+.mb-rank-scope-act-link .link-arrow {
+  flex: 0 0 auto;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.mb-rank-scope-act-link:active {
+  background: rgba(255, 138, 0, 0.12);
+  border-color: var(--mb-primary);
+}
+
+/* 活动详情 · 专项积分方案块 */
+.mb-scheme-detail-head {
+  padding-bottom: 4px;
+}
+
+.mb-scheme-detail-card.mb-scheme-detail-page {
+  margin: 12px var(--mb-content-pad) 16px;
+  padding: 14px 16px;
+}
+
+.mb-scheme-detail-card .scheme-detail-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mb-scheme-detail-card .scheme-detail-name {
+  font-size: var(--mb-font-body);
+  font-weight: 700;
+  color: var(--mb-text-primary);
+}
+
+.mb-scheme-detail-card .scheme-detail-desc {
+  margin-top: 10px;
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-secondary);
+  line-height: 1.65;
+}
+
+.mb-scheme-detail-card .status-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.mb-scheme-detail-card .adr-awards .value {
+  text-align: right;
+}
+
+.mb-scheme-award-tag {
+  display: inline-block;
+  margin: 2px 0 2px 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--mb-primary-lightest);
+  color: var(--mb-primary-dark);
+  font-size: var(--mb-font-tiny);
+  white-space: nowrap;
+}
+
+.scheme-awards-wrap {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 /* 维度详情内筛选条（复用 PC 类名，移动端 token 覆盖） */

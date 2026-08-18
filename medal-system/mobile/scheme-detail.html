@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  ============================================================
+  童蹊社区-原型 · 移动端 · 积分方案详情页（独立全屏，无 tabBar）
+  入口：统计排行 · 选择积分方案后「查看方案详情与奖项」（与活动组织解耦，数据来自 scoreSchemes）
+  ============================================================
+-->
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>方案详情 · 积分勋章</title>
+  <link rel="stylesheet" href="../../assets/css/tokens-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/base-mobile.css">
+  <link rel="stylesheet" href="../../assets/css/demo.css">
+  <link rel="stylesheet" href="../assets/css/medal.css">
+</head>
+<body class="mb-body">
+
+  <div class="mb-page">
+
+    <header class="mb-navbar">
+      <span class="nav-back" data-action="navigate" data-path="rank.html">‹</span>
+      <span class="nav-title">方案详情</span>
+      <span class="nav-action"></span>
+    </header>
+
+    <main class="mb-content no-tabbar">
+      <div id="schemeDetailRoot"></div>
+    </main>
+
+  </div>
+
+  <script src="../../assets/js/prototype.js"></script>
+  <script src="../assets/js/medal-data.js"></script>
+  <script src="../assets/js/medal.js"></script>
+</body>
+</html>
