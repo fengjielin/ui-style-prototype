@@ -5,7 +5,7 @@
   童蹊社区-原型 · 评委打分端（完整 PC 后台外壳）
   说明：评委同为 PC 端，具备完整后台元素（侧边栏 + 顶栏 + 面包屑 + TagsView + 内容区）
   菜单：评奖管理 > 评委打分（仅打分页；打分监控为管理员/园长功能，非评委，对应方案文档 2.2 评委矩阵）
-  交互：打分任务卡 → 打分弹窗（作品预览 + 按评分标准指标打分（含指标说明）+ 评语）→ 提交留痕
+  交互：打分任务表（待打分 / 已完成 tabs）→ 打分弹窗（作品预览 + 按评分标准指标打分（含指标说明）+ 评语）→ 保存草稿或提交留痕
   对应文档：2026-08-11-01 需求拆解（1.4 在线评奖流程）/ 2026-08-11-02 菜单设计（2.2 评委矩阵）
   ============================================================
 -->
@@ -76,10 +76,49 @@
             </div>
           </section>
 
-          <!-- 打分任务列表（medal.js renderJudgeTasks 渲染：按「我的打分任务」的活动筛选联动） -->
-          <section class="pc-card">
-            <div class="card-head"><span class="card-title">待打分作品</span></div>
-            <div class="card-body" id="judgeTaskList" style="display:flex;flex-direction:column;gap:14px;"></div>
+          <!-- 待打分 / 已完成：tabs + 表格（草稿显示已保存，提交后进入已完成） -->
+          <section class="pc-card" id="judgeTaskRoot">
+            <div class="card-head">
+              <span class="card-title">打分任务</span>
+            </div>
+            <div class="rank-tabs-bar">
+              <div class="pc-filter-tabs">
+                <span class="pc-filter-tab is-active" data-action="switch-tab" data-tab-group="judgeTaskTabs" data-tab-value="pending">待打分作品（<span id="judgePendingCount">0</span>）</span>
+                <span class="pc-filter-tab" data-action="switch-tab" data-tab-group="judgeTaskTabs" data-tab-value="done">已完成打分作品（<span id="judgeDoneCount">0</span>）</span>
+              </div>
+            </div>
+            <div data-tab-panel="judgeTaskTabs">
+              <div class="card-body no-padding" data-tab-content="pending">
+                <table class="pc-table">
+                  <thead>
+                    <tr>
+                      <th>作品名称</th>
+                      <th>所属活动</th>
+                      <th>提交教师</th>
+                      <th>状态</th>
+                      <th>我的评分</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="judgePendingTbody"></tbody>
+                </table>
+              </div>
+              <div class="card-body no-padding" data-tab-content="done" hidden>
+                <table class="pc-table">
+                  <thead>
+                    <tr>
+                      <th>作品名称</th>
+                      <th>所属活动</th>
+                      <th>提交教师</th>
+                      <th>状态</th>
+                      <th>我的评分</th>
+                      <th>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="judgeDoneTbody"></tbody>
+                </table>
+              </div>
+            </div>
           </section>
 
         </div>
@@ -105,12 +144,20 @@
         </div>
         <div class="score-work-meta" id="judgeWorkMeta"></div>
 
-        <!-- 评分指标（medal.js 按活动关联评分标准动态渲染：指标名称 + 满分上限 + 各指标评语） -->
+        <!-- 评分指标（medal.js 按活动关联评分标准动态渲染：指标名称 + 满分上限 + 权重 + 各指标评语 + 加权总分） -->
         <div style="font-size:12px;color:#909399;margin-top:14px;margin-bottom:8px;" id="judgeScoreHint">评分指标</div>
         <div id="judgeScoreFields"></div>
+        <div class="score-total-bar" id="judgeWeightedTotal">
+          <div class="st-left">
+            <div class="st-label">加权总分</div>
+            <div class="st-value"><span id="judgeWeightedTotalValue">—</span><span class="unit">分</span></div>
+          </div>
+          <div class="st-right">Σ（该项得分 / 该项满分 × 权重）· 满分 100</div>
+        </div>
       </div>
       <div class="dialog-footer">
         <button type="button" class="pc-btn pc-btn-default" data-action="close-dialog" data-target="judgeDialog">取 消</button>
+        <button type="button" class="pc-btn pc-btn-edit" data-action="judge-draft-save">保存评分</button>
         <button type="button" class="pc-btn pc-btn-add" data-action="judge-save">提交打分</button>
       </div>
     </div>

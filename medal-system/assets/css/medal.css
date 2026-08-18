@@ -1058,6 +1058,7 @@
 .judge-score-row .js-head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
@@ -1069,6 +1070,37 @@
 }
 
 .judge-score-row .js-max {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c2410c;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.judge-score-row .js-weight {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 999px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.judge-score-row .js-score-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.judge-score-row .js-unit {
   font-size: 12px;
   color: var(--pc-text-secondary);
 }
@@ -1095,16 +1127,16 @@
   resize: vertical;
 }
 
-/* 评委打分任务卡：已完成作品的总分展示 */
-.judge-task-score {
-  margin-top: 8px;
+/* 积分获得情况：四维排位分单元格 */
+.so-dim-cell {
+  white-space: nowrap;
   font-size: 13px;
   color: var(--pc-text-regular);
 }
 
-.judge-task-score b {
+.so-dim-cell .total-cell {
+  font-weight: 700;
   color: var(--pc-primary);
-  font-size: 16px;
 }
 
 /* 移动端「获奖公示」结果弹层：全员报表较长时内部滚动 */
@@ -2711,6 +2743,116 @@ tr.row-excluded td {
   background: var(--mb-bg-tertiary);
   color: var(--mb-text-muted);
   cursor: not-allowed;
+}
+
+.act-detail-btn.act-detail-result {
+  background: var(--mb-grad-primary);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* 活动详情页：分享入口 */
+.act-nav-share {
+  font-size: 18px;
+  letter-spacing: -1px;
+}
+
+.act-share-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 12px var(--mb-content-pad) 0;
+  padding: 12px 14px;
+  background: #fff;
+  border-radius: var(--mb-radius-card);
+  box-shadow: var(--mb-shadow-card);
+}
+
+.act-share-bar .act-share-label {
+  font-size: var(--mb-font-mini);
+  color: var(--mb-text-muted);
+}
+
+.act-share-bar .act-share-btns {
+  display: flex;
+  gap: 16px;
+}
+
+.act-share-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--mb-text-secondary);
+}
+
+.act-share-btn-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.act-share-btn-icon.act-share-icon-wechat {
+  background: linear-gradient(135deg, #07c160, #06ad56);
+}
+
+.act-share-btn-icon.act-share-icon-moments {
+  background: linear-gradient(135deg, #576b95, #7b8db5);
+}
+
+/* 分享弹层选项 */
+.act-share-options {
+  display: flex;
+  justify-content: center;
+  gap: 48px;
+  padding: 28px 16px 20px;
+}
+
+.act-share-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.act-share-option-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.act-share-option-icon.act-share-icon-wechat {
+  background: linear-gradient(135deg, #07c160, #06ad56);
+}
+
+.act-share-option-icon.act-share-icon-moments {
+  background: linear-gradient(135deg, #576b95, #7b8db5);
+}
+
+.act-share-option-label {
+  font-size: 13px;
+  color: var(--mb-text-secondary);
 }
 
 /* 活动评审工具栏：左侧操作 + 右侧简易统计 */

@@ -7,6 +7,7 @@
   结构：顶部橙导航栏（返回活动中心）+ 活动信息卡 + 底部操作区
   内容（medal.js renderActivityDetail 渲染）：活动标题/类型/说明/报名时间/对象/奖项 + 报名按钮（活动不设置作品格式）
   交互：报名按钮（activity-detail-signup）→ 报名并回显已报名状态
+    分享（activity-share）→ 微信好友 / 朋友圈；已出结果 → 查看结果弹层；已报名待上传 → 上传作品弹层
   对应文档：需求 1.x 活动详情 / 2.4 通知跳转报名
   ============================================================
 -->
@@ -27,7 +28,7 @@
     <header class="mb-navbar">
       <span class="nav-back" data-action="navigate" data-path="activity.html">‹</span>
       <span class="nav-title">活动详情</span>
-      <span class="nav-action" data-action="show-toast" data-toast="更多">⋯</span>
+      <span class="nav-action act-nav-share" data-action="activity-share" title="分享">⎙</span>
     </header>
 
     <main class="mb-content no-tabbar">
@@ -35,6 +36,56 @@
       <div id="activityDetailRoot"></div>
     </main>
 
+  </div>
+
+  <!-- 分享弹层（微信好友 / 朋友圈） -->
+  <div class="mask-layer sheet-mask" id="shareSheet" hidden data-close-on-mask="true">
+    <div class="mb-sheet">
+      <div class="sheet-title">分享活动</div>
+      <div class="act-share-options">
+        <button type="button" class="act-share-option" data-action="activity-share-wechat">
+          <span class="act-share-option-icon act-share-icon-wechat">微</span>
+          <span class="act-share-option-label">微信好友</span>
+        </button>
+        <button type="button" class="act-share-option" data-action="activity-share-moments">
+          <span class="act-share-option-icon act-share-icon-moments">圈</span>
+          <span class="act-share-option-label">朋友圈</span>
+        </button>
+      </div>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-cancel" data-action="close-dialog" data-target="shareSheet">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 我的结果 / 获奖公示弹层 -->
+  <div class="mask-layer sheet-mask" id="resultSheet" hidden data-close-on-mask="true">
+    <div class="mb-sheet">
+      <div class="sheet-title" id="resultTitle">我的结果</div>
+      <div class="sheet-body" id="resultBody"></div>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-confirm" data-action="close-dialog" data-target="resultSheet">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 作品上传底部弹层 -->
+  <div class="mask-layer sheet-mask" id="uploadSheet" hidden data-close-on-mask="true">
+    <div class="mb-sheet">
+      <div class="sheet-title">上传参赛作品</div>
+      <div class="sheet-field">
+        <label>选择文件（支持文档 / 图片 / 视频 / 压缩包等常见格式）</label>
+        <input type="text" id="uploadFileName" placeholder="点击选择文件（演示：占位输入）">
+      </div>
+      <div class="sheet-field">
+        <label>作品说明</label>
+        <textarea id="uploadDesc" rows="3" placeholder="请输入作品说明（选填）"></textarea>
+      </div>
+      <div class="sheet-btns">
+        <button type="button" class="sheet-cancel" data-action="close-dialog" data-target="uploadSheet">取消</button>
+        <button type="button" class="sheet-confirm" data-action="upload-confirm">确认提交</button>
+      </div>
+    </div>
   </div>
 
   <script src="../../assets/js/prototype.js"></script>

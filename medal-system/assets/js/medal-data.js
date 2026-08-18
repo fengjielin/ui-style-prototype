@@ -193,20 +193,25 @@ window.MDS = (function () {
       { id: 8, title: '秋季家园共育案例评选', type: '论文比赛', status: 'PUBLISHED', stage: 'signup', publishTime: '2026-08-10', signupStart: '2026-08-10', signupEnd: '2026-09-20', targetKindergartens: ['全部幼儿园'], targetRole: 'SPECIFIED', targetTeachers: ['张慧', '李娜'],awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 4 }, { name: '三等奖', count: 6 }], desc: '征集家园共育优秀案例，推动家园协作经验沉淀与分享。', participants: 15, worksCount: 0, supplementEnabled: true, workDeadline: '2026-09-25' },
       // 审核阶段：管理员直接审核
       { id: 9, title: '户外活动设计大赛', type: '课件比赛', status: 'PUBLISHED', stage: 'review', expertReview: false, publishTime: '2026-07-20', signupStart: '2026-07-22', signupEnd: '2026-08-08', targetKindergartens: ['阳光幼儿园', '蓝天幼儿园'],awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '提升教师户外活动组织与设计能力，展示户外游戏课程化探索成果。', participants: 20, worksCount: 12 },
-      // 归档阶段：评审已完成，待发布结果
-      { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'pending', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'],awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，评审已完成，待发布评审结果。', participants: 30, worksCount: 30, certTemplateId: 1 },
+      // 归档阶段：评审已完成，结果已发布
+      { id: 10, title: '区域活动观察记录评比', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'published', publishTime: '2026-05-10', signupStart: '2026-05-12', signupEnd: '2026-06-05', targetKindergartens: ['童蹊幼儿园'],awards: [{ name: '一等奖', count: 2 }, { name: '二等奖', count: 3 }, { name: '三等奖', count: 5 }], desc: '检验教师区域活动观察与分析能力，评审结果已发布。', participants: 30, worksCount: 30, certTemplateId: 1 },
+      // 归档阶段：园长专项 · 已发布结果（园长端「已出结果」演示）
+      { id: 11, title: '园长办园经验分享评选', type: '论文比赛', status: 'PUBLISHED', stage: 'archive', resultStatus: 'published', publishTime: '2026-03-01', signupStart: '2026-03-05', signupEnd: '2026-04-30', targetKindergartens: ['全部幼儿园'], targetRole: 'PRINCIPAL', awards: [{ name: '一等奖', count: 1 }, { name: '二等奖', count: 2 }, { name: '三等奖', count: 3 }], desc: '征集园长办园管理经验与特色做法，促进园所间经验交流。', participants: 3, worksCount: 3 },
     ],
 
     /* 教师端「活动中心」当前教师（张慧）的报名/上传状态（活动 id → 参与状态，可持久化）
        signedUp 是否已报名 / workSubmitted 是否已上传作品 / workTitle 上传的作品名称 */
     teacherSignups: {
       1:  { signedUp: true, signupTime: '2026-07-02 09:00', workSubmitted: true,  workTitle: '浅谈幼儿园一日活动中的生活教育' },
+      5:  { signedUp: true, signupTime: '2026-03-05 09:00', workSubmitted: true,  workTitle: '中一班亲子阅读 21 天记录' },
       6:  { signedUp: true, signupTime: '2025-09-05 10:00', workSubmitted: true,  workTitle: '幼儿园户外自主游戏的教师支持策略' },
       10: { signedUp: true, signupTime: '2026-05-15 09:30', workSubmitted: true,  workTitle: '建构区幼儿合作行为观察记录' },
     },
 
     /* 园长端「活动中心」当前园长（李园长）的报名/上传状态（活动 id → 参与状态，可持久化，结构同 teacherSignups） */
-    principalSignups: {},
+    principalSignups: {
+      11: { signedUp: true, signupTime: '2026-03-10 09:00', workSubmitted: true, workTitle: '童蹊幼儿园家园共育特色实践' },
+    },
 
     /* 活动类型字典（可配置，多层级） */
     activityTypes: [
@@ -241,9 +246,9 @@ window.MDS = (function () {
 
     /* 评委打分回退默认三维度（活动未关联评分标准时使用；含指标说明，评委打分时可见） */
     defaultIndicators: [
-      { name: '内容质量', desc: '选题价值、内容充实度与专业深度', maxScore: 100 },
-      { name: '创新创意', desc: '设计新颖、视角独特、体现创新性', maxScore: 100 },
-      { name: '呈现效果', desc: '结构清晰、表达规范、呈现美观', maxScore: 100 },
+      { name: '内容质量', desc: '选题价值、内容充实度与专业深度', maxScore: 100, weight: 34 },
+      { name: '创新创意', desc: '设计新颖、视角独特、体现创新性', maxScore: 100, weight: 33 },
+      { name: '呈现效果', desc: '结构清晰、表达规范、呈现美观', maxScore: 100, weight: 33 },
     ],
 
     /* 参赛作品（含作品名称 title，作品管理页支持按作品名称/教师筛选） */
@@ -258,6 +263,7 @@ window.MDS = (function () {
       { id: 24, activity: '课件制作技能大赛', title: '《动物王国》语言领域课件', teacher: '张慧', className: '中一班', type: '文档', size: '18.7MB', status: '评审中', check: '未检出重复', submitTime: '2026-07-16 09:30' },
       { id: 25, activity: '课件制作技能大赛', title: '《数字大冒险》数学游戏课件', teacher: '王强', className: '大一班', type: '压缩包', size: '32.5MB', status: '评审中', check: '相似度 4%', submitTime: '2026-07-18 14:20' },
       { id: 7, activity: '亲子阅读打卡活动', title: '亲子共读 21 天打卡记录', teacher: '孙悦', className: '中一班', type: '文档', size: '1.2MB', status: '已完成', check: '未检出重复', submitTime: '2026-04-20 09:00' },
+      { id: 26, activity: '亲子阅读打卡活动', title: '中一班亲子阅读 21 天记录', teacher: '张慧', className: '中一班', type: '文档', size: '1.5MB', status: '已评审', check: '未检出重复', submitTime: '2026-04-15 10:00' },
       // 户外活动设计大赛（审核阶段）
       { id: 8, activity: '户外活动设计大赛', title: '户外体育循环活动方案', teacher: '周涛', className: '大一班', type: '文档', size: '18.2MB', status: '评审中', check: '未检出重复', submitTime: '2026-08-10 09:30' },
       { id: 9, activity: '户外活动设计大赛', title: '沙水区自主游戏观察方案', teacher: '吴倩', className: '小一班', type: '文档', size: '2.1MB', status: '评审中', check: '未检出重复', submitTime: '2026-08-11 10:15' },
@@ -278,6 +284,10 @@ window.MDS = (function () {
       // 班级环创成果评比（归档阶段 · 已归档）
       { id: 16, activity: '班级环创成果评比', title: '小一班主题环创布置方案', teacher: '赵敏', className: '小一班', type: '压缩包', size: '28.5MB', status: '已评审', check: '未检出重复', submitTime: '2026-01-20 09:00' },
       { id: 17, activity: '班级环创成果评比', title: '中一班区域角环境创设', teacher: '陈晨', className: '中一班', type: '图片', size: '12.3MB', status: '已评审', check: '未检出重复', submitTime: '2026-01-21 11:30' },
+      // 园长办园经验分享评选（归档阶段 · 已发布结果）
+      { id: 27, activity: '园长办园经验分享评选', title: '童蹊幼儿园家园共育特色实践', teacher: '李园长', className: '—', type: '文档', size: '2.8MB', status: '已评审', check: '未检出重复', submitTime: '2026-04-12 09:30' },
+      { id: 28, activity: '园长办园经验分享评选', title: '阳光幼儿园课程游戏化探索', teacher: '王园长', className: '—', type: '文档', size: '3.2MB', status: '已评审', check: '未检出重复', submitTime: '2026-04-14 10:00' },
+      { id: 29, activity: '园长办园经验分享评选', title: '蓝天幼儿园精细化管理案例', teacher: '陈园长', className: '—', type: '文档', size: '2.5MB', status: '已评审', check: '未检出重复', submitTime: '2026-04-16 11:20' },
     ],
 
     /* 评委账号（20 位，供分组抽取演示） */
@@ -306,8 +316,8 @@ window.MDS = (function () {
 
     /* 评委打分留痕（评委端提交后写入） */
     reviewRecords: [
-      { id: 1, activity: '课件制作技能大赛', work: '赵敏的课件', judge: '王教授', scores: '85 / 90 / 88', comment: '课件结构完整，交互设计较好。', time: '2026-08-06 10:15' },
-      { id: 2, activity: '课件制作技能大赛', work: '陈晨的课件', judge: '王教授', scores: '92 / 88 / 90', comment: '动画流畅，课堂适用性强。', time: '2026-08-06 10:40' },
+      { id: 1, activity: '课件制作技能大赛', work: '赵敏的课件', judge: '王教授', scores: '34 / 27 / 26.4', comment: '课件结构完整，交互设计较好。', time: '2026-08-06 10:15' },
+      { id: 2, activity: '课件制作技能大赛', work: '陈晨的课件', judge: '王教授', scores: '36.8 / 26.4 / 27', comment: '动画流畅，课堂适用性强。', time: '2026-08-06 10:40' },
       // 区域活动观察记录评比（归档阶段）
       { id: 3, activity: '区域活动观察记录评比', work: '张慧的作品', judge: '王教授', scores: '88 / 90 / 86', comment: '观察记录详实，分析与建议到位。', time: '2026-06-10 09:20' },
       { id: 4, activity: '区域活动观察记录评比', work: '张慧的作品', judge: '陈园长', scores: '90 / 92 / 89', comment: '一等奖候选。', time: '2026-06-12 10:05' },
@@ -342,10 +352,19 @@ window.MDS = (function () {
       // 亲子阅读打卡活动（归档阶段 · 已发布结果）
       { id: 29, activity: '亲子阅读打卡活动', work: '孙悦的作品', judge: '王教授', scores: '86 / 88 / 90', comment: '打卡记录完整，方法有效。', time: '2026-05-02 09:10' },
       { id: 30, activity: '亲子阅读打卡活动', work: '孙悦的作品', judge: '陈园长', scores: '84 / 87 / 89', comment: '二等奖候选。', time: '2026-05-03 10:00' },
+      { id: 33, activity: '亲子阅读打卡活动', work: '张慧的作品', judge: '王教授', scores: '92 / 90 / 91', comment: '打卡记录详实，亲子互动质量高。', time: '2026-05-02 09:30' },
+      { id: 34, activity: '亲子阅读打卡活动', work: '张慧的作品', judge: '陈园长', scores: '91 / 93 / 90', comment: '一等奖候选。', time: '2026-05-03 10:20' },
+      // 园长办园经验分享评选（归档阶段 · 已发布结果）
+      { id: 35, activity: '园长办园经验分享评选', work: '李园长的作品', judge: '王教授', scores: '90 / 92 / 91', comment: '案例完整，家园共育特色鲜明。', time: '2026-05-05 09:10' },
+      { id: 36, activity: '园长办园经验分享评选', work: '李园长的作品', judge: '陈园长', scores: '91 / 90 / 92', comment: '一等奖候选。', time: '2026-05-06 10:00' },
+      { id: 37, activity: '园长办园经验分享评选', work: '王园长的作品', judge: '王教授', scores: '86 / 88 / 87', comment: '课程游戏化探索有亮点。', time: '2026-05-05 09:30' },
+      { id: 38, activity: '园长办园经验分享评选', work: '王园长的作品', judge: '陈园长', scores: '87 / 86 / 88', comment: '二等奖水平。', time: '2026-05-06 10:20' },
+      { id: 39, activity: '园长办园经验分享评选', work: '陈园长的作品', judge: '王教授', scores: '82 / 84 / 83', comment: '管理案例可再提炼。', time: '2026-05-05 09:50' },
+      { id: 40, activity: '园长办园经验分享评选', work: '陈园长的作品', judge: '陈园长', scores: '83 / 82 / 84', comment: '三等奖水平。', time: '2026-05-06 10:40' },
       // 课件制作技能大赛：同组评委进度对照（陈园长已评 1 份）
-      { id: 31, activity: '课件制作技能大赛', work: '赵敏的课件', judge: '陈园长', scores: '84 / 88 / 86', comment: '内容完整，交互可再加强。', time: '2026-08-06 11:20' },
+      { id: 31, activity: '课件制作技能大赛', work: '赵敏的课件', judge: '陈园长', scores: '33.6 / 26.4 / 25.8', comment: '内容完整，交互可再加强。', time: '2026-08-06 11:20' },
       // 2026 春季论文评选大赛（评审阶段 · 李教授已评 1 份）
-      { id: 32, activity: '2026 春季论文评选大赛', work: '张慧的作品', judge: '李教授', scores: '88 / 86 / 90', comment: '生活教育案例具体，建议可操作。', time: '2026-08-10 09:20' },
+      { id: 32, activity: '2026 春季论文评选大赛', work: '张慧的作品', judge: '李教授', scores: '35.2 / 25.8 / 27', comment: '生活教育案例具体，建议可操作。', time: '2026-08-10 09:20' },
     ],
 
     /* 评委分组（活动 id → 评委行；评审阶段「评委分配」写入，演示种子含评审中活动）
@@ -1004,6 +1023,14 @@ window.MDS = (function () {
             delete a.award;
             migrated = true;
           }
+          // 评分标准绑定：旧缓存活动缺 scoreStandardId 时，按 id 从 mock 种子补齐
+          if (a.scoreStandardId == null) {
+            var seedActStd = MOCK.activities.filter(function (m) { return m.id === a.id; })[0];
+            if (seedActStd && seedActStd.scoreStandardId != null) {
+              a.scoreStandardId = seedActStd.scoreStandardId;
+              migrated = true;
+            }
+          }
           // 电子奖状模板绑定：旧缓存活动缺 certTemplateId 时，按 id 从 mock 种子补齐
           if (a.certTemplateId == null) {
             var seedAct2 = MOCK.activities.filter(function (m) { return m.id === a.id; })[0];
@@ -1026,19 +1053,85 @@ window.MDS = (function () {
         if (migrated) {
           lsSet('activities', cache.activities);
         }
+        // 活动中心演示：补齐新增活动、同步已发布结果状态
+        var actIds = {};
+        cache.activities.forEach(function (a) { actIds[a.id] = true; });
+        var actDemoMigrated = false;
+        (MOCK.activities || []).forEach(function (seed) {
+          if (!actIds[seed.id]) {
+            cache.activities.push(JSON.parse(JSON.stringify(seed)));
+            actDemoMigrated = true;
+            return;
+          }
+          if (seed.id === 10 && seed.resultStatus === 'published') {
+            cache.activities.forEach(function (a) {
+              if (a.id === 10 && a.resultStatus === 'pending') {
+                a.resultStatus = 'published';
+                a.desc = seed.desc;
+                actDemoMigrated = true;
+              }
+            });
+          }
+        });
+        if (actDemoMigrated) lsSet('activities', cache.activities);
       }
+      // 教师/园长报名状态：旧缓存缺演示键时从种子补齐
+      ['teacherSignups', 'principalSignups'].forEach(function (signupKey) {
+        var signupMap = cache[signupKey] || {};
+        var signupMigrated = false;
+        Object.keys(MOCK[signupKey] || {}).forEach(function (actId) {
+          if (!signupMap[actId]) {
+            signupMap[actId] = JSON.parse(JSON.stringify(MOCK[signupKey][actId]));
+            signupMigrated = true;
+          }
+        });
+        if (signupMigrated) {
+          cache[signupKey] = signupMap;
+          lsSet(signupKey, signupMap);
+        }
+      });
       // 评审阶段评委统计演示：旧缓存缺 id=31/32 的评分留痕时从种子补齐
       if (Array.isArray(cache.reviewRecords)) {
         var recIds = {};
         cache.reviewRecords.forEach(function (r) { recIds[r.id] = true; });
         var recAppended = false;
         (MOCK.reviewRecords || []).forEach(function (seed) {
-          if ((seed.id === 31 || seed.id === 32) && !recIds[seed.id]) {
+          if ((seed.id === 31 || seed.id === 32 || (seed.id >= 33 && seed.id <= 40)) && !recIds[seed.id]) {
             cache.reviewRecords.push(JSON.parse(JSON.stringify(seed)));
             recAppended = true;
           }
         });
         if (recAppended) lsSet('reviewRecords', cache.reviewRecords);
+        // 评分标准引入满分上限后：旧缓存若按 0-100 打分且超过指标满分，按满分比例折算
+        var actsForScore = cache.activities || MOCK.activities || [];
+        var stdsForScore = cache.scoreStandards || MOCK.scoreStandards || [];
+        var defaultInds = MOCK.defaultIndicators || [];
+        var scoreRescaled = false;
+        cache.reviewRecords.forEach(function (r) {
+          var act = actsForScore.filter(function (a) { return a.title === r.activity; })[0];
+          var std = act && act.scoreStandardId != null
+            ? stdsForScore.filter(function (s) { return s.id === act.scoreStandardId; })[0]
+            : null;
+          var inds = (std && std.indicators && std.indicators.length) ? std.indicators : defaultInds;
+          if (!inds.length) return;
+          var parts = String(r.scores || '').split('/').map(function (s) { return s.trim(); });
+          var over = false;
+          var next = parts.map(function (p, i) {
+            var v = parseFloat(p);
+            var max = parseFloat(inds[i] && inds[i].maxScore);
+            if (!isFinite(v) || !isFinite(max) || max <= 0) return p;
+            if (v > max) {
+              over = true;
+              return String(Math.round((v / 100) * max * 10) / 10);
+            }
+            return p;
+          });
+          if (over) {
+            r.scores = next.join(' / ');
+            scoreRescaled = true;
+          }
+        });
+        if (scoreRescaled) lsSet('reviewRecords', cache.reviewRecords);
       }
       // 积分方案重构：旧版「活动方案」键（关联活动 + 奖励折算标准）已废弃 → 移除残留，改由 scoreSchemes 键管理
       try {

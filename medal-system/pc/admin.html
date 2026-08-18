@@ -691,7 +691,7 @@
         <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="scoreDetailMeta"></div>
         <div style="max-height:320px;overflow-y:auto;border:1px solid var(--pc-border-card);border-radius:6px;">
           <table class="pc-table">
-            <thead><tr><th>评委</th><th>评分</th><th>评语</th><th>时间</th></tr></thead>
+            <thead><tr><th>评委</th><th>评分</th><th>加权总分</th><th>评语</th><th>时间</th></tr></thead>
             <tbody id="scoreDetailTbody"></tbody>
           </table>
         </div>
@@ -704,13 +704,13 @@
 
   <!-- ══════════════════ 评委评分详情弹窗（评审阶段评委行「查看详情」：该评委对各作品的评分） ══════════════════ -->
   <div class="mask-layer" id="judgeScoreDetailDialog" hidden data-close-on-mask="true">
-    <div class="pc-dialog" style="width:1000px;">
+    <div class="pc-dialog" style="width:1100px;">
       <div class="dialog-head" id="judgeScoreDetailTitle">评委评分详情</div>
       <div class="dialog-body">
         <div style="font-size:12px;color:#909399;margin-bottom:12px;" id="judgeScoreDetailMeta"></div>
         <div style="max-height:360px;overflow-y:auto;border:1px solid var(--pc-border-card);border-radius:6px;">
           <table class="pc-table">
-            <thead><tr><th>作品名称</th><th>报名教师</th><th>评分</th><th>评语</th><th>时间</th><th>状态</th></tr></thead>
+            <thead><tr><th>作品名称</th><th>报名教师</th><th>评分</th><th>加权总分</th><th>评语</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
             <tbody id="judgeScoreDetailTbody"></tbody>
           </table>
         </div>
